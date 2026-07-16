@@ -7,47 +7,112 @@ const supabase = createClient(
 );
 
 function App() {
-  const [datoBaseDatos, setDatoBaseDatos] = useState('Buscando datos...');
-  const [color, setColor] = useState('#f59e0b'); // Naranja de espera
+  const [estado, setEstado] = useState('cargando');
+  const [areas, setAreas] = useState([]);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    async function obtenerDatos() {
-      // Consultamos la tabla que acabas de crear
-      const { data, error } = await supabase.from('tabla_falsa').select('*');
+    async function probarConexionReal() {
+      // Consultamos la tabla "area_facultad" que ya tiene tus datos semilla
+      const { data, error } = await supabase.from('area_facultad').select('*');
 
       if (error) {
-        setDatoBaseDatos('❌ Error al leer: ' + error.message);
-        setColor('#ef4444'); // Rojo
-      } else if (data && data.length > 0) {
-        // Extraemos el mensaje de la primera fila que insertaste
-        setDatoBaseDatos('✅ ' + data[0].mensaje);
-        setColor('#10b981'); // Verde
+        setEstado('error');
+        setErrorMsg(error.message);
       } else {
-        setDatoBaseDatos('⚠️ La tabla existe, pero está vacía.');
-        setColor('#f59e0b'); // Naranja
+        setEstado('conectado');
+        setAreas(data || []);
       }
     }
 
-    obtenerDatos();
+    probarConexionReal();
   }, []);
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'system-ui, sans-serif', textAlign: 'center' }}>
-      <h1>Panel de Control</h1>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#f0f9ff', /* Azul muy claro tipo médico */
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '40px 20px'
+    }}>
       
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '20px', 
-        borderRadius: '8px',
-        backgroundColor: '#1e293b', 
-        color: '#ffffff',
-        display: 'inline-block'
+      {/* Tarjeta Principal */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        padding: '40px',
+        borderRadius: '16px',
+        boxShadow: '0 10px 25px rgba(3, 105, 161, 0.1)',
+        maxWidth: '600px',
+        width: '100%',
+        textAlign: 'center'
       }}>
-        <h2>Respuesta del Servidor:</h2>
-        <h3 style={{ color: color }}>
-          {datoBaseDatos}
-        </h3>
+        
+        <h1 style={{ color: '#0369a1', margin: '0 0 10px 0', fontSize: '28px' }}>
+          🏥 Sistema Integrado SIIH
+        </h1>
+        <p style={{ color: '#64748b', margin: '0 0 30px 0', fontSize: '16px' }}>
+          Módulo de Administración Hospitalaria
+        </p>
+
+        {/* Estado de Conexión */}
+        {estado === 'cargando' && (
+          <div style={{ color: '#d97706', fontWeight: 'bold', fontSize: '18px' }}>
+            ⏳ Conectando con la base de datos...
+          </div>
+        )}
+
+        {estado === 'error' && (
+          <div style={{ backgroundColor: '#fef2f2', color: '#ef4444', padding: '15px', borderRadius: '8px' }}>
+            <strong>❌ Error de Conexión:</strong> {errorMsg}
+          </div>
+        )}
+
+        {estado === 'conectado' && (
+          <>
+            <div style={{ 
+              backgroundColor: '#ecfdf5', 
+              color: '#059669', 
+              padding: '12px', 
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              marginBottom: '30px'
+            }}>
+              ✅ ¡Base de datos conectada exitosamente!
+            </div>
+
+            <div style={{ textAlign: 'left' }}>
+              <h3 style={{ color: '#334155', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
+                Áreas Registradas en el Sistema:
+              </h3>
+              
+              <ul style={{ listStyleType: 'none', padding: 0 }}>
+                {areas.map((area) => (
+                  <li key={area.id_area} style={{ 
+                    backgroundColor: '#f8fafc',
+                    padding: '12px 16px',
+                    margin: '8px 0',
+                    borderRadius: '6px',
+                    borderLeft: '4px solid #0ea5e9',
+                    color: '#334155',
+                    display: 'flex',
+                    justifyContent: 'space-between'
+                  }}>
+                    <strong>{area.nombre_area}</strong>
+                    <span style={{ fontSize: '14px', color: '#94a3b8' }}>{area.tipo_area}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
+        )}
       </div>
+      
+      <p style={{ color: '#94a3b8', marginTop: '30px', fontSize: '14px' }}>
+        Desarrollado con React + Vite + Supabase
+      </p>
     </div>
   );
 }
