@@ -1,0 +1,149 @@
+/* src/styles/global.css */
+/* ============================================================
+   CAPA DE PRESENTACIÓN — Paleta azul y blanco (institucional UMSA)
+   ============================================================ */
+:root {
+  --color-primary: #0b5fa5;
+  --color-primary-dark: #073b66;
+  --color-primary-light: #e8f1fa;
+  --color-white: #ffffff;
+  --color-gray-text: #33475b;
+  --color-border: #c7dcef;
+  --color-error: #c0392b;
+  --color-success: #1e7e34;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: var(--color-primary-light);
+  color: var(--color-gray-text);
+}
+
+.siih-container {
+  max-width: 720px;
+  margin: 40px auto;
+  background: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(11, 95, 165, 0.15);
+  overflow: hidden;
+}
+
+.siih-header {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: var(--color-white);
+  padding: 24px 32px;
+}
+
+.siih-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.siih-header p {
+  margin: 4px 0 0;
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.siih-body {
+  padding: 32px;
+}
+
+.siih-field {
+  margin-bottom: 18px;
+}
+
+.siih-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--color-primary-dark);
+  font-size: 0.9rem;
+}
+
+.siih-field input,
+.siih-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.siih-field input:focus,
+.siih-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(11, 95, 165, 0.15);
+}
+
+.siih-error {
+  color: var(--color-error);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.siih-row {
+  display: flex;
+  gap: 16px;
+}
+
+.siih-row > .siih-field {
+  flex: 1;
+}
+
+.siih-button {
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.siih-button:hover {
+  background: var(--color-primary-dark);
+}
+
+.siih-button:disabled {
+  background: #a9c6de;
+  cursor: not-allowed;
+}
+
+.siih-alert {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.siih-alert-success {
+  background: #e7f6ec;
+  color: var(--color-success);
+  border: 1px solid #bee5c6;
+}
+
+.siih-alert-error {
+  background: #fbeaea;
+  color: var(--color-error);
+  border: 1px solid #f1c4c0;
+}
+
+.siih-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.siih-link:hover {
+  text-decoration: underline;
+}
