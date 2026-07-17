@@ -8,49 +8,43 @@
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 
 // Lista de especialidades distintas ofrecidas (para el primer selector del formulario).
+// Retorna array de nombres (strings) para compatibilidad con frontend.
 export async function obtenerEspecialidades() {
   const { data, error } = await supabaseAdmin
     .from('especialidad')
-    .select('id_especialidad, nombre, tarifa')
+    .select('nombre')
     .eq('estado', 'activo')
     .order('nombre', { ascending: true });
 
   if (error) throw new Error(`Error al obtener especialidades: ${error.message}`);
 
-  return (data || []).map((e) => ({
-    id_especialidad: e.id_especialidad,
-    nombre: e.nombre,
-    tarifa: e.tarifa,
-  }));
+  return (data || []).map((e) => e.nombre);
 }
 
 // Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
-// NOTA: requiere que exista la FK medico.persona_id -> persona.persona_id
-// para que el embed `persona:persona_id (...)` funcione.
+// especialidad: nombre de especialidad (string), ej. "Cardiología"
 export async function obtenerMedicosPorEspecialidad(especialidad) {
-  // especialidad puede ser nombre (string) o id (number)
-  const esNumero = !Number.isNaN(especialidad);
-  
-  let query = supabaseAdmin
-    .from('medico')
-    .select('id_medico, nro_licencia, id_especialidad, especialidad:id_especialidad (nombre, tarifa), persona:persona_id (nombre, apellido)');
-
-  if (esNumero) {
-    query = query.eq('id_especialidad', parseInt(especialidad));
-  } else {
-    // Búsqueda por nombre de especialidad
-    const { data: esps, error: errEsp } = await supabaseAdmin
-      .from('especialidad')
-      .select('id_especialidad')
-      .eq('nombre', especialidad);
-    
-    if (errEsp || !esps || esps.length === 0) {
-      return [];
-    }
-    query = query.eq('id_especialidad', esps[0].id_especialidad);
+  if (!especialidad) {
+    return [];
   }
 
-  const { data, error } = await query;
+  // Obtener el id_especialidad a partir del nombre
+  const { data: esps, error: errEsp } = await supabaseAdmin
+    .from('especialidad')
+    .select('id_especialidad')
+    .eq('nombre', especialidad)
+    .eq('estado', 'activo')
+    .single();
+
+  if (errEsp || !esps) {
+    return [];
+  }
+
+  // Obtener médicos de esa especialidad
+  const { data, error } = await supabaseAdmin
+    .from('medico')
+    .select('id_medico, nro_licencia, id_especialidad, especialidad:id_especialidad (nombre, tarifa), persona:persona_id (nombre, apellido)')
+    .eq('id_especialidad', esps.id_especialidad);
 
   if (error) throw new Error(`Error al obtener médicos: ${error.message}`);
 

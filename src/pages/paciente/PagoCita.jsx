@@ -32,6 +32,10 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
   // Resultado de pago
   const [resultadoPago, setResultadoPago] = useState(null);
   const [errorPago, setErrorPago] = useState(null);
+  
+  // Polling para validación de pago en 2 fases
+  const [pollingActivo, setPollingActivo] = useState(false);
+  const [mensajeValidacion, setMensajeValidacion] = useState(null);
 
   // Cargar validación de seguro al montar
   useEffect(() => {
@@ -94,7 +98,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
     cargarMonto();
   }, [idMedico]);
 
-  // Procesar pago
+  // Procesar pago (inicia validación 2-fase)
   async function handleProcesarPago() {
     if (!idCita || !idPaciente || !monto) {
       setErrorPago('Faltan datos para procesar el pago');
@@ -103,6 +107,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
     setProcesandoPago(true);
     setErrorPago(null);
+    setMensajeValidacion('Procesando pago...');
 
     try {
       const res = await fetch('/api/pagos/procesar-pago', {
@@ -120,24 +125,14 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
       const data = await res.json();
 
       if (data.exitoso) {
+        // Pago registrado en estado "pendiente_validacion"
         setResultadoPago(data);
         setEtapa('comprobante');
+        setMensajeValidacion('Validando pago... (esto puede tomar 1-3 segundos)');
+        setPollingActivo(true);
         
-        // Registrar validación de seguro
-        if (seguroValidacion?.vigente) {
-          await fetch('/api/pagos/registrar-validacion', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id_cita: parseInt(idCita),
-              id_paciente: parseInt(idPaciente),
-              tipo_seguro: seguroValidacion.tipo_seguro,
-              numero_seguro: seguroValidacion.numero_seguro,
-              vigencia: seguroValidacion.fecha_vigencia,
-              estado_validacion: 'vigente',
-            }),
-          });
-        }
+        // NO registrar seguro aquí - lo hace el endpoint completar-pago-y-seguro
+        // Este es solo para flujo de pago directo
       } else {
         setErrorPago(data.razon || 'Error procesando pago');
         setEtapa('error');
@@ -149,6 +144,86 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
       setProcesandoPago(false);
     }
   }
+
+  // Polling para verificar estado del pago (validación 2-fase)
+  useEffect(() => {
+    if (!pollingActivo || !resultadoPago?.id_pago) return;
+
+    console.log('[PagoCita] Iniciando polling para id_pago:', resultadoPago.id_pago);
+
+    let intentos = 0;
+    const maxIntentos = 30; // máximo 30 segundos
+
+    const interval = setInterval(async () => {
+      intentos++;
+      console.log(`[PagoCita] Polling intento ${intentos}/${maxIntentos}`);
+
+      try {
+        const res = await fetch(`/api/pagos/estado-pago?id_pago=${resultadoPago.id_pago}`);
+        const data = await res.json();
+
+        if (data.ok && data.estado_pago) {
+          console.log('[PagoCita] Estado del pago:', data.estado_pago);
+
+          // Actualizar estado del pago
+          setResultadoPago((prev) => ({
+            ...prev,
+            estado: data.estado_pago,
+            razon_rechazo: data.razon_rechazo,
+          }));
+
+          // Si está aprobado → mostrar comprobante
+          if (data.estado_pago === 'aprobado') {
+            console.log('[PagoCita] Pago aprobado!');
+            setMensajeValidacion('✓ Pago validado exitosamente');
+            clearInterval(interval);
+            setPollingActivo(false);
+
+            // Registrar validación de seguro (si existe seguro vigente)
+            if (seguroValidacion?.vigente) {
+              await fetch('/api/pagos/registrar-validacion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id_cita: parseInt(idCita),
+                  id_paciente: parseInt(idPaciente),
+                  tipo_seguro: seguroValidacion.tipo_seguro,
+                  numero_seguro: seguroValidacion.numero_seguro,
+                  vigencia: seguroValidacion.fecha_vigencia,
+                  estado_validacion: 'vigente',
+                }),
+              });
+            }
+          }
+
+          // Si está rechazado → mostrar error
+          if (data.estado_pago === 'rechazado') {
+            console.log('[PagoCita] Pago rechazado:', data.razon_rechazo);
+            setMensajeValidacion(null);
+            setErrorPago(`Pago rechazado: ${data.razon_rechazo || 'Sin especificar'}`);
+            clearInterval(interval);
+            setPollingActivo(false);
+            setEtapa('error');
+          }
+        }
+      } catch (err) {
+        console.error('[PagoCita] Error en polling:', err.message);
+      }
+
+      // Si se agotaron los intentos, detener
+      if (intentos >= maxIntentos) {
+        console.warn('[PagoCita] Polling expirado después de 30 segundos');
+        clearInterval(interval);
+        setPollingActivo(false);
+        setErrorPago('Timeout validando pago. Intenta nuevamente o contacta soporte.');
+        setEtapa('error');
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [pollingActivo, resultadoPago?.id_pago, idCita, idPaciente, seguroValidacion]);
 
   // ===== RENDERIZADO =====
 
@@ -269,9 +344,17 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
         {/* ===== ETAPA 2: COMPROBANTE ===== */}
         {etapa === 'comprobante' && resultadoPago && (
           <>
-            <div className="siih-alert siih-alert-success">
-              ✓ Pago procesado exitosamente
-            </div>
+            {pollingActivo && mensajeValidacion && (
+              <div className="siih-alert siih-alert-info">
+                ⏳ {mensajeValidacion}
+              </div>
+            )}
+
+            {!pollingActivo && resultadoPago.estado === 'aprobado' && (
+              <div className="siih-alert siih-alert-success">
+                ✓ Pago procesado exitosamente
+              </div>
+            )}
 
             <div className="siih-card">
               <h2>Comprobante de Pago</h2>
