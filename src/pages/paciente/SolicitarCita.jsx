@@ -41,7 +41,7 @@ export default function SolicitarCita({ idPaciente }) {
         if (data.ok) setEspecialidades(data.especialidades);
         else setErrorGeneral(data.mensaje || 'No se pudo cargar la lista de especialidades.');
       } catch {
-        setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente.');
+        setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente ......');
       }
     }
     cargarEspecialidades();
