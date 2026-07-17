@@ -26,17 +26,12 @@ export default async function handler(req, res) {
       .select(
         `
         id_pago, 
-        id_cita, 
-        id_paciente, 
+        id_consulta, 
+        id_inscripcion, 
         monto, 
         metodo_pago, 
-        estado_pago, 
         comprobante, 
-        referencia_txn,
-        razon_rechazo,
-        fecha_pago, 
-        created_at,
-        updated_at
+        fecha_pago
         `
       )
       .eq('id_pago', parseInt(id_pago))
@@ -46,56 +41,53 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Pago no encontrado' });
     }
 
-    // Obtener estado de la cita asociada
-    const { data: cita, error: errorCita } = await supabaseAdmin
-      .from('cita')
-      .select('id_cita, estado, estado_pago, fecha_hora, motivo')
-      .eq('id_cita', pago.id_cita)
-      .single();
+    // Obtener estado de la consulta asociada si existe
+    let consulta = null;
+    if (pago.id_consulta) {
+      const { data: consultaData, error: errorConsulta } = await supabaseAdmin
+        .from('consulta')
+        .select('id_consulta, id_cita, id_paciente, id_medico, fecha_consulta')
+        .eq('id_consulta', pago.id_consulta)
+        .single();
+      
+      if (!errorConsulta && consultaData) {
+        consulta = consultaData;
+      }
+    }
 
-    // Obtener validación de seguro asociada
-    const { data: seguro, error: errorSeguro } = await supabaseAdmin
-      .from('validacion_seguro')
-      .select('id_validacion, estado_validacion, tipo_seguro, fecha_validacion')
-      .eq('id_cita', pago.id_cita)
-      .order('created_at', { ascending: false })
-      .limit(1);
+    // Obtener estado de la cita si existe
+    let cita = null;
+    if (consulta?.id_cita) {
+      const { data: citaData } = await supabaseAdmin
+        .from('cita')
+        .select('id_cita, estado_pago, fecha_hora')
+        .eq('id_cita', consulta.id_cita)
+        .single();
+      
+      if (citaData) {
+        cita = citaData;
+      }
+    }
 
     return res.status(200).json({
+      ok: true,
       id_pago: pago.id_pago,
-      estado_pago: pago.estado_pago,
+      estado_pago: cita?.estado_pago || 'pendiente_validacion',
       monto: pago.monto,
       metodo_pago: pago.metodo_pago,
-      referencia_txn: pago.referencia_txn,
       comprobante: pago.comprobante,
-      razon_rechazo: pago.razon_rechazo,
       fecha_pago: pago.fecha_pago,
-      created_at: pago.created_at,
       
-      // Estado de la cita
+      // Información adicional
+      id_consulta: pago.id_consulta,
+      id_inscripcion: pago.id_inscripcion,
+      
+      // Estado de la cita asociada si existe
       cita: cita ? {
-        id_cita: cita.id_cita,
-        estado: cita.estado,
+        id_cita: consulta.id_cita,
         estado_pago: cita.estado_pago,
         fecha_hora: cita.fecha_hora,
-        motivo: cita.motivo,
       } : null,
-
-      // Validación de seguro
-      seguro: seguro && seguro.length > 0 ? {
-        id_validacion: seguro[0].id_validacion,
-        estado_validacion: seguro[0].estado_validacion,
-        tipo_seguro: seguro[0].tipo_seguro,
-        fecha_validacion: seguro[0].fecha_validacion,
-      } : null,
-
-      // Interpretación del estado
-      interpretacion: {
-        pagado: pago.estado_pago === 'aprobado',
-        pendiente: pago.estado_pago === 'pendiente_validacion',
-        rechazado: pago.estado_pago === 'rechazado',
-        listo_consulta: pago.estado_pago === 'aprobado' && cita?.estado === 'confirmada',
-      },
     });
   } catch (error) {
     console.error('[/api/pagos/estado-pago] Error:', error.message);

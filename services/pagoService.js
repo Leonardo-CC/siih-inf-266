@@ -15,7 +15,7 @@ import { supabaseAdmin } from '../lib/supabaseAdmin.js';
  * @param {number} id_paciente - ID del paciente
  * @returns {Object} { vigente: boolean, tipo_seguro: string, numero_seguro: string, fecha_vigencia: Date, razon: string }
  */
-export async function validarVigemiaSeguro(id_paciente) {
+export async function validarVigenciaSeguro(id_paciente) {
   try {
     // Obtener datos de seguro del paciente
     const { data: paciente, error: errorPaciente } = await supabaseAdmin
@@ -110,12 +110,11 @@ export async function obtenerMontoCita(id_medico) {
  * Fase 1: Registra el pago en estado 'pendiente_validacion'
  * Fase 2: Se valida luego mediante webhook o polling
  * 
- * @param {Object} datosPago - { id_cita, id_paciente, id_medico, monto, metodo_pago }
- * @returns {Object} { exitoso: boolean, id_pago, estado, referencia_txn, razon }
+ * @param {Object} datosPago - { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago }
+ * @returns {Object} { exitoso: boolean, id_pago, estado, comprobante, razon }
  */
 export async function procesarPago(datosPago) {
-  // Nota: Necesitamos id_consulta, no id_cita directamente para la tabla pago
-  const { id_cita, id_consulta, monto, metodo_pago } = datosPago;
+  let { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago } = datosPago;
 
   try {
     // Validaciones
@@ -127,6 +126,48 @@ export async function procesarPago(datosPago) {
       return { exitoso: false, razon: 'Monto inválido' };
     }
 
+    // Si no tiene id_consulta, intentar obtenerla de la cita
+    if (!id_consulta && id_cita) {
+      const { data: consultas } = await supabaseAdmin
+        .from('consulta')
+        .select('id_consulta')
+        .eq('id_cita', id_cita)
+        .limit(1);
+      
+      if (consultas && consultas.length > 0) {
+        id_consulta = consultas[0].id_consulta;
+      } else {
+        // Si no existe consulta aún, crear una temporal
+        const { data: citaData } = await supabaseAdmin
+          .from('cita')
+          .select('id_paciente, id_medico, motivo, fecha_hora')
+          .eq('id_cita', id_cita)
+          .single();
+
+        if (citaData) {
+          const { data: nuevaConsulta, error: errorConsulta } = await supabaseAdmin
+            .from('consulta')
+            .insert([{
+              id_cita,
+              id_paciente: citaData.id_paciente,
+              id_medico: citaData.id_medico,
+              motivo_consulta: citaData.motivo || 'Consulta programada',
+              fecha_consulta: citaData.fecha_hora || new Date().toISOString(),
+            }])
+            .select('id_consulta')
+            .single();
+
+          if (!errorConsulta && nuevaConsulta) {
+            id_consulta = nuevaConsulta.id_consulta;
+          }
+        }
+      }
+    }
+
+    if (!id_consulta) {
+      return { exitoso: false, razon: 'No se pudo obtener o crear la consulta para procesar el pago' };
+    }
+
     // Generar referencia única (lo guardaremos en la columna comprobante)
     const comprobante_ref = `${metodo_pago.toUpperCase()}-${Date.now()}`;
 
@@ -135,10 +176,10 @@ export async function procesarPago(datosPago) {
       .from('pago')
       .insert([
         {
-          id_consulta: id_consulta, // Usar id_consulta según el esquema
+          id_consulta,
           monto,
           metodo_pago,
-          comprobante: comprobante_ref // Usamos comprobante en lugar de referencia_txn
+          comprobante: comprobante_ref
         },
       ])
       .select('id_pago')
@@ -158,7 +199,7 @@ export async function procesarPago(datosPago) {
       exitoso: true,
       id_pago: pagoDatos.id_pago,
       estado: 'pendiente_validacion',
-      referencia_txn: comprobante_ref,
+      comprobante: comprobante_ref,
       razon: 'Pago registrado, pendiente de validación',
       mensaje: 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
@@ -167,56 +208,17 @@ export async function procesarPago(datosPago) {
     throw error;
   }
 }
-
 /**
- * Valida un pago de forma asincrónica.
+ * Valida un pago de forma asincrónica (simula webhook de proveedor).
+ * En producción, esto sería un webhook real del proveedor de pagos.
  */
 async function validarPagoEnBackground(id_pago, id_cita, metodo_pago) {
   try {
     // Simular delay de validación (1-3 segundos)
     await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
 
-    let aprobado = true;
-    let razon_rechazo = '';
-
-    if (metodo_pago === 'qr') {
-      aprobado = Math.random() > 0.3;
-      if (!aprobado) razon_rechazo = 'El código QR rechazó la transacción';
-    } else if (metodo_pago === 'tarjeta') {
-      aprobado = Math.random() > 0.2;
-      if (!aprobado) razon_rechazo = 'Fondos insuficientes o tarjeta rechazada';
-    }
-
-    // Actualizar estado de la cita (ya no actualizamos estado_pago en la tabla pago)
-    const estado_cita = aprobado ? 'pagado' : 'sin_pagar';
-    await actualizarEstadoCita(id_cita, estado_cita);
-
-    // Opcional: Si es rechazado y quieres guardar la razón,
-    // tendrías que agregar la columna razon_rechazo a la tabla pago,
-    // o manejarlo eliminando el pago fallido.
-    if (!aprobado) {
-       console.log(`[pagoService] Pago #${id_pago} rechazado: ${razon_rechazo}`);
-       // Opcional: await supabaseAdmin.from('pago').delete().eq('id_pago', id_pago);
-    } else {
-       console.log(`[pagoService] Pago #${id_pago} validado y aprobado.`);
-    }
-
-  } catch (error) {
-    console.error('[pagoService] Error en validación de fondo:', error);
-  }
-}
-/**
- * Valida un pago de forma asincrónica (simula webhook de proveedor).
- * En producción, esto sería un webhook real del proveedor de pagos.
- */
-async function validarPagoEnBackground(id_pago, id_cita, id_paciente, metodo_pago) {
-  try {
-    // Simular delay de validación (1-3 segundos)
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
-
     // Simular validación según método
     let aprobado = true;
-    let razon_rechazo = '';
 
     if (metodo_pago === 'efectivo') {
       // Efectivo: siempre se aprueba
@@ -224,38 +226,17 @@ async function validarPagoEnBackground(id_pago, id_cita, id_paciente, metodo_pag
     } else if (metodo_pago === 'qr') {
       // QR: 70% de éxito
       aprobado = Math.random() > 0.3;
-      if (!aprobado) {
-        razon_rechazo = 'El código QR rechazó la transacción';
-      }
     } else if (metodo_pago === 'tarjeta') {
       // Tarjeta: 80% de éxito
       aprobado = Math.random() > 0.2;
-      if (!aprobado) {
-        razon_rechazo = 'Fondos insuficientes o tarjeta rechazada';
-      }
-    }
-
-    // Actualizar estado del pago
-    const estado_final = aprobado ? 'aprobado' : 'rechazado';
-    
-    const { error: errorUpdate } = await supabaseAdmin
-      .from('pago')
-      .update({
-        estado_pago: estado_final,
-        razon_rechazo: razon_rechazo || null,
-      })
-      .eq('id_pago', id_pago);
-
-    if (errorUpdate) {
-      console.error('[pagoService] Error actualizando estado de pago:', errorUpdate);
-      return;
     }
 
     // Actualizar estado de la cita
     const estado_cita = aprobado ? 'pagado' : 'sin_pagar';
     await actualizarEstadoCita(id_cita, estado_cita);
 
-    console.log(`[pagoService] Pago #${id_pago} validado: ${estado_final}`);
+    const resultado = aprobado ? 'aprobado' : 'rechazado';
+    console.log(`[pagoService] Pago #${id_pago} validado: ${resultado}`);
 
   } catch (error) {
     console.error('[pagoService] Error en validación de fondo:', error);
@@ -303,18 +284,17 @@ export async function registrarValidacionSeguro(id_cita, id_paciente, datosSegur
 }
 
 /**
- * Obtiene el historial de pagos de un paciente.
- * @param {number} id_paciente - ID del paciente
+ * Obtiene el historial de pagos para una consulta.
+ * @param {number} id_consulta - ID de la consulta
  * @returns {Array} Lista de pagos registrados
  */
-export async function obtenerHistorialPagos(id_paciente) {
+export async function obtenerHistorialPagos(id_consulta) {
   try {
     const { data, error } = await supabaseAdmin
       .from('pago')
-      .select('id_pago, id_cita, monto, metodo_pago, estado_pago, comprobante, referencia_txn, fecha_pago, created_at')
-      .eq('id_paciente', id_paciente)
-      .order('created_at', { ascending: false })
-      .limit(10);
+      .select('id_pago, id_consulta, id_inscripcion, monto, metodo_pago, comprobante, fecha_pago')
+      .eq('id_consulta', id_consulta)
+      .order('fecha_pago', { ascending: false });
 
     if (error) {
       throw new Error(`Error obteniendo historial: ${error.message}`);

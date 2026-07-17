@@ -2,7 +2,7 @@
 // ============================================================
 // Endpoint: POST /api/pagos/procesar-pago
 // Procesa un pago para una cita
-// Body: { id_cita, id_paciente, id_medico, monto, metodo_pago }
+// Body: { id_cita, id_consulta (optional), id_paciente (optional), id_medico (optional), monto, metodo_pago }
 // ============================================================
 
 import { procesarPago } from '../../services/pagoService.js';
@@ -13,18 +13,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { id_cita, id_paciente, id_medico, monto, metodo_pago } = req.body;
+    const { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago } = req.body;
 
     // Validaciones básicas
-    if (!id_cita || !id_paciente || !monto || !metodo_pago) {
+    if (!id_cita || !monto || !metodo_pago) {
       return res.status(400).json({ 
-        error: 'Faltan parámetros requeridos: id_cita, id_paciente, monto, metodo_pago' 
+        error: 'Faltan parámetros requeridos: id_cita, monto, metodo_pago' 
       });
     }
 
     // Procesar el pago
     const resultado = await procesarPago({
       id_cita,
+      id_consulta,
       id_paciente,
       id_medico,
       monto,

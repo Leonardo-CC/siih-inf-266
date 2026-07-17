@@ -4,7 +4,7 @@
 // Valida la vigencia del seguro del paciente
 // ============================================================
 
-import { validarVigemiaSeguro } from '../../services/pagoService.js';
+import { validarVigenciaSeguro } from '../../services/pagoService.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'id_paciente es requerido' });
     }
 
-    const resultado = await validarVigemiaSeguro(parseInt(id_paciente));
+    const resultado = await validarVigenciaSeguro(parseInt(id_paciente));
     return res.status(200).json(resultado);
   } catch (error) {
     console.error('[/api/pagos/validar-seguro] Error:', error.message);
