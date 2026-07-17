@@ -118,7 +118,7 @@ export async function procesarPago(datosPago) {
 
   try {
     // Validaciones
-    if (!['efectivo', 'qr', 'tarjeta'].includes(metodo_pago)) {
+    if (!['efectivo', 'transferencia', 'tarjeta'].includes(metodo_pago)) {
       return { exitoso: false, razon: 'Método de pago no válido' };
     }
 
@@ -193,8 +193,8 @@ export async function procesarPago(datosPago) {
     await actualizarEstadoCita(id_cita, 'pendiente_validacion');
 
     // FASE 2: Simular validación de pago en background
-    // IMPORTANTE: Para efectivo, NO simular validación (debe validarse manualmente)
-    if (metodo_pago !== 'efectivo') {
+    // IMPORTANTE: Para efectivo y transferencia, NO simular validación (debe validarse manualmente)
+    if (!['efectivo', 'transferencia'].includes(metodo_pago)) {
       validarPagoEnBackground(pagoDatos.id_pago, id_cita, metodo_pago);
     }
 
@@ -206,8 +206,8 @@ export async function procesarPago(datosPago) {
       metodo_pago: metodo_pago,
       monto: monto,
       razon: 'Pago registrado, pendiente de validación',
-      mensaje: metodo_pago === 'efectivo' 
-        ? '✓ Pago registrado. Un administrador validará que recibió el efectivo.' 
+      mensaje: ['efectivo', 'transferencia'].includes(metodo_pago)
+        ? '✓ Pago registrado. Un administrador validará la transacción.' 
         : 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
   } catch (error) {
@@ -230,8 +230,8 @@ async function validarPagoEnBackground(id_pago, id_cita, metodo_pago) {
     if (metodo_pago === 'efectivo') {
       // Efectivo: siempre se aprueba
       aprobado = true;
-    } else if (metodo_pago === 'qr') {
-      // QR: 70% de éxito
+    } else if (metodo_pago === 'transferencia') {
+      // Transferencia: 70% de éxito
       aprobado = Math.random() > 0.3;
     } else if (metodo_pago === 'tarjeta') {
       // Tarjeta: 80% de éxito

@@ -196,10 +196,10 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
             metodo_pago: metodoPago,
           }));
 
-          // Si el método es EFECTIVO y está en pendiente_validacion → terminó (esperando validación manual)
-          if (metodoPago === 'efectivo' && data.estado_pago === 'pendiente_validacion') {
-            console.log('[PagoCita] Pago en efectivo registrado - esperando validación manual');
-            setMensajeValidacion('✓ Pago registrado. Un administrador validará la entrega de efectivo');
+          // Si el método es EFECTIVO o TRANSFERENCIA y está en pendiente_validacion → terminó (esperando validación manual)
+          if (['efectivo', 'transferencia'].includes(metodoPago) && data.estado_pago === 'pendiente_validacion') {
+            console.log('[PagoCita] Pago en efectivo/transferencia registrado - esperando validación manual');
+            setMensajeValidacion('✓ Pago registrado. Un administrador validará la transacción');
             clearInterval(interval);
             setPollingActivo(false);
             setEtapa('comprobante');
@@ -351,10 +351,10 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMetodoPago('qr')}
-                    className={`siih-method-btn ${metodoPago === 'qr' ? 'siih-method-selected' : ''}`}
+                    onClick={() => setMetodoPago('transferencia')}
+                    className={`siih-method-btn ${metodoPago === 'transferencia' ? 'siih-method-selected' : ''}`}
                   >
-                    📱 QR
+                    🏦 Transferencia
                   </button>
                   <button
                     type="button"
@@ -392,10 +392,10 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
               </div>
             )}
 
-            {!pollingActivo && (resultadoPago.estado === 'aprobado' || resultadoPago.metodo_pago === 'efectivo') && (
-              <div className={`siih-alert ${resultadoPago.metodo_pago === 'efectivo' ? 'siih-alert-warning' : 'siih-alert-success'}`}>
-                {resultadoPago.metodo_pago === 'efectivo' 
-                  ? '✓ Pago registrado - esperando validación del efectivo' 
+            {!pollingActivo && (resultadoPago.estado === 'aprobado' || ['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)) && (
+              <div className={`siih-alert ${['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) ? 'siih-alert-warning' : 'siih-alert-success'}`}>
+                {['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)
+                  ? '✓ Pago registrado - esperando validación' 
                   : '✓ Pago procesado exitosamente'}
               </div>
             )}
@@ -412,20 +412,20 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 </p>
                 <p>
                   <strong>Método:</strong> {resultadoPago.metodo_pago === 'efectivo' ? 'Efectivo' : 
-                                          resultadoPago.metodo_pago === 'qr' ? 'QR' : 'Tarjeta'}
+                                          resultadoPago.metodo_pago === 'transferencia' ? 'Transferencia' : 'Tarjeta'}
                 </p>
                 <p>
                   <strong>Estado:</strong> {resultadoPago.estado}
                 </p>
               </div>
 
-              {resultadoPago.metodo_pago === 'efectivo' && (
+              {['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) && (
                 <div className="siih-alert siih-alert-info">
-                  <strong>Pago en Efectivo:</strong> Tu pago ha sido registrado. Un administrador verificará la entrega del efectivo y completará la transacción.
+                  <strong>Pago en Espera:</strong> Tu pago ha sido registrado. Un administrador verificará la transacción y completará el proceso.
                 </div>
               )}
 
-              {resultadoPago.metodo_pago !== 'efectivo' && (
+              {!['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) && (
                 <div className="siih-alert siih-alert-success">
                   Tu cita ha sido confirmada. Recibirás una confirmación por correo electrónico.
                 </div>
