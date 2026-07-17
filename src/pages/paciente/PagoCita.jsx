@@ -49,6 +49,12 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
       try {
         const res = await fetch(`/api/pagos/validar-seguro?id_paciente=${idPaciente}`);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Error ${res.status}: ${errorText}`);
+        }
+        
         const data = await res.json();
         
         setSeguroValidacion(data);
@@ -81,6 +87,12 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
       try {
         const res = await fetch(`/api/pagos/monto-cita?id_medico=${idMedico}`);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Error ${res.status}: ${errorText}`);
+        }
+        
         const data = await res.json();
         
         if (data.monto) {
@@ -122,6 +134,11 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
         }),
       });
 
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error ${res.status}: ${errorText}`);
+      }
+
       const data = await res.json();
 
       if (data.exitoso) {
@@ -160,6 +177,12 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
       try {
         const res = await fetch(`/api/pagos/estado-pago?id_pago=${resultadoPago.id_pago}`);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Error ${res.status}: ${errorText}`);
+        }
+        
         const data = await res.json();
 
         if (data.ok && data.estado_pago) {
@@ -181,18 +204,26 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
             // Registrar validación de seguro (si existe seguro vigente)
             if (seguroValidacion?.vigente) {
-              await fetch('/api/pagos/registrar-validacion', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id_cita: parseInt(idCita),
-                  id_paciente: parseInt(idPaciente),
-                  tipo_seguro: seguroValidacion.tipo_seguro,
-                  numero_seguro: seguroValidacion.numero_seguro,
-                  vigencia: seguroValidacion.fecha_vigencia,
-                  estado_validacion: 'vigente',
-                }),
-              });
+              try {
+                const resSeguro = await fetch('/api/pagos/registrar-validacion', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    id_cita: parseInt(idCita),
+                    id_paciente: parseInt(idPaciente),
+                    tipo_seguro: seguroValidacion.tipo_seguro,
+                    numero_seguro: seguroValidacion.numero_seguro,
+                    vigencia: seguroValidacion.fecha_vigencia,
+                    estado_validacion: 'vigente',
+                  }),
+                });
+                
+                if (!resSeguro.ok) {
+                  console.error('[PagoCita] Error registrando validación de seguro:', resSeguro.status);
+                }
+              } catch (errSeguro) {
+                console.error('[PagoCita] Error en registrar-validacion:', errSeguro.message);
+              }
             }
           }
 
