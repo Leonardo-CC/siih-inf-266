@@ -39,7 +39,7 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
         persona_id,
         ci,
         correo,
-        'contraseña': contrasenaHash,
+        'contrasena': contrasenaHash,
         rol: 'paciente',
         estado: 'activo',
       },
