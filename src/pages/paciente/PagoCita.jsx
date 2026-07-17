@@ -185,6 +185,9 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
         
         const data = await res.json();
 
+        // 1. LA LÍNEA MÁGICA: Capturamos el estado sin importar cómo lo llame el backend
+        data.estado_pago = data.estado_pago || data.estado;
+
         if (data.ok && data.estado_pago) {
           console.log('[PagoCita] Estado del pago:', data.estado_pago);
           console.log('[PagoCita] Método de pago:', metodoPago);
@@ -196,9 +199,9 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
             metodo_pago: metodoPago,
           }));
 
-          // Si el método es EFECTIVO o TRANSFERENCIA y está en pendiente_validacion → terminó (esperando validación manual)
+          // 2. CORRECCIÓN: Quitamos 'tarjeta' de aquí. Solo efectivo y transferencia son manuales.
           if (['efectivo', 'transferencia'].includes(metodoPago) && data.estado_pago === 'pendiente_validacion') {
-            console.log('[PagoCita] Pago en efectivo/transferencia registrado - esperando validación manual');
+            console.log('[PagoCita] Pago manual registrado - esperando validación');
             setMensajeValidacion('✓ Pago registrado. Un administrador validará la transacción');
             clearInterval(interval);
             setPollingActivo(false);
@@ -206,8 +209,8 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
             return;
           }
 
-          // Si está aprobado → mostrar comprobante
-          if (data.estado_pago === 'aprobado') {
+          // Si está aprobado/pagado (AQUÍ ENTRARÁ LA TARJETA) → mostrar comprobante
+          if (data.estado_pago === 'aprobado' || data.estado_pago === 'pagado') {
             console.log('[PagoCita] Pago aprobado!');
             setMensajeValidacion('✓ Pago validado exitosamente');
             clearInterval(interval);
@@ -236,10 +239,21 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 console.error('[PagoCita] Error en registrar-validacion:', errSeguro.message);
               }
             }
+            
+            // 3. CORRECCIÓN: ¡Avanzar a la pantalla del comprobante!
+            // Registrar validación de seguro...
+            // (código del seguro)
+
+            // Esperar 1.5 segundos para que el usuario pueda leer el mensaje de éxito
+            setTimeout(() => {
+              setEtapa('comprobante');
+            }, 1500);
+            
+            return;
           }
 
           // Si está rechazado → mostrar error
-          if (data.estado_pago === 'rechazado') {
+          if (data.estado_pago === 'rechazado' || data.estado_pago === 'sin_pagar') {
             console.log('[PagoCita] Pago rechazado');
             setMensajeValidacion(null);
             setErrorPago('Pago rechazado. Por favor intenta con otro método de pago.');
@@ -251,7 +265,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
       } catch (err) {
         console.error('[PagoCita] Error en polling:', err.message);
       }
-
+      
       // Si se agotaron los intentos, detener
       if (intentos >= maxIntentos) {
         console.warn('[PagoCita] Polling expirado después de 30 segundos');
@@ -392,11 +406,11 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
               </div>
             )}
 
-            {!pollingActivo && (resultadoPago.estado === 'aprobado' || ['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)) && (
+            {!pollingActivo && (resultadoPago.estado === 'pagado' || resultadoPago.estado === 'aprobado' || ['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)) && (
               <div className={`siih-alert ${['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) ? 'siih-alert-warning' : 'siih-alert-success'}`}>
                 {['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)
-                  ? '✓ Pago registrado - esperando validación' 
-                  : '✓ Pago procesado exitosamente'}
+                  ? '✓ Pago registrado - esperando validación manual' 
+                  : '✓ Pago validado exitosamente'}
               </div>
             )}
 
@@ -419,13 +433,13 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 </p>
               </div>
 
-              {['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) && (
+              {resultadoPago.metodo_pago === 'efectivo' && (
                 <div className="siih-alert siih-alert-info">
-                  <strong>Pago en Espera:</strong> Tu pago ha sido registrado. Un administrador verificará la transacción y completará el proceso.
+                  <strong>Pago en Efectivo:</strong> Tu pago ha sido registrado. Un administrador verificará la entrega del efectivo y completará la transacción.
                 </div>
               )}
 
-              {!['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) && (
+              {resultadoPago.metodo_pago !== 'efectivo' && (
                 <div className="siih-alert siih-alert-success">
                   Tu cita ha sido confirmada. Recibirás una confirmación por correo electrónico.
                 </div>
