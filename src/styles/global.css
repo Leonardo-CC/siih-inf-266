@@ -147,3 +147,49 @@ body {
 .siih-link:hover {
   text-decoration: underline;
 }
+
+
+.siih-hint {
+  font-size: 0.85rem;
+  color: var(--color-gray-text);
+  opacity: 0.8;
+  margin: 4px 0 0;
+}
+
+.siih-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.siih-slot {
+  padding: 8px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.siih-slot:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.siih-slot-selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.siih-slot-ocupado {
+  background: #f1f1f1;
+  color: #a9a9a9;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
