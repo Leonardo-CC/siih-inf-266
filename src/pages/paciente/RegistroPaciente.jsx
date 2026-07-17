@@ -1,10 +1,12 @@
-// src/pages/paciente/RegistroPaciente.jsx
 import { useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
-// CAPA DE PRESENTACIÓN
-// Vista del ACTOR "Paciente/Estudiante" — HU-01
-// Solo se encarga de mostrar el formulario y llamar al endpoint.
-// Toda la validación real (duplicados, hash, etc.) vive en /api.
+// Inicializamos Supabase directamente en el componente
+// (Lo ideal a futuro es tener esto en un archivo separado, pero así funcionará perfecto ahora)
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const initialForm = {
   nombre: '',
@@ -39,24 +41,54 @@ export default function RegistroPaciente() {
     setMensajeExito(null);
 
     try {
-      const res = await fetch('/api/pacientes/registro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
+      // 1. CREAR LA PERSONA
+      const { data: persona, error: errPersona } = await supabase
+        .from('persona')
+        .insert([{
+          nombre: form.nombre,
+          apellido: form.apellido,
+          fecha_nac: form.fecha_nac || null,
+          sexo: form.sexo,
+          telefono: form.telefono || null
+        }])
+        .select()
+        .single(); // single() hace que nos devuelva el objeto, no un array
 
-      if (data.ok) {
-        setMensajeExito(data.mensaje);
-        setForm(initialForm);
-      } else if (data.errores) {
-        setErrores(data.errores);
-        if (data.errores.general) setErrorGeneral(data.errores.general);
-      } else {
-        setErrorGeneral(data.mensaje || 'Ocurrió un error inesperado.');
-      }
+      if (errPersona) throw new Error('Error al crear persona: ' + errPersona.message);
+
+      const nuevaPersonaId = persona.persona_id;
+
+      // 2. CREAR EL USUARIO (vinculado a la persona)
+      const { error: errUsuario } = await supabase
+        .from('usuario')
+        .insert([{
+          persona_id: nuevaPersonaId,
+          ci: form.ci,
+          correo: form.correo,
+          contrasena: form.contrasena, // Nota: En producción esto debería ir encriptado
+          rol: 'paciente' // Asegúrate de que 'paciente' sea un valor válido en tu USER-DEFINED rol
+        }]);
+
+      if (errUsuario) throw new Error('Error al crear usuario: ' + errUsuario.message);
+
+      // 3. CREAR EL PERFIL DE PACIENTE (vinculado a la persona)
+      const { error: errPaciente } = await supabase
+        .from('paciente')
+        .insert([{
+          persona_id: nuevaPersonaId,
+          tipo_seguro: form.tipo_seguro || null,
+          numero_seguro: form.numero_seguro || null
+        }]);
+
+      if (errPaciente) throw new Error('Error al crear paciente: ' + errPaciente.message);
+
+      // SI TODO SALIÓ BIEN:
+      setMensajeExito('¡Paciente registrado con éxito en la base de datos!');
+      setForm(initialForm);
+
     } catch (err) {
-      setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente.');
+      console.error(err);
+      setErrorGeneral(err.message || 'No se pudo conectar con el servidor.');
     } finally {
       setEnviando(false);
     }
