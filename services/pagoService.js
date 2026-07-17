@@ -118,13 +118,24 @@ export async function procesarPago(datosPago) {
 
   try {
     // Validaciones
-    if (!['efectivo', 'transferencia', 'tarjeta'].includes(metodo_pago)) {
+    const metodosValidos = ['efectivo', 'transferencia', 'tarjeta'];
+    if (!metodosValidos.includes(metodo_pago)) {
       return { exitoso: false, razon: 'Método de pago no válido' };
     }
 
     if (monto <= 0) {
       return { exitoso: false, razon: 'Monto inválido' };
     }
+
+    // Mapear valores al formato del enum de Supabase
+    // Intentar múltiples formatos en caso de que el enum tenga otro nombre
+    const mapeoMetodos = {
+      'efectivo': 'efectivo',
+      'transferencia': 'transferencia', 
+      'tarjeta': 'tarjeta'
+    };
+    
+    const metodo_pago_enum = mapeoMetodos[metodo_pago] || metodo_pago;
 
     // Si no tiene id_consulta, intentar obtenerla de la cita
     if (!id_consulta && id_cita) {
@@ -178,7 +189,7 @@ export async function procesarPago(datosPago) {
         {
           id_consulta,
           monto,
-          metodo_pago,
+          metodo_pago: metodo_pago_enum,
           comprobante: comprobante_ref
         },
       ])
@@ -186,6 +197,7 @@ export async function procesarPago(datosPago) {
       .single();
 
     if (errorPago) {
+      console.error('[pagoService] Error completo:', errorPago);
       throw new Error(`Error registrando pago: ${errorPago.message}`);
     }
 
