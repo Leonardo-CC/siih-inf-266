@@ -1,5 +1,6 @@
 // src/pages/paciente/SolicitarCita.jsx
 import { useEffect, useState } from 'react';
+import PagoCita from './PagoCita.jsx';
 
 // CAPA DE PRESENTACIÓN
 // Vista del ACTOR "Paciente/Estudiante" — HU-03
@@ -31,6 +32,9 @@ export default function SolicitarCita({ idPaciente }) {
 
   const [mensajeExito, setMensajeExito] = useState(null);
   const [errorGeneral, setErrorGeneral] = useState(null);
+
+  // Estados para flujo de pago después de solicitar cita
+  const [citaCreada, setCitaCreada] = useState(null); // { id_cita, id_medico } cuando se crea exitosamente
 
   // 1. Cargar especialidades al montar
   useEffect(() => {
@@ -124,10 +128,12 @@ export default function SolicitarCita({ idPaciente }) {
       const data = await res.json();
 
       if (data.ok) {
-        setMensajeExito(`${data.mensaje} (Estado: ${data.cita.estado}).`);
-        setHoraSeleccionada(null);
-        setMotivo('');
-        setFecha((f) => f); // refresca horarios para reflejar el slot recién tomado
+        // Cita creada exitosamente, ir al flujo de pago
+        setCitaCreada({
+          id_cita: data.cita.id_cita,
+          id_medico: idMedico,
+        });
+        setMensajeExito(`${data.mensaje} (Estado: ${data.cita.estado}). Proceeding to payment...`);
       } else {
         setErrorGeneral(
           data.errores?.general || data.errores?.fecha_hora || data.mensaje || 'Ocurrió un error inesperado.'
@@ -138,6 +144,17 @@ export default function SolicitarCita({ idPaciente }) {
     } finally {
       setEnviando(false);
     }
+  }
+
+  // Si la cita fue creada exitosamente, mostrar flujo de pago
+  if (citaCreada) {
+    return (
+      <PagoCita
+        idPaciente={idPaciente}
+        idCita={citaCreada.id_cita}
+        idMedico={citaCreada.id_medico}
+      />
+    );
   }
 
   return (
