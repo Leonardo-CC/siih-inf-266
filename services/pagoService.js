@@ -74,14 +74,14 @@ export async function validarVigemiaSeguro(id_paciente) {
 /**
  * Obtiene el monto a pagar por una consulta según especialidad del médico.
  * @param {number} id_medico - ID del médico
- * @returns {Object} { monto: number, especialidad: string }
+ * @returns {Object} { monto: number, especialidad: string, id_especialidad: number }
  */
 export async function obtenerMontoCita(id_medico) {
   try {
-    // Obtener especialidad del médico
+    // Obtener especialidad del médico (ahora con FK a especialidad tabla)
     const { data: medico, error: errorMedico } = await supabaseAdmin
       .from('medico')
-      .select('especialidad')
+      .select('id_especialidad, especialidad:id_especialidad (nombre, tarifa)')
       .eq('id_medico', id_medico)
       .single();
 
@@ -89,21 +89,15 @@ export async function obtenerMontoCita(id_medico) {
       throw new Error('Médico no encontrado');
     }
 
-    // Obtener tarifa de la especialidad
-    const { data: especialidad, error: errorEspecialidad } = await supabaseAdmin
-      .from('especialidad')
-      .select('tarifa')
-      .eq('nombre', medico.especialidad)
-      .single();
-
-    if (errorEspecialidad || !especialidad) {
-      // Retornar tarifa por defecto si especialidad no existe
-      return { monto: 200.00, especialidad: medico.especialidad };
+    if (!medico.id_especialidad || !medico.especialidad) {
+      // Retornar tarifa por defecto si especialidad no está vinculada
+      return { monto: 200.00, especialidad: 'Consulta General', id_especialidad: null };
     }
 
     return {
-      monto: parseFloat(especialidad.tarifa),
-      especialidad: medico.especialidad,
+      monto: parseFloat(medico.especialidad.tarifa),
+      especialidad: medico.especialidad.nombre,
+      id_especialidad: medico.id_especialidad,
     };
   } catch (error) {
     console.error('[pagoService] Error obteniendo monto de cita:', error);
@@ -112,9 +106,12 @@ export async function obtenerMontoCita(id_medico) {
 }
 
 /**
- * Procesa un pago para una cita (simulado).
+ * Procesa un pago para una cita (con validación en 2 fases).
+ * Fase 1: Registra el pago en estado 'pendiente_validacion'
+ * Fase 2: Se valida luego mediante webhook o polling
+ * 
  * @param {Object} datosPago - { id_cita, id_paciente, id_medico, monto, metodo_pago }
- * @returns {Object} { exitoso: boolean, id_pago, comprobante, referencia_txn, razon }
+ * @returns {Object} { exitoso: boolean, id_pago, estado, referencia_txn, razon }
  */
 export async function procesarPago(datosPago) {
   const { id_cita, id_paciente, monto, metodo_pago } = datosPago;
@@ -135,66 +132,10 @@ export async function procesarPago(datosPago) {
       };
     }
 
-    // Simular procesamiento según método de pago
-    // En producción, estos serían llamadas a APIs reales de proveedores de pago
-    let aprobado = true;
-    let referencia_txn = '';
-    let razon_rechazo = '';
+    // Generar referencia única
+    const referencia_txn = `${metodo_pago.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    if (metodo_pago === 'efectivo') {
-      // Pago en efectivo: se aprueba automáticamente
-      referencia_txn = `EFE-${Date.now()}`;
-      aprobado = true;
-    } else if (metodo_pago === 'qr') {
-      // Pago por QR: se aprueba automáticamente (70% de éxito en simulación)
-      aprobado = Math.random() > 0.3;
-      referencia_txn = `QR-${Date.now()}`;
-      if (!aprobado) {
-        razon_rechazo = 'Transacción rechazada por el proveedor QR';
-      }
-    } else if (metodo_pago === 'tarjeta') {
-      // Pago con tarjeta: se aprueba automáticamente (80% de éxito en simulación)
-      aprobado = Math.random() > 0.2;
-      referencia_txn = `TRX-${Date.now()}`;
-      if (!aprobado) {
-        razon_rechazo = 'Fondos insuficientes o tarjeta rechazada';
-      }
-    }
-
-    if (!aprobado) {
-      // Registrar pago rechazado
-      const { data: pagoDatos, error: errorPago } = await supabaseAdmin
-        .from('pago')
-        .insert([
-          {
-            id_cita,
-            id_paciente,
-            monto,
-            metodo_pago,
-            estado_pago: 'rechazado',
-            referencia_txn,
-            razon_rechazo,
-            fecha_pago: new Date().toISOString(),
-          },
-        ])
-        .select('id_pago')
-        .single();
-
-      return {
-        exitoso: false,
-        razon: razon_rechazo || 'Pago rechazado',
-        referencia_txn,
-      };
-    }
-
-    // Generar comprobante
-    const comprobante = generarComprobante({
-      referencia_txn,
-      monto,
-      metodo_pago,
-    });
-
-    // Registrar pago aprobado
+    // FASE 1: Registrar pago en estado 'pendiente_validacion'
     const { data: pagoDatos, error: errorPago } = await supabaseAdmin
       .from('pago')
       .insert([
@@ -203,8 +144,7 @@ export async function procesarPago(datosPago) {
           id_paciente,
           monto,
           metodo_pago,
-          estado_pago: 'aprobado',
-          comprobante,
+          estado_pago: 'pendiente_validacion',  // ← Estado inicial
           referencia_txn,
           fecha_pago: new Date().toISOString(),
         },
@@ -216,19 +156,81 @@ export async function procesarPago(datosPago) {
       throw new Error(`Error registrando pago: ${errorPago.message}`);
     }
 
-    // Actualizar estado de la cita
-    await actualizarEstadoCita(id_cita, 'pagado');
+    // Actualizar cita a 'pendiente_validacion'
+    await actualizarEstadoCita(id_cita, 'pendiente_validacion');
+
+    // FASE 2: Simular validación de pago (en prod, sería webhook de proveedor)
+    // Guardar en background para no bloquear la respuesta
+    validarPagoEnBackground(pagoDatos.id_pago, id_cita, id_paciente, metodo_pago);
 
     return {
       exitoso: true,
       id_pago: pagoDatos.id_pago,
-      comprobante,
+      estado: 'pendiente_validacion',
       referencia_txn,
-      razon: 'Pago procesado exitosamente',
+      razon: 'Pago registrado, pendiente de validación',
+      mensaje: 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
   } catch (error) {
     console.error('[pagoService] Error procesando pago:', error);
     throw error;
+  }
+}
+
+/**
+ * Valida un pago de forma asincrónica (simula webhook de proveedor).
+ * En producción, esto sería un webhook real del proveedor de pagos.
+ */
+async function validarPagoEnBackground(id_pago, id_cita, id_paciente, metodo_pago) {
+  try {
+    // Simular delay de validación (1-3 segundos)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+
+    // Simular validación según método
+    let aprobado = true;
+    let razon_rechazo = '';
+
+    if (metodo_pago === 'efectivo') {
+      // Efectivo: siempre se aprueba
+      aprobado = true;
+    } else if (metodo_pago === 'qr') {
+      // QR: 70% de éxito
+      aprobado = Math.random() > 0.3;
+      if (!aprobado) {
+        razon_rechazo = 'El código QR rechazó la transacción';
+      }
+    } else if (metodo_pago === 'tarjeta') {
+      // Tarjeta: 80% de éxito
+      aprobado = Math.random() > 0.2;
+      if (!aprobado) {
+        razon_rechazo = 'Fondos insuficientes o tarjeta rechazada';
+      }
+    }
+
+    // Actualizar estado del pago
+    const estado_final = aprobado ? 'aprobado' : 'rechazado';
+    
+    const { error: errorUpdate } = await supabaseAdmin
+      .from('pago')
+      .update({
+        estado_pago: estado_final,
+        razon_rechazo: razon_rechazo || null,
+      })
+      .eq('id_pago', id_pago);
+
+    if (errorUpdate) {
+      console.error('[pagoService] Error actualizando estado de pago:', errorUpdate);
+      return;
+    }
+
+    // Actualizar estado de la cita
+    const estado_cita = aprobado ? 'pagado' : 'sin_pagar';
+    await actualizarEstadoCita(id_cita, estado_cita);
+
+    console.log(`[pagoService] Pago #${id_pago} validado: ${estado_final}`);
+
+  } catch (error) {
+    console.error('[pagoService] Error en validación de fondo:', error);
   }
 }
 

@@ -10,31 +10,56 @@ import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 // Lista de especialidades distintas ofrecidas (para el primer selector del formulario).
 export async function obtenerEspecialidades() {
   const { data, error } = await supabaseAdmin
-    .from('medico')
-    .select('especialidad')
-    .order('especialidad', { ascending: true });
+    .from('especialidad')
+    .select('id_especialidad, nombre, tarifa')
+    .eq('estado', 'activo')
+    .order('nombre', { ascending: true });
 
   if (error) throw new Error(`Error al obtener especialidades: ${error.message}`);
 
-  // dedupe en JS porque Supabase/PostgREST no tiene DISTINCT directo vía select simple
-  return [...new Set((data || []).map((m) => m.especialidad))];
+  return (data || []).map((e) => ({
+    id_especialidad: e.id_especialidad,
+    nombre: e.nombre,
+    tarifa: e.tarifa,
+  }));
 }
 
-// Médicos de una especialidad, con nombre completo (join a persona vía persona_id).
+// Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
 // NOTA: requiere que exista la FK medico.persona_id -> persona.persona_id
 // para que el embed `persona:persona_id (...)` funcione.
 export async function obtenerMedicosPorEspecialidad(especialidad) {
-  const { data, error } = await supabaseAdmin
+  // especialidad puede ser nombre (string) o id (number)
+  const esNumero = !Number.isNaN(especialidad);
+  
+  let query = supabaseAdmin
     .from('medico')
-    .select('id_medico, nro_licencia, especialidad, persona:persona_id (nombre, apellido)')
-    .eq('especialidad', especialidad);
+    .select('id_medico, nro_licencia, id_especialidad, especialidad:id_especialidad (nombre, tarifa), persona:persona_id (nombre, apellido)');
+
+  if (esNumero) {
+    query = query.eq('id_especialidad', parseInt(especialidad));
+  } else {
+    // Búsqueda por nombre de especialidad
+    const { data: esps, error: errEsp } = await supabaseAdmin
+      .from('especialidad')
+      .select('id_especialidad')
+      .eq('nombre', especialidad);
+    
+    if (errEsp || !esps || esps.length === 0) {
+      return [];
+    }
+    query = query.eq('id_especialidad', esps[0].id_especialidad);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(`Error al obtener médicos: ${error.message}`);
 
   return (data || []).map((m) => ({
     id_medico: m.id_medico,
     nro_licencia: m.nro_licencia,
-    especialidad: m.especialidad,
+    id_especialidad: m.id_especialidad,
+    especialidad: m.especialidad?.nombre || 'Desconocida',
+    tarifa: m.especialidad?.tarifa || 200.00,
     nombre_completo: m.persona
       ? `Dr(a). ${m.persona.nombre} ${m.persona.apellido}`
       : `Médico #${m.id_medico}`,
