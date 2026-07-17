@@ -187,13 +187,24 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
         if (data.ok && data.estado_pago) {
           console.log('[PagoCita] Estado del pago:', data.estado_pago);
+          console.log('[PagoCita] Método de pago:', metodoPago);
 
           // Actualizar estado del pago
           setResultadoPago((prev) => ({
             ...prev,
             estado: data.estado_pago,
-            razon_rechazo: data.razon_rechazo,
+            metodo_pago: metodoPago,
           }));
+
+          // Si el método es EFECTIVO y está en pendiente_validacion → terminó (esperando validación manual)
+          if (metodoPago === 'efectivo' && data.estado_pago === 'pendiente_validacion') {
+            console.log('[PagoCita] Pago en efectivo registrado - esperando validación manual');
+            setMensajeValidacion('✓ Pago registrado. Un administrador validará la entrega de efectivo');
+            clearInterval(interval);
+            setPollingActivo(false);
+            setEtapa('comprobante');
+            return;
+          }
 
           // Si está aprobado → mostrar comprobante
           if (data.estado_pago === 'aprobado') {
@@ -229,9 +240,9 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
           // Si está rechazado → mostrar error
           if (data.estado_pago === 'rechazado') {
-            console.log('[PagoCita] Pago rechazado:', data.razon_rechazo);
+            console.log('[PagoCita] Pago rechazado');
             setMensajeValidacion(null);
-            setErrorPago(`Pago rechazado: ${data.razon_rechazo || 'Sin especificar'}`);
+            setErrorPago('Pago rechazado. Por favor intenta con otro método de pago.');
             clearInterval(interval);
             setPollingActivo(false);
             setEtapa('error');
@@ -254,7 +265,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
     return () => {
       clearInterval(interval);
     };
-  }, [pollingActivo, resultadoPago?.id_pago, idCita, idPaciente, seguroValidacion]);
+  }, [pollingActivo, resultadoPago?.id_pago, idCita, idPaciente, seguroValidacion, metodoPago]);
 
   // ===== RENDERIZADO =====
 
@@ -381,32 +392,44 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
               </div>
             )}
 
-            {!pollingActivo && resultadoPago.estado === 'aprobado' && (
-              <div className="siih-alert siih-alert-success">
-                ✓ Pago procesado exitosamente
+            {!pollingActivo && (resultadoPago.estado === 'aprobado' || resultadoPago.metodo_pago === 'efectivo') && (
+              <div className={`siih-alert ${resultadoPago.metodo_pago === 'efectivo' ? 'siih-alert-warning' : 'siih-alert-success'}`}>
+                {resultadoPago.metodo_pago === 'efectivo' 
+                  ? '✓ Pago registrado - esperando validación del efectivo' 
+                  : '✓ Pago procesado exitosamente'}
               </div>
             )}
 
             <div className="siih-card">
               <h2>Comprobante de Pago</h2>
               
-              <pre className="siih-comprobante">
-                {resultadoPago.comprobante}
-              </pre>
-
               <div className="siih-info-block">
                 <p>
-                  <strong>Referencia:</strong> {resultadoPago.referencia_txn}
+                  <strong>Referencia:</strong> {resultadoPago.comprobante}
                 </p>
                 <p>
-                  <strong>Método:</strong> {resultadoPago.referencia_txn?.split('-')[0] === 'EFE' ? 'Efectivo' : 
-                                          resultadoPago.referencia_txn?.split('-')[0] === 'QR' ? 'QR' : 'Tarjeta'}
+                  <strong>Monto:</strong> Bs. {resultadoPago.monto?.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Método:</strong> {resultadoPago.metodo_pago === 'efectivo' ? 'Efectivo' : 
+                                          resultadoPago.metodo_pago === 'qr' ? 'QR' : 'Tarjeta'}
+                </p>
+                <p>
+                  <strong>Estado:</strong> {resultadoPago.estado}
                 </p>
               </div>
 
-              <div className="siih-alert siih-alert-success">
-                Tu cita ha sido confirmada. Recibirás una confirmación por correo electrónico.
-              </div>
+              {resultadoPago.metodo_pago === 'efectivo' && (
+                <div className="siih-alert siih-alert-info">
+                  <strong>Pago en Efectivo:</strong> Tu pago ha sido registrado. Un administrador verificará la entrega del efectivo y completará la transacción.
+                </div>
+              )}
+
+              {resultadoPago.metodo_pago !== 'efectivo' && (
+                <div className="siih-alert siih-alert-success">
+                  Tu cita ha sido confirmada. Recibirás una confirmación por correo electrónico.
+                </div>
+              )}
 
               <button
                 type="button"

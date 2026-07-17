@@ -42,37 +42,44 @@ export default async function handler(req, res) {
     }
 
     // Obtener estado de la consulta asociada si existe
-    let consulta = null;
+    let consultaData = null;
+    let citaData = null;
+    
     if (pago.id_consulta) {
-      const { data: consultaData, error: errorConsulta } = await supabaseAdmin
+      const result = await supabaseAdmin
         .from('consulta')
         .select('id_consulta, id_cita, id_paciente, id_medico, fecha_consulta')
         .eq('id_consulta', pago.id_consulta)
         .single();
       
-      if (!errorConsulta && consultaData) {
-        consulta = consultaData;
+      if (!result.error && result.data) {
+        consultaData = result.data;
+        
+        // Obtener estado de la cita si existe
+        if (consultaData.id_cita) {
+          const resultCita = await supabaseAdmin
+            .from('cita')
+            .select('id_cita, estado_pago, fecha_hora')
+            .eq('id_cita', consultaData.id_cita)
+            .single();
+          
+          if (!resultCita.error && resultCita.data) {
+            citaData = resultCita.data;
+          }
+        }
       }
     }
 
-    // Obtener estado de la cita si existe
-    let cita = null;
-    if (consulta?.id_cita) {
-      const { data: citaData } = await supabaseAdmin
-        .from('cita')
-        .select('id_cita, estado_pago, fecha_hora')
-        .eq('id_cita', consulta.id_cita)
-        .single();
-      
-      if (citaData) {
-        cita = citaData;
-      }
-    }
+    // Determinar el estado actual del pago
+    // Prioridad: estado_pago de la cita > 'pendiente_validacion' (por defecto)
+    const estadoPago = citaData?.estado_pago || 'pendiente_validacion';
+
+    console.log(`[estado-pago] id_pago: ${pago.id_pago}, estado: ${estadoPago}, metodo: ${pago.metodo_pago}`);
 
     return res.status(200).json({
       ok: true,
       id_pago: pago.id_pago,
-      estado_pago: cita?.estado_pago || 'pendiente_validacion',
+      estado_pago: estadoPago,
       monto: pago.monto,
       metodo_pago: pago.metodo_pago,
       comprobante: pago.comprobante,
@@ -81,13 +88,6 @@ export default async function handler(req, res) {
       // Información adicional
       id_consulta: pago.id_consulta,
       id_inscripcion: pago.id_inscripcion,
-      
-      // Estado de la cita asociada si existe
-      cita: cita ? {
-        id_cita: consulta.id_cita,
-        estado_pago: cita.estado_pago,
-        fecha_hora: cita.fecha_hora,
-      } : null,
     });
   } catch (error) {
     console.error('[/api/pagos/estado-pago] Error:', error.message);

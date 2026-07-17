@@ -193,15 +193,22 @@ export async function procesarPago(datosPago) {
     await actualizarEstadoCita(id_cita, 'pendiente_validacion');
 
     // FASE 2: Simular validación de pago en background
-    validarPagoEnBackground(pagoDatos.id_pago, id_cita, metodo_pago);
+    // IMPORTANTE: Para efectivo, NO simular validación (debe validarse manualmente)
+    if (metodo_pago !== 'efectivo') {
+      validarPagoEnBackground(pagoDatos.id_pago, id_cita, metodo_pago);
+    }
 
     return {
       exitoso: true,
       id_pago: pagoDatos.id_pago,
       estado: 'pendiente_validacion',
       comprobante: comprobante_ref,
+      metodo_pago: metodo_pago,
+      monto: monto,
       razon: 'Pago registrado, pendiente de validación',
-      mensaje: 'Tu pago está siendo procesado. En breve recibirás confirmación.',
+      mensaje: metodo_pago === 'efectivo' 
+        ? '✓ Pago registrado. Un administrador validará que recibió el efectivo.' 
+        : 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
   } catch (error) {
     console.error('[pagoService] Error procesando pago:', error);
