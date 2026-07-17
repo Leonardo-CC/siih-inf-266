@@ -114,39 +114,31 @@ export async function obtenerMontoCita(id_medico) {
  * @returns {Object} { exitoso: boolean, id_pago, estado, referencia_txn, razon }
  */
 export async function procesarPago(datosPago) {
-  const { id_cita, id_paciente, monto, metodo_pago } = datosPago;
+  // Nota: Necesitamos id_consulta, no id_cita directamente para la tabla pago
+  const { id_cita, id_consulta, monto, metodo_pago } = datosPago;
 
   try {
     // Validaciones
     if (!['efectivo', 'qr', 'tarjeta'].includes(metodo_pago)) {
-      return {
-        exitoso: false,
-        razon: 'Método de pago no válido',
-      };
+      return { exitoso: false, razon: 'Método de pago no válido' };
     }
 
     if (monto <= 0) {
-      return {
-        exitoso: false,
-        razon: 'Monto inválido',
-      };
+      return { exitoso: false, razon: 'Monto inválido' };
     }
 
-    // Generar referencia única
-    const referencia_txn = `${metodo_pago.toUpperCase()}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generar referencia única (lo guardaremos en la columna comprobante)
+    const comprobante_ref = `${metodo_pago.toUpperCase()}-${Date.now()}`;
 
-    // FASE 1: Registrar pago en estado 'pendiente_validacion'
+    // FASE 1: Registrar el pago en la tabla pago
     const { data: pagoDatos, error: errorPago } = await supabaseAdmin
       .from('pago')
       .insert([
         {
-          id_cita,
-          id_paciente,
+          id_consulta: id_consulta, // Usar id_consulta según el esquema
           monto,
           metodo_pago,
-          estado_pago: 'pendiente_validacion',  // ← Estado inicial
-          referencia_txn,
-          fecha_pago: new Date().toISOString(),
+          comprobante: comprobante_ref // Usamos comprobante en lugar de referencia_txn
         },
       ])
       .select('id_pago')
@@ -156,18 +148,17 @@ export async function procesarPago(datosPago) {
       throw new Error(`Error registrando pago: ${errorPago.message}`);
     }
 
-    // Actualizar cita a 'pendiente_validacion'
+    // Actualizar estado_pago en la tabla cita a 'pendiente_validacion'
     await actualizarEstadoCita(id_cita, 'pendiente_validacion');
 
-    // FASE 2: Simular validación de pago (en prod, sería webhook de proveedor)
-    // Guardar en background para no bloquear la respuesta
-    validarPagoEnBackground(pagoDatos.id_pago, id_cita, id_paciente, metodo_pago);
+    // FASE 2: Simular validación de pago en background
+    validarPagoEnBackground(pagoDatos.id_pago, id_cita, metodo_pago);
 
     return {
       exitoso: true,
       id_pago: pagoDatos.id_pago,
       estado: 'pendiente_validacion',
-      referencia_txn,
+      referencia_txn: comprobante_ref,
       razon: 'Pago registrado, pendiente de validación',
       mensaje: 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
@@ -177,6 +168,43 @@ export async function procesarPago(datosPago) {
   }
 }
 
+/**
+ * Valida un pago de forma asincrónica.
+ */
+async function validarPagoEnBackground(id_pago, id_cita, metodo_pago) {
+  try {
+    // Simular delay de validación (1-3 segundos)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+
+    let aprobado = true;
+    let razon_rechazo = '';
+
+    if (metodo_pago === 'qr') {
+      aprobado = Math.random() > 0.3;
+      if (!aprobado) razon_rechazo = 'El código QR rechazó la transacción';
+    } else if (metodo_pago === 'tarjeta') {
+      aprobado = Math.random() > 0.2;
+      if (!aprobado) razon_rechazo = 'Fondos insuficientes o tarjeta rechazada';
+    }
+
+    // Actualizar estado de la cita (ya no actualizamos estado_pago en la tabla pago)
+    const estado_cita = aprobado ? 'pagado' : 'sin_pagar';
+    await actualizarEstadoCita(id_cita, estado_cita);
+
+    // Opcional: Si es rechazado y quieres guardar la razón,
+    // tendrías que agregar la columna razon_rechazo a la tabla pago,
+    // o manejarlo eliminando el pago fallido.
+    if (!aprobado) {
+       console.log(`[pagoService] Pago #${id_pago} rechazado: ${razon_rechazo}`);
+       // Opcional: await supabaseAdmin.from('pago').delete().eq('id_pago', id_pago);
+    } else {
+       console.log(`[pagoService] Pago #${id_pago} validado y aprobado.`);
+    }
+
+  } catch (error) {
+    console.error('[pagoService] Error en validación de fondo:', error);
+  }
+}
 /**
  * Valida un pago de forma asincrónica (simula webhook de proveedor).
  * En producción, esto sería un webhook real del proveedor de pagos.
