@@ -108,3 +108,38 @@ export async function crearCita({ id_paciente, id_medico, fecha_hora, motivo }) 
   if (error) throw new Error(`Error al crear la cita: ${error.message}`);
   return data;
 }
+
+// Obtiene todas las citas de un médico para un día específico o un rango de fechas.
+// Incluye información del paciente y especialidad.
+export async function obtenerCitasPorMedico(id_medico, fechaInicio, fechaFin) {
+  const { data, error } = await supabaseAdmin
+    .from('cita')
+    .select(
+      `id_cita, 
+       fecha_hora, 
+       estado, 
+       motivo,
+       estado_pago,
+       id_paciente,
+       id_medico,
+       paciente:id_paciente (
+         id_paciente,
+         persona_id,
+         persona:persona_id (nombre, apellido, telefono, fecha_nac, sexo)
+       ),
+       medico:id_medico (
+         id_medico,
+         id_especialidad,
+         especialidad:id_especialidad (nombre, tarifa),
+         persona:persona_id (nombre, apellido)
+       )`
+    )
+    .eq('id_medico', id_medico)
+    .gte('fecha_hora', fechaInicio)
+    .lte('fecha_hora', fechaFin)
+    .neq('estado', 'cancelada')
+    .order('fecha_hora', { ascending: true });
+
+  if (error) throw new Error(`Error al obtener citas del médico: ${error.message}`);
+  return data || [];
+}
