@@ -120,11 +120,25 @@
 /* Error */
 .agenda-error {
   background-color: #fee2e2;
-  color: #991b1b;
+  border-left: 4px solid #ef4444;
   padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 16px;
-  border-left: 4px solid #dc2626;
+  margin: 16px 0;
+  border-radius: 4px;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+/* Debug Info */
+.debug-info {
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 12px 0;
+  font-size: 11px;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+  overflow-x: auto;
 }
 
 /* Fecha actual */

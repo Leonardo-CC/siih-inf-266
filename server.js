@@ -120,6 +120,12 @@ async function setupRoutes() {
       return solicitarHandler(req, res);
     });
 
+    const { default: agendaMedicoHandler } = await import('./api/citas/agenda-medico.js');
+    app.get('/api/citas/agenda-medico', async (req, res) => {
+      req.method = 'GET';
+      return agendaMedicoHandler(req, res);
+    });
+
     // ============================================================
     // Cargar endpoints de /api/pacientes/
     // ============================================================

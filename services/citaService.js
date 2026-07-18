@@ -12,6 +12,7 @@ import {
   obtenerCitasOcupadas,
   existeCitaEnHorario,
   crearCita,
+  obtenerCitasPorMedico,
 } from '../repositories/citaRepository.js';
 
 // --- Configuración de horario de atención ---------------------------------
@@ -139,3 +140,57 @@ export async function solicitarCita({ id_paciente, id_medico, fecha_hora, motivo
     cita, // { id_cita, fecha_hora, estado: 'pendiente' }
   };
 }
+
+// Obtiene la agenda del médico para un rango de fechas.
+// Permite ver en tiempo real el cronograma de citas.
+export async function obtenerAgendaMedico({ id_medico, fecha, filtroEspecialidad }) {
+  if (!id_medico || !fecha) {
+    return {
+      ok: false,
+      status: 400,
+      errores: { general: 'Faltan datos obligatorios (médico y fecha).' },
+    };
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return { ok: false, status: 400, errores: { fecha: 'Formato de fecha inválido (YYYY-MM-DD).' } };
+  }
+
+  // Rango: desde las 00:00 hasta las 23:59:59 del día especificado
+  const fechaInicio = `${fecha}T00:00:00`;
+  const fechaFin = `${fecha}T23:59:59`;
+
+  try {
+    const citas = await obtenerCitasPorMedico(id_medico, fechaInicio, fechaFin);
+
+    // Agrupar citas por estado
+    const citasAgrupadas = {
+      pendiente: [],
+      confirmada: [],
+      completada: [],
+      cancelada: [],
+    };
+
+    citas.forEach((cita) => {
+      const estado = cita.estado || 'pendiente';
+      if (citasAgrupadas[estado]) {
+        citasAgrupadas[estado].push(cita);
+      }
+    });
+
+    return {
+      ok: true,
+      status: 200,
+      fecha,
+      totalCitas: citas.length,
+      citas: citasAgrupadas,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      mensaje: `Error al obtener la agenda: ${error.message}`,
+    };
+  }
+}
+

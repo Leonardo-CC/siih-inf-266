@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import TarjetaCita from './TarjetaCita';
 import './AgendaMedico.css';
 
@@ -30,15 +31,23 @@ const AgendaMedico = () => {
     setError(null);
 
     try {
-      const respuesta = await fetch(
-        `/api/citas/agenda-medico?id_medico=${idMedico}&fecha=${fechaSeleccionada}`
-      );
+      const url = `/api/citas/agenda-medico?id_medico=${idMedico}&fecha=${fechaSeleccionada}`;
+      console.log('[v0] Cargando agenda desde:', url);
+      console.log('[v0] ID Médico:', idMedico);
+      console.log('[v0] Fecha seleccionada:', fechaSeleccionada);
+
+      const respuesta = await fetch(url);
+
+      console.log('[v0] Respuesta status:', respuesta.status);
 
       if (!respuesta.ok) {
-        throw new Error('Error al cargar la agenda');
+        const textoError = await respuesta.text();
+        console.error('[v0] Error en respuesta:', textoError);
+        throw new Error(`Error HTTP ${respuesta.status}: ${textoError}`);
       }
 
       const datos = await respuesta.json();
+      console.log('[v0] Datos recibidos:', datos);
 
       if (datos.ok) {
         setCitasAgrupadas(datos.citas);
@@ -50,13 +59,16 @@ const AgendaMedico = () => {
           ...datos.citas.confirmada,
           ...datos.citas.completada,
         ];
+        console.log('[v0] Total de citas:', todas.length);
         setCitas(todas);
       } else {
-        setError(datos.mensaje || 'Error al cargar citas');
+        const mensajeError = datos.mensaje || JSON.stringify(datos.errores) || 'Error desconocido al cargar citas';
+        console.error('[v0] Error en datos:', mensajeError);
+        setError(mensajeError);
       }
     } catch (err) {
-      console.error('Error:', err);
-      setError('No se pudieron cargar las citas. Intenta más tarde.');
+      console.error('[v0] Error capturado:', err);
+      setError(`Error: ${err.message}`);
     } finally {
       setCargando(false);
     }
@@ -147,7 +159,14 @@ const AgendaMedico = () => {
       </div>
 
       {/* Mensaje de error */}
-      {error && <div className="agenda-error">{error}</div>}
+      {error && (
+        <div className="agenda-error">
+          <strong>Error:</strong> {error}
+          <div style={{ fontSize: '12px', marginTop: '8px', opacity: 0.8 }}>
+            📖 Lee la consola (F12) o abre DEBUG_AGENDA.md para más detalles
+          </div>
+        </div>
+      )}
 
       {/* Fecha seleccionada */}
       <div className="fecha-actual">
@@ -173,6 +192,23 @@ const AgendaMedico = () => {
             />
           ))
         )}
+      </div>
+
+      {/* Botón para regresar a Home */}
+      <div style={{ marginTop: '24px', textAlign: 'center' }}>
+        <Link to="/">
+          <button style={{ 
+            padding: '10px 20px',
+            backgroundColor: '#6b7280',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}>
+            Volver a inicio
+          </button>
+        </Link>
       </div>
     </div>
   );
