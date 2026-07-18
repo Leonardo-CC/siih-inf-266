@@ -150,6 +150,27 @@ async function setupRoutes() {
     });
 
     // ============================================================
+    // Cargar endpoints de /api/signos-vitales/  (HU-10)
+    // ============================================================
+    const { default: opcionesSignosHandler } = await import('./api/signos-vitales/opciones.js');
+    app.get('/api/signos-vitales/opciones', async (req, res) => {
+      req.method = 'GET';
+      return opcionesSignosHandler(req, res);
+    });
+
+    const { default: registrarSignosHandler } = await import('./api/signos-vitales/registrar.js');
+    app.post('/api/signos-vitales/registrar', async (req, res) => {
+      req.method = 'POST';
+      return registrarSignosHandler(req, res);
+    });
+
+    const { default: listarSignosHandler } = await import('./api/signos-vitales/listar.js');
+    app.get('/api/signos-vitales/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarSignosHandler(req, res);
+    });
+
+    // ============================================================
     // Cargar endpoints de /api/pacientes/
     // ============================================================
     const { default: registroHandler } = await import('./api/pacientes/registro.js');
