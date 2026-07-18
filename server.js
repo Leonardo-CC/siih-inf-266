@@ -19,6 +19,7 @@ const result = dotenv.config({ path: envLocalPath });
 
 if (result.error) {
   dotenv.config({ path: envPath });
+  dotenv.config({ path: envLocalPath, override: true });
   console.warn(`⚠️ No se pudo cargar .env.local: ${result.error.message}`);
 }
 

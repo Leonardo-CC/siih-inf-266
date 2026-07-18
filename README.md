@@ -28,3 +28,14 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 # ⚠️ IMPORTANTE: Esta clave da acceso total a la base de datos. 
 # 🛑 ¡NUNCA HAGAS COMMIT DE ESTE ARCHIVO A GITHUB!
 SUPABASE_SERVICE_ROLE_KEY=pega_aqui_la_clave_secreta_que_copiaste_del_panel
+
+
+## Issue Nro XX: 
+Descripcion
+Para quien es: para medico puede hacer, registrar.
+
+
+
+
+
+
