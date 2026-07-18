@@ -1,16 +1,6 @@
-// src/pages/paciente/SolicitarCita.jsx
 import { useEffect, useState } from 'react';
 import PagoCita from './PagoCita.jsx';
 
-// CAPA DE PRESENTACIÓN
-// Vista del ACTOR "Paciente/Estudiante" — HU-03
-// Solo se encarga de mostrar el formulario y llamar a los endpoints /api/citas/*.
-// Toda la validación real (horarios ocupados, fechas pasadas) vive en /api,
-// igual que RegistroPaciente.jsx (server-side) llama a /api/pacientes/registro.
-//
-// IMPORTANTE PARA PROBARLO: estos endpoints viven en /api (Vercel Functions),
-// así que corriendo solo `npm run dev` (Vite) NO van a responder — hay que
-// correr `vercel dev` para que sirva a la vez el frontend y las funciones.
 export default function SolicitarCita({ idPaciente }) {
   const hoyISO = new Date().toISOString().slice(0, 10);
 
@@ -33,10 +23,8 @@ export default function SolicitarCita({ idPaciente }) {
   const [mensajeExito, setMensajeExito] = useState(null);
   const [errorGeneral, setErrorGeneral] = useState(null);
 
-  // Estados para flujo de pago después de solicitar cita
-  const [citaCreada, setCitaCreada] = useState(null); // { id_cita, id_medico } cuando se crea exitosamente
+  const [citaCreada, setCitaCreada] = useState(null);
 
-  // 1. Cargar especialidades al montar
   useEffect(() => {
     async function cargarEspecialidades() {
       try {
@@ -45,13 +33,12 @@ export default function SolicitarCita({ idPaciente }) {
         if (data.ok) setEspecialidades(data.especialidades);
         else setErrorGeneral(data.mensaje || 'No se pudo cargar la lista de especialidades.');
       } catch {
-        setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente ......');
+        setErrorGeneral('No se pudo conectar con el servidor.');
       }
     }
     cargarEspecialidades();
   }, []);
 
-  // 2. Cuando cambia la especialidad, cargar médicos y resetear lo siguiente
   useEffect(() => {
     setIdMedico('');
     setFecha('');
@@ -66,9 +53,9 @@ export default function SolicitarCita({ idPaciente }) {
         const res = await fetch(`/api/citas/medicos?especialidad=${encodeURIComponent(especialidad)}`);
         const data = await res.json();
         if (data.ok) setMedicos(data.medicos);
-        else setErrorGeneral(data.mensaje || 'No se pudo cargar la lista de médicos.');
+        else setErrorGeneral(data.mensaje || 'No se pudo cargar la lista de medicos.');
       } catch {
-        setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente.');
+        setErrorGeneral('No se pudo conectar con el servidor.');
       } finally {
         setCargandoMedicos(false);
       }
@@ -76,7 +63,6 @@ export default function SolicitarCita({ idPaciente }) {
     cargarMedicos();
   }, [especialidad]);
 
-  // 3. Cuando cambia médico o fecha, cargar horarios disponibles
   useEffect(() => {
     setHorarios([]);
     setHoraSeleccionada(null);
@@ -91,7 +77,7 @@ export default function SolicitarCita({ idPaciente }) {
         if (data.ok) setHorarios(data.horarios);
         else setErrorGeneral(data.mensaje || 'No se pudieron cargar los horarios.');
       } catch {
-        setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente.');
+        setErrorGeneral('No se pudo conectar con el servidor.');
       } finally {
         setCargandoHorarios(false);
       }
@@ -109,7 +95,7 @@ export default function SolicitarCita({ idPaciente }) {
       return;
     }
     if (!idPaciente) {
-      setErrorGeneral('No se identificó al paciente (falta sesión/idPaciente).');
+      setErrorGeneral('No se identifico al paciente (falta sesion/idPaciente).');
       return;
     }
 
@@ -128,25 +114,23 @@ export default function SolicitarCita({ idPaciente }) {
       const data = await res.json();
 
       if (data.ok) {
-        // Cita creada exitosamente, ir al flujo de pago
         setCitaCreada({
           id_cita: data.cita.id_cita,
           id_medico: idMedico,
         });
-        setMensajeExito(`${data.mensaje} (Estado: ${data.cita.estado}). Proceeding to payment...`);
+        setMensajeExito(`${data.mensaje} (Estado: ${data.cita.estado}). Redirigiendo al pago...`);
       } else {
         setErrorGeneral(
-          data.errores?.general || data.errores?.fecha_hora || data.mensaje || 'Ocurrió un error inesperado.'
+          data.errores?.general || data.errores?.fecha_hora || data.mensaje || 'Ocurrio un error inesperado.'
         );
       }
     } catch {
-      setErrorGeneral('No se pudo conectar con el servidor. Intenta nuevamente.');
+      setErrorGeneral('No se pudo conectar con el servidor.');
     } finally {
       setEnviando(false);
     }
   }
 
-  // Si la cita fue creada exitosamente, mostrar flujo de pago
   if (citaCreada) {
     return (
       <PagoCita
@@ -158,106 +142,134 @@ export default function SolicitarCita({ idPaciente }) {
   }
 
   return (
-    <div className="siih-container">
-      <div className="siih-header">
-        <h1>Solicitar cita médica</h1>
-        <p>HU-03 · Elige especialidad, médico y un horario libre. Podrás ver el estado de tu cita.</p>
-      </div>
+    <div className="max-w-3xl mx-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-primary to-primary-dark px-8 py-6">
+          <h1 className="text-2xl font-bold text-white">Solicitar cita medica</h1>
+          <p className="text-blue-100 mt-1 text-sm">HU-03 · Elige especialidad, medico y un horario libre. Podras ver el estado de tu cita.</p>
+        </div>
 
-      <div className="siih-body">
-        {mensajeExito && <div className="siih-alert siih-alert-success">{mensajeExito}</div>}
-        {errorGeneral && <div className="siih-alert siih-alert-error">{errorGeneral}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="siih-row">
-            <div className="siih-field">
-              <label>Especialidad *</label>
-              <select value={especialidad} onChange={(e) => setEspecialidad(e.target.value)} required>
-                <option value="">Selecciona una especialidad</option>
-                {especialidades.map((esp) => (
-                  <option key={esp} value={esp}>
-                    {esp}
-                  </option>
-                ))}
-              </select>
+        <div className="p-8">
+          {mensajeExito && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+              {mensajeExito}
             </div>
-
-            <div className="siih-field">
-              <label>Médico *</label>
-              <select
-                value={idMedico}
-                onChange={(e) => setIdMedico(e.target.value)}
-                disabled={!especialidad || cargandoMedicos}
-                required
-              >
-                <option value="">{cargandoMedicos ? 'Cargando médicos...' : 'Selecciona un médico'}</option>
-                {medicos.map((m) => (
-                  <option key={m.id_medico} value={m.id_medico}>
-                    {m.nombre_completo}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="siih-field">
-            <label>Fecha *</label>
-            <input
-              type="date"
-              value={fecha}
-              min={hoyISO}
-              onChange={(e) => setFecha(e.target.value)}
-              disabled={!idMedico}
-              required
-            />
-          </div>
-
-          {idMedico && fecha && (
-            <div className="siih-field">
-              <label>Horario disponible *</label>
-              {cargandoHorarios && <p className="siih-hint">Cargando horarios...</p>}
-              {!cargandoHorarios && horarios.length === 0 && (
-                <p className="siih-hint">No hay horarios para este día (día no laboral o sin cupos).</p>
-              )}
-              {!cargandoHorarios && horarios.length > 0 && (
-                <div className="siih-slot-grid">
-                  {horarios.map((h) => {
-                    const seleccionado = horaSeleccionada?.fecha_hora === h.fecha_hora;
-                    return (
-                      <button
-                        type="button"
-                        key={h.fecha_hora}
-                        disabled={!h.disponible}
-                        onClick={() => setHoraSeleccionada(h)}
-                        className={
-                          'siih-slot' +
-                          (!h.disponible ? ' siih-slot-ocupado' : '') +
-                          (seleccionado ? ' siih-slot-selected' : '')
-                        }
-                      >
-                        {h.hora}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+          )}
+          {errorGeneral && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+              {errorGeneral}
             </div>
           )}
 
-          <div className="siih-field">
-            <label>Motivo de la consulta</label>
-            <input
-              name="motivo"
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Opcional: describe brevemente el motivo"
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Especialidad *</label>
+                <select
+                  value={especialidad}
+                  onChange={(e) => setEspecialidad(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                  required
+                >
+                  <option value="">Selecciona una especialidad</option>
+                  {especialidades.map((esp) => (
+                    <option key={esp} value={esp}>
+                      {esp}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <button type="submit" className="siih-button" disabled={enviando || !horaSeleccionada}>
-            {enviando ? 'Solicitando...' : 'Solicitar cita'}
-          </button>
-        </form>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Medico *</label>
+                <select
+                  value={idMedico}
+                  onChange={(e) => setIdMedico(e.target.value)}
+                  disabled={!especialidad || cargandoMedicos}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition disabled:bg-slate-100"
+                  required
+                >
+                  <option value="">{cargandoMedicos ? 'Cargando medicos...' : 'Selecciona un medico'}</option>
+                  {medicos.map((m) => (
+                    <option key={m.id_medico} value={m.id_medico}>
+                      {m.nombre_completo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Fecha *</label>
+              <input
+                type="date"
+                value={fecha}
+                min={hoyISO}
+                onChange={(e) => setFecha(e.target.value)}
+                disabled={!idMedico}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition disabled:bg-slate-100"
+                required
+              />
+            </div>
+
+            {idMedico && fecha && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Horario disponible *</label>
+                {cargandoHorarios && (
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Cargando horarios...
+                  </div>
+                )}
+                {!cargandoHorarios && horarios.length === 0 && (
+                  <p className="text-sm text-slate-500">No hay horarios para este dia (dia no laboral o sin cupos).</p>
+                )}
+                {!cargandoHorarios && horarios.length > 0 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                    {horarios.map((h) => {
+                      const seleccionado = horaSeleccionada?.fecha_hora === h.fecha_hora;
+                      return (
+                        <button
+                          type="button"
+                          key={h.fecha_hora}
+                          disabled={!h.disponible}
+                          onClick={() => setHoraSeleccionada(h)}
+                          className={`py-2 px-3 rounded-lg text-sm font-medium border transition ${
+                            !h.disponible
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed line-through'
+                              : seleccionado
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-white text-slate-700 border-slate-300 hover:border-primary hover:bg-primary-light'
+                          }`}
+                        >
+                          {h.hora}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Motivo de la consulta</label>
+              <input
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Opcional: describe brevemente el motivo"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={enviando || !horaSeleccionada}
+              className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {enviando ? 'Solicitando...' : 'Solicitar cita'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,29 @@
+import { Navigate } from 'react-router-dom';
+import { obtenerUsuario } from '../lib/authSession.js';
+
+const rolesPermitidos = {
+  '/dashboard': ['paciente', 'enfermero', 'medico', 'administrativo', 'farmaceutico', 'direccion'],
+  '/paciente/cita': ['paciente', 'administrativo'],
+  '/paciente/citas': ['paciente'],
+  '/paciente/perfil': ['paciente'],
+  '/enfermeria/admisiones': ['enfermero', 'administrativo', 'medico'],
+  '/enfermeria/signos-vitales': ['enfermero', 'administrativo'],
+  '/enfermeria/pacientes': ['enfermero', 'administrativo'],
+  '/medico/consultas': ['medico'],
+  '/medico/signos': ['medico'],
+};
+
+export default function ProtectedRoute({ element, ruta }) {
+  const usuario = obtenerUsuario();
+
+  if (!usuario) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const permitidos = rolesPermitidos[ruta] || Object.keys(rolesPermitidos);
+  if (!permitidos.includes(usuario.rol)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return element;
+}

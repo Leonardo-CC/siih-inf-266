@@ -1,4 +1,4 @@
-// repositories/signosVitalesRepository.js
+﻿// repositories/signosVitalesRepository.js
 // ============================================================
 // CAPA DE DATOS - HU-10 / RF10: Registro de signos vitales
 // Acceso a consultas pendientes de signos, enfermeros y tabla
@@ -40,13 +40,14 @@ export async function obtenerConsultasParaSignos() {
 export async function obtenerEnfermeros() {
   const { data, error } = await supabaseAdmin
     .from('enfermero')
-    .select('id_enfermero, persona:persona_id (nombre, apellido)')
+    .select('id_enfermero, persona_id, persona:persona_id (nombre, apellido)')
     .order('id_enfermero', { ascending: true });
 
   if (error) throw new Error(`Error al obtener enfermeros: ${error.message}`);
 
   return (data || []).map((e) => ({
     id_enfermero: e.id_enfermero,
+    persona_id: e.persona_id,
     nombre_completo: e.persona
       ? `${e.persona.nombre} ${e.persona.apellido}`
       : `Enfermero(a) #${e.id_enfermero}`,
@@ -65,14 +66,24 @@ export async function verificarConsultaExiste(idConsulta) {
 }
 
 export async function obtenerEstadoConsulta(idConsulta) {
-  const { data, error } = await supabaseAdmin
+  const { data: consulta, error: errorConsulta } = await supabaseAdmin
     .from('consulta')
-    .select('estado')
+    .select('id_consulta, id_cita')
     .eq('id_consulta', idConsulta)
     .single();
 
-  if (error || !data) return null;
-  return data.estado;
+  if (errorConsulta || !consulta) return null;
+
+  if (!consulta.id_cita) return 'confirmada';
+
+  const { data: cita, error: errorCita } = await supabaseAdmin
+    .from('cita')
+    .select('estado')
+    .eq('id_cita', consulta.id_cita)
+    .single();
+
+  if (errorCita || !cita) return null;
+  return cita.estado;
 }
 
 export async function obtenerRolEnfermero(idEnfermero) {
@@ -118,14 +129,55 @@ export async function registrarSignosVitales(payload) {
   return data;
 }
 
-export async function obtenerSignosVitales() {
+export async function actualizarSignosVitales(id_signos, payload) {
+  const registro = {
+    id_consulta: payload.id_consulta,
+    presion_arterial: payload.presion_arterial || null,
+    temperatura: payload.temperatura != null ? Number(payload.temperatura) : null,
+    frecuencia_cardiaca:
+      payload.frecuencia_cardiaca != null ? Number(payload.frecuencia_cardiaca) : null,
+    observaciones: payload.observaciones || null,
+    id_enfermero: payload.id_enfermero,
+  };
+
   const { data, error } = await supabaseAdmin
+    .from('signos_vitales')
+    .update(registro)
+    .eq('id_signos', id_signos)
+    .select(
+      'id_signos, id_consulta, presion_arterial, temperatura, frecuencia_cardiaca, observaciones, fecha_hora'
+    )
+    .single();
+
+  if (error) throw new Error(`Error actualizando signos vitales: ${error.message}`);
+
+  return data;
+}
+
+export async function eliminarSignosVitales(id_signos) {
+  const { error } = await supabaseAdmin
+    .from('signos_vitales')
+    .delete()
+    .eq('id_signos', id_signos);
+
+  if (error) throw new Error(`Error eliminando signos vitales: ${error.message}`);
+}
+
+export async function obtenerSignosVitales(filtro = {}) {
+  let query = supabaseAdmin
     .from('vw_signos_vitales')
     .select('*')
     .order('fecha_hora', { ascending: false })
-    .limit(50);
+    .limit(100);
+
+  if (filtro.id_enfermero) {
+    query = query.eq('id_enfermero', filtro.id_enfermero);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(`Error al obtener signos vitales: ${error.message}`);
 
   return data || [];
 }
+

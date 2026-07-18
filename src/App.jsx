@@ -1,26 +1,91 @@
-// src/App.jsx
-// ============================================================
-// CAPA DE PRESENTACIÓN — Enrutador principal de la SPA.
-// Reemplaza el panel de prueba de conexión (esa validación ya
-// quedó cubierta por /api/test-bd.js). Cada nueva HU agrega
-// su propia ruta aquí.
-// ============================================================
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home.jsx';
+﻿// src/App.jsx
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import ProtectedLayout from './components/ProtectedLayout.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Login from './pages/Login.jsx';
 import RegistroPaciente from './pages/paciente/RegistroPaciente.jsx';
 import SolicitarCitaPage from './pages/paciente/SolicitarCitaPage.jsx';
 import GestionAdmision from './pages/enfermeria/GestionAdmision.jsx';
 import RegistroSignosVitales from './pages/enfermeria/RegistroSignosVitales.jsx';
+import GestionPacientesEnfermeria from './pages/enfermeria/GestionPacientesEnfermeria.jsx';
+import GestionConsultasMedico from './pages/medico/GestionConsultasMedico.jsx';
+import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
+import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
+import MiPerfil from './pages/paciente/MiPerfil.jsx';
+import MisCitas from './pages/paciente/MisCitas.jsx';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/paciente/registro" element={<RegistroPaciente />} />
-        <Route path="/paciente/cita" element={<SolicitarCitaPage />} />
-        <Route path="/enfermeria/admisiones" element={<GestionAdmision />} />
-        <Route path="/enfermeria/signos-vitales" element={<RegistroSignosVitales />} />
+
+        <Route element={<ProtectedLayout />}>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute ruta="/dashboard" element={<Dashboard />} />
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute ruta="/dashboard" element={<Dashboard />} />
+            }
+          />
+          <Route
+            path="/paciente/cita"
+            element={
+              <ProtectedRoute ruta="/paciente/cita" element={<SolicitarCitaPage />} />
+            }
+          />
+          <Route
+            path="/paciente/citas"
+            element={
+              <ProtectedRoute ruta="/paciente/citas" element={<MisCitas />} />
+            }
+          />
+          <Route
+            path="/paciente/perfil"
+            element={
+              <ProtectedRoute ruta="/paciente/perfil" element={<MiPerfil />} />
+            }
+          />
+          <Route
+            path="/enfermeria/admisiones"
+            element={
+              <ProtectedRoute ruta="/enfermeria/admisiones" element={<GestionAdmision />} />
+            }
+          />
+          <Route
+            path="/enfermeria/signos-vitales"
+            element={
+              <ProtectedRoute ruta="/enfermeria/signos-vitales" element={<RegistroSignosVitales />} />
+            }
+          />
+          <Route
+            path="/enfermeria/pacientes"
+            element={
+              <ProtectedRoute ruta="/enfermeria/pacientes" element={<GestionPacientesEnfermeria />} />
+            }
+          />
+          <Route
+            path="/medico/consultas"
+            element={
+              <ProtectedRoute ruta="/medico/consultas" element={<GestionConsultasMedico />} />
+            }
+          />
+          <Route
+            path="/medico/signos"
+            element={
+              <ProtectedRoute ruta="/medico/signos" element={<SignosVitalesMedico />} />
+            }
+          />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );
