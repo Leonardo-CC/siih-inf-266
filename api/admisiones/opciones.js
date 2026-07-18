@@ -11,7 +11,12 @@ export default async function handler(req, res) {
     const resultado = await listarOpcionesAdmision();
     return res.status(resultado.status).json(resultado);
   } catch (err) {
-    console.error('Error en /api/admisiones/opciones:', err);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
-  }
+  console.error(err);
+
+  return res.status(500).json({
+    ok: false,
+    mensaje: err.message,
+    stack: err.stack
+  });
+}
 }

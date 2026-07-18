@@ -15,21 +15,22 @@ const __dirname = dirname(__filename);
 
 const envLocalPath = path.join(__dirname, '.env.local');
 const envPath = path.join(__dirname, '.env');
-const result = dotenv.config({ path: envLocalPath });
 
-if (result.error) {
-  dotenv.config({ path: envPath });
-  dotenv.config({ path: envLocalPath, override: true });
-  console.warn(`⚠️ No se pudo cargar .env.local: ${result.error.message}`);
-}
+// Primero cargar .env
+dotenv.config({ path: envPath });
 
-if (!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ ERROR: Faltan variables SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en .env.local');
-  console.error('   Asegúrate de que el archivo .env.local existe en la raíz del proyecto');
-  console.error('   con las credenciales de Supabase correctas.');
+// Después cargar .env.local si existe (sobrescribe variables)
+dotenv.config({
+  path: envLocalPath,
+  override: true,
+});
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Cargada ✅" : "No encontrada ❌");
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("❌ No se cargaron las variables de Supabase.");
   process.exit(1);
 }
-
 console.log('✅ Variables de entorno cargadas correctamente');
 
 // PASO 2: Importar Express y crear la app
