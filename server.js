@@ -13,14 +13,16 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const envPath = path.join(__dirname, '.env.local');
-const result = dotenv.config({ path: envPath });
+const envLocalPath = path.join(__dirname, '.env.local');
+const envPath = path.join(__dirname, '.env');
+const result = dotenv.config({ path: envLocalPath });
 
 if (result.error) {
+  dotenv.config({ path: envPath });
   console.warn(`⚠️ No se pudo cargar .env.local: ${result.error.message}`);
 }
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if (!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('❌ ERROR: Faltan variables SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en .env.local');
   console.error('   Asegúrate de que el archivo .env.local existe en la raíz del proyecto');
   console.error('   con las credenciales de Supabase correctas.');
@@ -33,7 +35,7 @@ console.log('✅ Variables de entorno cargadas correctamente');
 import express from 'express';
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 // Middleware
 app.use(express.json());
@@ -118,6 +120,33 @@ async function setupRoutes() {
     app.post('/api/citas/solicitar', async (req, res) => {
       req.method = 'POST';
       return solicitarHandler(req, res);
+    });
+
+    // ============================================================
+    // Cargar endpoints de /api/admisiones/
+    // ============================================================
+    const { default: opcionesAdmisionHandler } = await import('./api/admisiones/opciones.js');
+    app.get('/api/admisiones/opciones', async (req, res) => {
+      req.method = 'GET';
+      return opcionesAdmisionHandler(req, res);
+    });
+
+    const { default: registrarAdmisionHandler } = await import('./api/admisiones/registrar.js');
+    app.post('/api/admisiones/registrar', async (req, res) => {
+      req.method = 'POST';
+      return registrarAdmisionHandler(req, res);
+    });
+
+    const { default: listarAdmisionHandler } = await import('./api/admisiones/listar.js');
+    app.get('/api/admisiones/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarAdmisionHandler(req, res);
+    });
+
+    const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
+    app.get('/api/admisiones/buscar', async (req, res) => {
+      req.method = 'GET';
+      return buscarAdmisionHandler(req, res);
     });
 
     // ============================================================
