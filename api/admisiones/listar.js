@@ -8,7 +8,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const resultado = await listarAdmisiones();
+    const filtro = {};
+    if (req.query?.id_enfermero) filtro.id_enfermero = Number(req.query.id_enfermero);
+    if (req.query?.id_medico) filtro.id_medico = Number(req.query.id_medico);
+    const resultado = await listarAdmisiones(filtro);
     return res.status(resultado.status).json(resultado);
   } catch (err) {
     console.error('Error en /api/admisiones/listar:', err);

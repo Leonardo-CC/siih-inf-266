@@ -69,3 +69,152 @@ export async function crearPaciente({ persona_id, tipo_seguro, numero_seguro }) 
 export async function eliminarPersona(persona_id) {
   await supabaseAdmin.from('persona').delete().eq('persona_id', persona_id);
 }
+
+export async function listarPacientes() {
+  const { data, error } = await supabaseAdmin
+    .from('paciente')
+    .select(`
+      id_paciente,
+      persona_id,
+      tipo_seguro,
+      numero_seguro,
+      persona:persona_id (
+        nombre,
+        apellido,
+        telefono,
+        sexo,
+        fecha_nac
+      )
+    `)
+    .order('id_paciente', { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(`Error al listar pacientes: ${error.message}`);
+
+  const pacientes = (data || []).map((p) => ({
+    id_paciente: p.id_paciente,
+    persona_id: p.persona_id,
+    nombre: p.persona?.nombre || '',
+    apellido: p.persona?.apellido || '',
+    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
+    telefono: p.persona?.telefono || '',
+    sexo: p.persona?.sexo || '',
+    fecha_nac: p.persona?.fecha_nac || '',
+    tipo_seguro: p.tipo_seguro || '',
+    numero_seguro: p.numero_seguro || '',
+  }));
+
+  if (pacientes.length === 0) {
+    return pacientes;
+  }
+
+  const personaIds = pacientes.map((p) => p.persona_id);
+  const { data: usuarios, error: errorUsuarios } = await supabaseAdmin
+    .from('usuario')
+    .select('persona_id, ci, correo')
+    .in('persona_id', personaIds);
+
+  if (errorUsuarios) throw new Error(`Error al listar usuarios: ${errorUsuarios.message}`);
+
+  const usuarioMap = new Map((usuarios || []).map((u) => [u.persona_id, u]));
+
+  return pacientes.map((p) => {
+    const usuario = usuarioMap.get(p.persona_id);
+    return {
+      ...p,
+      correo: usuario?.correo || '',
+      ci: usuario?.ci || '',
+    };
+  });
+}
+
+export async function eliminarPaciente(id_paciente) {
+  const { data: paciente } = await supabaseAdmin
+    .from('paciente')
+    .select('persona_id')
+    .eq('id_paciente', id_paciente)
+    .single();
+
+  if (!paciente) {
+    throw new Error('Paciente no encontrado');
+  }
+
+  const { error: errorPaciente } = await supabaseAdmin
+    .from('paciente')
+    .delete()
+    .eq('id_paciente', id_paciente);
+
+  if (errorPaciente) throw new Error(`Error al eliminar paciente: ${errorPaciente.message}`);
+
+  const { error: errorUsuario } = await supabaseAdmin
+    .from('usuario')
+    .delete()
+    .eq('persona_id', paciente.persona_id);
+
+  if (errorUsuario) throw new Error(`Error al eliminar usuario: ${errorUsuario.message}`);
+
+  const { error: errorPersona } = await supabaseAdmin
+    .from('persona')
+    .delete()
+    .eq('persona_id', paciente.persona_id);
+
+  if (errorPersona) throw new Error(`Error al eliminar persona: ${errorPersona.message}`);
+
+  return { ok: true };
+}
+
+export async function actualizarPaciente(id_paciente, datos) {
+  const { data: paciente } = await supabaseAdmin
+    .from('paciente')
+    .select('persona_id')
+    .eq('id_paciente', id_paciente)
+    .single();
+
+  if (!paciente) {
+    throw new Error('Paciente no encontrado');
+  }
+
+  // Datos que viven en la tabla persona
+  const updatesPersona = {};
+  if (datos.nombre !== undefined) updatesPersona.nombre = datos.nombre;
+  if (datos.apellido !== undefined) updatesPersona.apellido = datos.apellido;
+  if (datos.telefono !== undefined) updatesPersona.telefono = datos.telefono || null;
+
+  if (Object.keys(updatesPersona).length > 0) {
+    const { error } = await supabaseAdmin
+      .from('persona')
+      .update(updatesPersona)
+      .eq('persona_id', paciente.persona_id);
+
+    if (error) throw new Error(`Error actualizando persona: ${error.message}`);
+  }
+
+  // ci y correo viven en la tabla usuario (no en persona)
+  const updatesUsuario = {};
+  if (datos.ci !== undefined && datos.ci !== '') updatesUsuario.ci = datos.ci;
+  if (datos.correo !== undefined && datos.correo !== '') updatesUsuario.correo = datos.correo;
+
+  if (Object.keys(updatesUsuario).length > 0) {
+    const { error } = await supabaseAdmin
+      .from('usuario')
+      .update(updatesUsuario)
+      .eq('persona_id', paciente.persona_id);
+
+    if (error) throw new Error(`Error actualizando usuario: ${error.message}`);
+  }
+
+  const updatesPaciente = {};
+  if (datos.tipo_seguro !== undefined) updatesPaciente.tipo_seguro = datos.tipo_seguro || null;
+  if (datos.numero_seguro !== undefined) updatesPaciente.numero_seguro = datos.numero_seguro || null;
+
+  if (Object.keys(updatesPaciente).length > 0) {
+    const { error } = await supabaseAdmin
+      .from('paciente')
+      .update(updatesPaciente)
+      .eq('id_paciente', id_paciente);
+
+    if (error) throw new Error(`Error actualizando paciente: ${error.message}`);
+  }
+
+  return { ok: true };
+}

@@ -1,10 +1,28 @@
-// src/pages/enfermeria/GestionAdmision.jsx
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { obtenerUsuario } from '../../lib/authSession.js';
+import Modal from '../../components/Modal.jsx';
+import TablaCRUD from '../../components/TablaCRUD.jsx';
 
-const TIPO_LABELS = {
+const TIPOS = {
   consulta_externa: 'Consulta externa',
   emergencia: 'Emergencia',
   hospitalizacion: 'Hospitalizacion',
+};
+
+const ESTADOS = {
+  registrada: 'Registrada',
+  en_triage: 'En triage',
+  asignada: 'Asignada',
+  atendida: 'Atendida',
+  cancelada: 'Cancelada',
+};
+
+const ESTADO_CLASES = {
+  registrada: 'bg-slate-100 text-slate-700 border-slate-200',
+  en_triage: 'bg-amber-100 text-amber-800 border-amber-200',
+  asignada: 'bg-blue-100 text-blue-800 border-blue-200',
+  atendida: 'bg-green-100 text-green-800 border-green-200',
+  cancelada: 'bg-red-100 text-red-700 border-red-200',
 };
 
 function formatearFecha(fecha) {
@@ -16,51 +34,64 @@ function formatearFecha(fecha) {
 }
 
 const estadoInicial = {
-  id_cita: '',
+  id_consulta: null,
   id_paciente: '',
   paciente_nombre: '',
   id_enfermero: '',
   id_medico: '',
   tipo_admision: 'consulta_externa',
+  estado: 'registrada',
   motivo_consulta: '',
   sala_asignada: '',
-  datos_verificados: true,
+  datos_verificados: false,
   observaciones: '',
 };
 
 export default function GestionAdmision() {
-  const [form, setForm] = useState(estadoInicial);
-  const [citas, setCitas] = useState([]);
-  const [enfermeros, setEnfermeros] = useState([]);
-  const [medicos, setMedicos] = useState([]);
+  const usuario = obtenerUsuario();
+  const [admisiones, setAdmisiones] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [form, setForm] = useState(estadoInicial);
+  const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
-  const [mensajeExito, setMensajeExito] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
   const [errorGeneral, setErrorGeneral] = useState(null);
+  const [opciones, setOpciones] = useState({ citas: [], enfermeros: [], medicos: [], pacientes: [] });
   const [sugerencias, setSugerencias] = useState([]);
   const [buscando, setBuscando] = useState(false);
-  const debounceRef = useRef(null);
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
+  const debounceRef = useState(null)[0];
 
-  const citaSeleccionada = useMemo(
-    () => citas.find((c) => String(c.id_cita) === String(form.id_cita)),
-    [citas, form.id_cita]
-  );
-
-  async function cargarOpciones() {
+  async function cargarAdmisiones() {
     setCargando(true);
     setErrorGeneral(null);
     try {
-      const res = await fetch('/api/admisiones/opciones');
-      const data = await res.json();
-
-      if (!data.ok) {
-        setErrorGeneral(data.mensaje || 'No se pudieron cargar los datos de admision.');
-        return;
+      let url;
+      if (usuario?.rol === 'enfermero') {
+        let idEnfermero = usuario?.id_enfermero;
+        if (!idEnfermero) {
+          const propio = opciones.enfermeros.find(
+            (e) => String(e.persona_id) === String(usuario?.persona_id)
+          );
+          idEnfermero = propio?.id_enfermero || null;
+        }
+        url = idEnfermero
+          ? `/api/admisiones/listar?id_enfermero=${idEnfermero}`
+          : '/api/admisiones/listar';
+      } else {
+        url = '/api/admisiones/listar';
       }
-
-      setCitas(data.citas || []);
-      setEnfermeros(data.enfermeros || []);
-      setMedicos(data.medicos || []);
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.ok) {
+        setAdmisiones(data.admisiones || []);
+      } else {
+        setErrorGeneral(data.mensaje || 'No se pudieron cargar las admisiones.');
+      }
     } catch {
       setErrorGeneral('No se pudo conectar con el servidor.');
     } finally {
@@ -68,33 +99,85 @@ export default function GestionAdmision() {
     }
   }
 
-  useEffect(() => {
-    cargarOpciones();
-  }, []);
+  async function cargarOpciones() {
+    try {
+      const res = await fetch('/api/admisiones/opciones');
+      const data = await res.json();
+      if (data.ok) {
+        setOpciones({
+          citas: data.citas || [],
+          enfermeros: data.enfermeros || [],
+          medicos: data.medicos || [],
+          pacientes: data.pacientes || [],
+        });
+      }
+    } catch {
+      console.error('Error cargando opciones');
+    }
+  }
 
   useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
-    };
+    cargarOpciones().then(() => {
+      cargarAdmisiones();
+    });
   }, []);
+
+  function abrirModalCrear() {
+    setModoEdicion(false);
+    const propio = opciones.enfermeros.find((e) => String(e.persona_id) === String(usuario?.persona_id));
+    setForm({ ...estadoInicial, id_enfermero: propio ? String(propio.id_enfermero) : '' });
+    setErrores({});
+    setMensaje(null);
+    setErrorGeneral(null);
+    setModalAbierto(true);
+  }
+
+  function abrirModalEditar(admision) {
+    setModoEdicion(true);
+    const pacienteNombre = `${admision.paciente_nombre || ''} ${admision.paciente_apellido || ''}`.trim();
+    setForm({
+      id_consulta: admision.id_admision,
+      id_paciente: String(admision.id_paciente || ''),
+      paciente_nombre: pacienteNombre,
+      id_enfermero: String(admision.id_enfermero || ''),
+      id_medico: admision.id_medico ? String(admision.id_medico) : '',
+      tipo_admision: admision.tipo_admision || 'consulta_externa',
+      estado: admision.estado || 'registrada',
+      motivo_consulta: admision.motivo_consulta || '',
+      sala_asignada: admision.sala_asignada || '',
+      datos_verificados: Boolean(admision.datos_verificados),
+      observaciones: admision.observaciones || '',
+    });
+    if (admision.id_paciente && pacienteNombre) {
+      setSugerencias((prev) => {
+        const existe = prev.some((p) => p.id_paciente === admision.id_paciente);
+        if (existe) return prev;
+        return [...prev, { id_paciente: admision.id_paciente, nombre_completo: pacienteNombre }];
+      });
+    }
+    setErrores({});
+    setMensaje(null);
+    setErrorGeneral(null);
+    setModalAbierto(true);
+  }
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setErrores((prev) => ({ ...prev, [name]: '' }));
+  }
 
   async function buscarPacientes(texto) {
     if (!texto || texto.length < 2) {
       setSugerencias([]);
       return;
     }
-
     setBuscando(true);
     try {
       const res = await fetch(`/api/admisiones/buscar?q=${encodeURIComponent(texto)}`);
       const data = await res.json();
-      if (data.ok) {
-        setSugerencias(data.results || []);
-      } else {
-        setSugerencias([]);
-      }
+      if (data.ok) setSugerencias(data.results || []);
+      else setSugerencias([]);
     } catch {
       setSugerencias([]);
     } finally {
@@ -102,68 +185,36 @@ export default function GestionAdmision() {
     }
   }
 
-  function actualizarCampo(campo, valor) {
-    setForm((actual) => ({ ...actual, [campo]: valor }));
-  }
-
-  function seleccionarCita(idCita) {
-    const cita = citas.find((c) => String(c.id_cita) === String(idCita));
-
-    if (!cita) {
-      setForm((actual) => ({
-        ...actual,
-        id_cita: '',
-        id_paciente: '',
-        paciente_nombre: '',
-        id_medico: '',
-        motivo_consulta: '',
-      }));
-      return;
-    }
-
-    setForm((actual) => ({
-      ...actual,
-      id_cita: String(cita.id_cita),
-      id_paciente: String(cita.id_paciente),
-      paciente_nombre: cita.paciente_nombre,
-      id_medico: String(cita.id_medico),
-      motivo_consulta: cita.motivo || actual.motivo_consulta,
-    }));
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
-    setMensajeExito(null);
-    setErrorGeneral(null);
-
     setEnviando(true);
+    setErrores({});
+    setErrorGeneral(null);
+    setMensaje(null);
+
     try {
-      const res = await fetch('/api/admisiones/registrar', {
-        method: 'POST',
+      const url = modoEdicion ? '/api/admisiones/actualizar' : '/api/admisiones/registrar';
+      const method = modoEdicion ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await res.json();
 
       if (!data.ok) {
-        const errores = data.errores || {};
-        setErrorGeneral(
-          errores.general ||
-            errores.asignacion ||
-            errores.motivo_consulta ||
-            errores.id_paciente ||
-            errores.id_enfermero ||
-            'No se pudo registrar la admision.'
-        );
+        setErrorGeneral(data.mensaje || data.errores?.general || 'No se pudo guardar.');
+        if (data.errores) setErrores(data.errores);
         return;
       }
 
-      setMensajeExito(data.mensaje || 'Admision registrada correctamente.');
-      setForm((actual) => ({
-        ...estadoInicial,
-        id_enfermero: actual.id_enfermero,
-      }));
-      await cargarOpciones();
+      setMensaje(data.mensaje || 'Guardado correctamente.');
+      await cargarAdmisiones();
+      setTimeout(() => {
+        setModalAbierto(false);
+        setMensaje(null);
+      }, 1200);
     } catch {
       setErrorGeneral('No se pudo conectar con el servidor.');
     } finally {
@@ -171,176 +222,307 @@ export default function GestionAdmision() {
     }
   }
 
+  async function handleEliminar(admision) {
+    if (!confirm(`¿Eliminar admisión #${admision.id_admision}? Esta acción no se puede deshacer.`)) return;
+
+    try {
+      const res = await fetch('/api/admisiones/eliminar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_consulta: admision.id_admision }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        alert(data.mensaje || 'No se pudo eliminar.');
+        return;
+      }
+      await cargarAdmisiones();
+    } catch {
+      alert('No se pudo conectar con el servidor.');
+    }
+  }
+
+  const admisionesFiltradas = admisiones.filter((a) => {
+    const texto = filtroTexto.trim().toLowerCase();
+    const coincideTexto =
+      !texto ||
+      `${a.paciente_nombre || ''} ${a.paciente_apellido || ''}`.toLowerCase().includes(texto) ||
+      `${a.medico_nombre || ''}`.toLowerCase().includes(texto) ||
+      `${a.motivo_consulta || ''}`.toLowerCase().includes(texto);
+    const coincideEstado = !filtroEstado || a.estado === filtroEstado;
+    const coincideTipo = !filtroTipo || a.tipo_admision === filtroTipo;
+    return coincideTexto && coincideEstado && coincideTipo;
+  });
+
   return (
-    <div className="siih-container siih-container-wide">
-      <div className="siih-header">
-        <h1>Gestion de admision</h1>
-        <p>HU-11 · Verifica datos, registra motivo y asigna medico o sala.</p>
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-primary to-primary-dark px-8 py-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Gestión de Admisiones</h1>
+            <p className="text-blue-100 mt-1 text-sm">Administra las admisiones y consultas registradas.</p>
+          </div>
+          <button
+            onClick={abrirModalCrear}
+            className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition"
+          >
+            + Nueva admisión
+          </button>
+        </div>
+
+        <div className="p-6">
+          {errorGeneral && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+              {errorGeneral}
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <input
+              type="text"
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+              placeholder="Buscar por paciente, médico o motivo..."
+              className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+            />
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+            >
+              <option value="">Todos los estados</option>
+              {Object.entries(ESTADOS).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+            >
+              <option value="">Todos los tipos</option>
+              {Object.entries(TIPOS).map(([v, l]) => (
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </div>
+
+          {cargando ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <TablaCRUD
+              columnas={[
+                { clave: 'id_admision', titulo: 'ID' },
+                { clave: 'paciente_nombre', titulo: 'Paciente', render: (v, f) => `${v} ${f.paciente_apellido || ''}`.trim() },
+                { clave: 'medico_nombre', titulo: 'Médico', render: (v) => v ? `Dr(a). ${v}` : '-' },
+                { clave: 'tipo_admision', titulo: 'Tipo', render: (v) => TIPOS[v] || v },
+                {
+                  clave: 'estado',
+                  titulo: 'Estado',
+                  render: (v) => (
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ESTADO_CLASES[v] || ESTADO_CLASES.registrada}`}>
+                      {ESTADOS[v] || v}
+                    </span>
+                  ),
+                },
+                {
+                  clave: 'datos_verificados',
+                  titulo: 'Verif.',
+                  render: (v) => v
+                    ? <span className="text-green-600 font-semibold">✓</span>
+                    : <span className="text-slate-300">—</span>,
+                },
+                { clave: 'sala_asignada', titulo: 'Sala', render: (v) => v || '-' },
+                { clave: 'fecha_admision', titulo: 'Fecha', render: (v) => formatearFecha(v) },
+              ]}
+              datos={admisionesFiltradas}
+              cargando={cargando}
+              emptyMessage="No hay admisiones que coincidan con el filtro"
+              onEditar={abrirModalEditar}
+              onEliminar={handleEliminar}
+            />
+          )}
+        </div>
       </div>
 
-      <div className="siih-body">
-        {mensajeExito && <div className="siih-alert siih-alert-success">{mensajeExito}</div>}
-        {errorGeneral && <div className="siih-alert siih-alert-error">{errorGeneral}</div>}
+      <Modal abierto={modalAbierto} alCerrar={() => setModalAbierto(false)} titulo={modoEdicion ? 'Editar admisión' : 'Nueva admisión'} ancho="max-w-2xl">
+        {mensaje && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+            {mensaje}
+          </div>
+        )}
+        {errorGeneral && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {errorGeneral}
+          </div>
+        )}
 
-        {cargando ? (
-          <p className="siih-hint">Cargando datos de admision...</p>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="siih-section-title">Datos de ingreso</div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Paciente *</label>
+            <input
+              type="text"
+              name="paciente_nombre"
+              list="pacientes-datalist"
+              value={form.paciente_nombre}
+              onChange={(e) => {
+                const val = e.target.value;
+                handleChange(e);
+                if (!modoEdicion) {
+                  buscarPacientes(val);
+                }
+                const match = sugerencias.find((p) => p.nombre_completo === val);
+                setForm((prev) => ({
+                  ...prev,
+                  id_paciente: match ? String(match.id_paciente) : modoEdicion ? prev.id_paciente : '',
+                }));
+              }}
+              placeholder="Buscar paciente por nombre..."
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.id_paciente ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            <datalist id="pacientes-datalist">
+              {sugerencias.map((p) => (
+                <option key={p.id_paciente} value={p.nombre_completo} />
+              ))}
+            </datalist>
+            {errores.id_paciente && <p className="text-red-500 text-xs mt-1">{errores.id_paciente}</p>}
+          </div>
 
-            <div className="siih-field">
-              <label>Cita programada</label>
-              <select value={form.id_cita} onChange={(e) => seleccionarCita(e.target.value)}>
-                <option value="">Admision directa / sin cita</option>
-                {citas.map((cita) => (
-                  <option key={cita.id_cita} value={cita.id_cita}>
-                    #{cita.id_cita} · {formatearFecha(cita.fecha_hora)} · {cita.paciente_nombre}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Enfermero(a) *</label>
+              <select
+                name="id_enfermero"
+                value={form.id_enfermero}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                required
+              >
+                <option value="">Seleccionar enfermero</option>
+                {opciones.enfermeros.map((e) => (
+                  <option key={e.id_enfermero} value={e.id_enfermero}>
+                    {e.nombre_completo}
                   </option>
                 ))}
               </select>
-              {citaSeleccionada && (
-                <p className="siih-hint">
-                  Medico asignado: {citaSeleccionada.medico_nombre} · Estado: {citaSeleccionada.estado}
-                </p>
-              )}
             </div>
 
-            <div className="siih-row">
-              <div className="siih-field">
-                <label>Nombre del paciente *</label>
-                <input
-                  type="text"
-                  list="pacientes-list"
-                  value={form.paciente_nombre}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const match = sugerencias.find((p) => p.nombre_completo === v);
-                    actualizarCampo('paciente_nombre', v);
-                    actualizarCampo('id_paciente', match ? String(match.id_paciente) : '');
-                    if (debounceRef.current) {
-                      clearTimeout(debounceRef.current);
-                    }
-                    debounceRef.current = setTimeout(() => buscarPacientes(v), 250);
-                  }}
-                  onBlur={() => {
-                    const match = sugerencias.find(
-                      (p) => p.nombre_completo.toLowerCase() === form.paciente_nombre.toLowerCase()
-                    );
-                    if (match) {
-                      actualizarCampo('id_paciente', String(match.id_paciente));
-                    }
-                  }}
-                  disabled={Boolean(form.id_cita)}
-                  placeholder="Escribe para buscar paciente"
-                  required
-                />
-                <datalist id="pacientes-list">
-                  {sugerencias.map((p) => (
-                    <option key={p.persona_id} value={p.nombre_completo} />
-                  ))}
-                </datalist>
-                {buscando && <p className="siih-hint">Buscando pacientes...</p>}
-                {!buscando && form.paciente_nombre && sugerencias.length === 0 && (
-                  <p className="siih-hint">No se encontraron pacientes con ese nombre.</p>
-                )}
-              </div>
-
-              <div className="siih-field">
-                <label>Enfermero(a) responsable *</label>
-                <select
-                  value={form.id_enfermero}
-                  onChange={(e) => actualizarCampo('id_enfermero', e.target.value)}
-                  required
-                >
-                  <option value="">Selecciona enfermero(a)</option>
-                  {enfermeros.map((e) => (
-                    <option key={e.id_enfermero} value={e.id_enfermero}>
-                      {e.nombre_completo}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Médico asignado</label>
+              <select
+                name="id_medico"
+                value={form.id_medico}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              >
+                <option value="">Sin médico directo</option>
+                {opciones.medicos.map((m) => (
+                  <option key={m.id_medico} value={m.id_medico}>
+                    {m.nombre_completo}
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
 
-            <div className="siih-row">
-              <div className="siih-field">
-                <label>Tipo de admision *</label>
-                <select
-                  value={form.tipo_admision}
-                  onChange={(e) => actualizarCampo('tipo_admision', e.target.value)}
-                  required
-                >
-                  {Object.entries(TIPO_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="siih-field">
-                <label>Medico asignado</label>
-                <select
-                  value={form.id_medico}
-                  onChange={(e) => actualizarCampo('id_medico', e.target.value)}
-                  disabled={Boolean(form.id_cita)}
-                >
-                  <option value="">Sin medico directo</option>
-                  {medicos.map((m) => (
-                    <option key={m.id_medico} value={m.id_medico}>
-                      {m.nombre_completo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="siih-field">
-              <label>Sala asignada</label>
-              <input
-                value={form.sala_asignada}
-                onChange={(e) => actualizarCampo('sala_asignada', e.target.value)}
-                placeholder="Ej. Consultorio 2, Emergencias, Sala A"
-              />
-            </div>
-
-            <div className="siih-field">
-              <label>Motivo de consulta *</label>
-              <textarea
-                rows="3"
-                value={form.motivo_consulta}
-                onChange={(e) => actualizarCampo('motivo_consulta', e.target.value)}
-                placeholder="Describe el motivo indicado por el paciente"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de admisión *</label>
+              <select
+                name="tipo_admision"
+                value={form.tipo_admision}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                 required
-              />
+              >
+                {Object.entries(TIPOS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="siih-field">
-              <label>Observaciones</label>
-              <textarea
-                rows="2"
-                value={form.observaciones}
-                onChange={(e) => actualizarCampo('observaciones', e.target.value)}
-                placeholder="Opcional"
-              />
-            </div>
-
-            <label className="siih-check">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Sala asignada</label>
               <input
-                type="checkbox"
-                checked={form.datos_verificados}
-                onChange={(e) => actualizarCampo('datos_verificados', e.target.checked)}
+                name="sala_asignada"
+                value={form.sala_asignada}
+                onChange={handleChange}
+                placeholder="Ej. Consultorio 2"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
               />
-              Datos del paciente verificados
-            </label>
+            </div>
+          </div>
 
-            <button type="submit" className="siih-button" disabled={enviando}>
-              {enviando ? 'Registrando...' : 'Registrar admision'}
-            </button>
-          </form>
-        )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {modoEdicion && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Estado</label>
+                <select
+                  name="estado"
+                  value={form.estado}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                >
+                  {Object.entries(ESTADOS).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex items-center gap-2 pt-6">
+              <input
+                id="datos_verificados"
+                type="checkbox"
+                name="datos_verificados"
+                checked={form.datos_verificados}
+                onChange={handleChange}
+                className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary/30"
+              />
+              <label htmlFor="datos_verificados" className="text-sm font-medium text-slate-700">
+                Datos del paciente verificados
+              </label>
+            </div>
+          </div>
 
-      </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Motivo de consulta *</label>
+            <textarea
+              name="motivo_consulta"
+              value={form.motivo_consulta}
+              onChange={handleChange}
+              rows="3"
+              placeholder="Describe el motivo de la consulta"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
+            <textarea
+              name="observaciones"
+              value={form.observaciones}
+              onChange={handleChange}
+              rows="2"
+              placeholder="Opcional"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={enviando}
+            className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {enviando ? 'Guardando...' : modoEdicion ? 'Actualizar admisión' : 'Registrar admisión'}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -1,4 +1,4 @@
--- sql/006_hu10_registro_signos_vitales.sql
+﻿-- sql/006_hu10_registro_signos_vitales.sql
 -- ============================================================
 -- HU-10 / RF10: Registro de signos vitales
 -- Como enfermero(a), registra presion arterial, temperatura y
@@ -31,31 +31,10 @@ END;
 $$;
 
 -- ------------------------------------------------------------
--- AJUSTE DE RANGO DE TEMPERATURA SEGUN RF10 (34-42 °C)
--- ------------------------------------------------------------
 
-DO $$
-BEGIN
-  IF EXISTS (
-    SELECT 1 FROM information_schema.constraint_column_usage ccu
-    JOIN information_schema.check_constraints cc
-      ON cc.constraint_name = ccu.constraint_name
-    WHERE ccu.table_name = 'signos_vitales'
-      AND ccu.column_name = 'temperatura'
-      AND cc.check_clause ILIKE '%30%'
-  ) THEN
-    ALTER TABLE signos_vitales DROP CONSTRAINT IF EXISTS chk_temperatura;
-
-    ALTER TABLE signos_vitales ADD CONSTRAINT chk_temperatura
-      CHECK (temperatura IS NULL OR temperatura BETWEEN 34 AND 42);
-  END IF;
-END;
-$$;
-
--- ------------------------------------------------------------
 -- VALIDACION DE RANGO Y TRAZABILIDAD DE SIGNOS VITALES
 -- Presion: formato sistolica/diastolica (mmHg).
--- Temperatura: 34..42 °C (RF10).
+
 -- Frecuencia cardiaca: 30..220 lpm.
 -- Trazabilidad HU-10 -> HU-11: la consulta debe existir y estar
 -- en estado 'pendiente' o 'confirmada' (no atendida/cancelada).
@@ -95,12 +74,6 @@ BEGIN
     END IF;
   END IF;
 
-  IF NEW.temperatura IS NOT NULL THEN
-    IF NEW.temperatura < 34 OR NEW.temperatura > 42 THEN
-      RAISE EXCEPTION 'La temperatura debe estar entre 34 y 42 °C.';
-    END IF;
-  END IF;
-
   IF NEW.frecuencia_cardiaca IS NOT NULL THEN
     IF NEW.frecuencia_cardiaca < 30 OR NEW.frecuencia_cardiaca > 220 THEN
       RAISE EXCEPTION 'La frecuencia cardiaca debe estar entre 30 y 220 lpm.';
@@ -108,9 +81,11 @@ BEGIN
   END IF;
 
   IF NEW.id_consulta IS NOT NULL THEN
-    SELECT c.estado::TEXT
+    SELECT COALESCE(ci.estado::TEXT, 'confirmada')
     INTO v_estado
     FROM consulta c
+    LEFT JOIN cita ci
+      ON ci.id_cita = c.id_cita
     WHERE c.id_consulta = NEW.id_consulta;
 
     IF v_estado IS NULL THEN
@@ -191,3 +166,4 @@ COMMENT ON TABLE signos_vitales IS
 --   (1, '120/80', 36.8, 80, 1);
 --
 -- SELECT * FROM vw_signos_vitales;
+

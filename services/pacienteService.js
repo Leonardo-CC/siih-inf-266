@@ -16,6 +16,9 @@ import {
   crearUsuario,
   crearPaciente,
   eliminarPersona,
+  listarPacientes,
+  eliminarPaciente,
+  actualizarPaciente,
 } from '../repositories/pacienteRepository.js';
 
 import { enviarNotificacion } from './notificacionService.js';
@@ -23,7 +26,7 @@ import { enviarNotificacion } from './notificacionService.js';
 const CI_REGEX = /^[0-9]{5,10}$/;
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function validarDatos({ ci, correo, contrasena, nombre, apellido }) {
+function validarDatos({ ci, correo, contrasena, nombre, apellido, contrasenaEsCI = false }) {
   const errores = {};
 
   if (!nombre || nombre.trim().length < 2)
@@ -39,7 +42,7 @@ function validarDatos({ ci, correo, contrasena, nombre, apellido }) {
   if (!correo || !CORREO_REGEX.test(correo))
     errores.correo = 'El formato del correo no es válido.';
 
-  if (!contrasena || contrasena.length < 6)
+  if (!contrasenaEsCI && (!contrasena || contrasena.length < 6))
     errores.contrasena =
       'La contraseña debe tener al menos 6 caracteres.';
 
@@ -61,13 +64,15 @@ export async function registrarPaciente(payload) {
     numero_seguro,
   } = payload || {};
 
-  // Validación
+  const contrasenaFinal = contrasena || ci;
+
   const errores = validarDatos({
     ci,
     correo,
-    contrasena,
+    contrasena: contrasenaFinal,
     nombre,
     apellido,
+    contrasenaEsCI: !contrasena,
   });
 
   if (Object.keys(errores).length > 0) {
@@ -78,7 +83,6 @@ export async function registrarPaciente(payload) {
     };
   }
 
-  // Validar duplicados
   const existentes = await buscarUsuarioPorCiOCorreo(ci, correo);
 
   if (existentes.length > 0) {
@@ -100,8 +104,7 @@ export async function registrarPaciente(payload) {
     };
   }
 
-  // Encriptar contraseña
-  const contrasenaHash = await bcrypt.hash(contrasena, 10);
+  const contrasenaHash = await bcrypt.hash(contrasenaFinal, 10);
 
   let personaId;
 
@@ -159,4 +162,33 @@ export async function registrarPaciente(payload) {
     status: 201,
     mensaje: `¡Bienvenido(a), ${nombre}! Tu registro se completó correctamente.`,
   };
+}
+
+export async function obtenerPacientes() {
+  const pacientes = await listarPacientes();
+  return { ok: true, status: 200, pacientes };
+}
+
+export async function borrarPaciente(id_paciente) {
+  try {
+    await eliminarPaciente(id_paciente);
+    return { ok: true, status: 200, mensaje: 'Paciente eliminado correctamente.' };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
+}
+
+export async function editarPaciente(payload) {
+  const { id_paciente, nombre, apellido, ci, telefono, correo, tipo_seguro, numero_seguro } = payload || {};
+
+  if (!id_paciente) {
+    return { ok: false, status: 400, errores: { general: 'ID de paciente requerido.' } };
+  }
+
+  try {
+    await actualizarPaciente(id_paciente, { nombre, apellido, ci, telefono, correo, tipo_seguro, numero_seguro });
+    return { ok: true, status: 200, mensaje: 'Paciente actualizado correctamente.' };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
 }

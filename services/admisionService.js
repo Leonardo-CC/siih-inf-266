@@ -16,9 +16,12 @@ import {
   obtenerPacientes,
   buscarPacientesPorNombre,
   crearPersonaYPaciente,
+  actualizarAdmision,
+  borrarAdmision,
 } from '../repositories/admisionRepository.js';
 
 const TIPOS_ADMISION = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const ESTADOS_ADMISION = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
 
 function toIntOrNull(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -79,11 +82,12 @@ export async function listarOpcionesAdmision() {
     medicos,
     pacientes,
     tipos_admision: TIPOS_ADMISION,
+    estados_admision: ESTADOS_ADMISION,
   };
 }
 
-export async function listarAdmisiones() {
-  const admisiones = await obtenerAdmisiones();
+export async function listarAdmisiones(filtro = {}) {
+  const admisiones = await obtenerAdmisiones(filtro);
   return { ok: true, status: 200, admisiones };
 }
 
@@ -141,6 +145,51 @@ export async function registrarAdmision(payload = {}) {
       return { ok: false, status: 409, errores: { general: 'Paciente ya tiene una admisión reciente.' } };
     }
 
+    return { ok: false, status: 500, errores: { general: err.message } };
+  }
+}
+
+export async function editarAdmision(id_consulta, payload = {}) {
+  if (!id_consulta) {
+    return { ok: false, status: 400, errores: { general: 'Falta el identificador de la admisión.' } };
+  }
+
+  if (payload.tipo_admision !== undefined && !TIPOS_ADMISION.includes(payload.tipo_admision)) {
+    return { ok: false, status: 400, errores: { tipo_admision: 'Tipo de admisión no válido.' } };
+  }
+
+  if (payload.estado !== undefined && !ESTADOS_ADMISION.includes(payload.estado)) {
+    return { ok: false, status: 400, errores: { estado: 'Estado de admisión no válido.' } };
+  }
+
+  if (payload.motivo_consulta !== undefined && !payload.motivo_consulta?.trim()) {
+    return { ok: false, status: 400, errores: { motivo_consulta: 'El motivo de consulta no puede quedar vacío.' } };
+  }
+
+  try {
+    const admision = await actualizarAdmision(id_consulta, payload);
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Admision actualizada correctamente.',
+      admision,
+    };
+  } catch (err) {
+    return { ok: false, status: 500, errores: { general: err.message } };
+  }
+}
+
+export const ESTADOS_ADMISION_DISPONIBLES = ESTADOS_ADMISION;
+
+export async function eliminarAdmision(id_consulta) {
+  try {
+    await borrarAdmision(id_consulta);
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Admision eliminada correctamente.',
+    };
+  } catch (err) {
     return { ok: false, status: 500, errores: { general: err.message } };
   }
 }
