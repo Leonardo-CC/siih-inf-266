@@ -8,7 +8,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const resultado = await listarSignosVitales();
+    const filtro = {};
+    if (req.query?.id_enfermero) filtro.id_enfermero = Number(req.query.id_enfermero);
+    const resultado = await listarSignosVitales(filtro);
     return res.status(resultado.status).json(resultado);
   } catch (err) {
     console.error('Error en /api/signos-vitales/listar:', err);

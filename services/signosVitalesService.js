@@ -1,11 +1,6 @@
 // services/signosVitalesService.js
 // ============================================================
 // CAPA DE LOGICA Y SEGURIDAD - HU-10 / RF10
-// Reglas:
-//  - Registra presion arterial, temperatura y frecuencia cardiaca.
-//  - Los signos se registran PREVIO a la atencion medica, sobre
-//    una consulta ya creada por admision (HU-11).
-//  - La consulta y el enfermero son obligatorios.
 // ============================================================
 import {
   obtenerConsultasParaSignos,
@@ -15,6 +10,8 @@ import {
   obtenerRolEnfermero,
   registrarSignosVitales,
   obtenerSignosVitales,
+  actualizarSignosVitales,
+  eliminarSignosVitales,
 } from '../repositories/signosVitalesRepository.js';
 
 function toIntOrNull(value) {
@@ -50,10 +47,6 @@ function validarSignos(payload) {
     errores.presion_arterial = 'Formato invalido. Usa sistolica/diastolica (ej. 120/80).';
   }
 
-  if (temperatura != null && (temperatura < 34 || temperatura > 42)) {
-    errores.temperatura = 'La temperatura debe estar entre 34 y 42 °C.';
-  }
-
   if (frecuenciaCardiaca != null && (frecuenciaCardiaca < 30 || frecuenciaCardiaca > 220)) {
     errores.frecuencia_cardiaca = 'La frecuencia cardiaca debe estar entre 30 y 220 lpm.';
   }
@@ -80,12 +73,12 @@ export async function listarOpcionesSignos() {
   return { ok: true, status: 200, consultas, enfermeros };
 }
 
-export async function listarSignosVitales() {
-  const signos = await obtenerSignosVitales();
+export async function listarSignosVitales(filtro = {}) {
+  const signos = await obtenerSignosVitales(filtro);
   return { ok: true, status: 200, signos };
 }
 
-export async function registrarSignos(payload = {}) {
+export async function registrarSignos(payload = {}, usuarioLogueado = null) {
   const { errores, normalizado } = validarSignos(payload);
 
   if (Object.keys(errores).length > 0) {
@@ -93,9 +86,7 @@ export async function registrarSignos(payload = {}) {
   }
 
   try {
-    // RNF01 - Control de accesos: solo usuarios con rol 'enfermero'.
-    const rol = await obtenerRolEnfermero(normalizado.id_enfermero);
-    if (rol !== 'enfermero') {
+    if (!usuarioLogueado || !['enfermero','administrativo'].includes(usuarioLogueado.rol)) {
       return {
         ok: false,
         status: 403,
@@ -105,7 +96,6 @@ export async function registrarSignos(payload = {}) {
       };
     }
 
-    // Trazabilidad HU-10 -> HU-11: la consulta debe existir y estar activa.
     const estado = await obtenerEstadoConsulta(normalizado.id_consulta);
     if (estado === null) {
       return {
@@ -131,6 +121,59 @@ export async function registrarSignos(payload = {}) {
       status: 201,
       mensaje: 'Signos vitales registrados correctamente.',
       signos,
+    };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
+}
+
+export async function editarSignos(id_signos, payload = {}, usuarioLogueado = null) {
+  const { errores, normalizado } = validarSignos(payload);
+
+  if (Object.keys(errores).length > 0) {
+    return { ok: false, status: 400, errores };
+  }
+
+  try {
+    if (!usuarioLogueado || !['enfermero','administrativo'].includes(usuarioLogueado.rol)) {
+      return {
+        ok: false,
+        status: 403,
+        errores: {
+          general: 'Acceso denegado: solo el personal de enfermeria puede editar signos vitales.',
+        },
+      };
+    }
+
+    const signos = await actualizarSignosVitales(id_signos, normalizado);
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Signos vitales actualizados correctamente.',
+      signos,
+    };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
+}
+
+export async function eliminarSignos(id_signos, usuarioLogueado = null) {
+  try {
+    if (!usuarioLogueado || !['enfermero','administrativo'].includes(usuarioLogueado.rol)) {
+      return {
+        ok: false,
+        status: 403,
+        errores: {
+          general: 'Acceso denegado: solo el personal de enfermeria puede eliminar signos vitales.',
+        },
+      };
+    }
+
+    await eliminarSignosVitales(id_signos);
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Signos vitales eliminados correctamente.',
     };
   } catch (err) {
     return { ok: false, status: 400, errores: { general: err.message } };

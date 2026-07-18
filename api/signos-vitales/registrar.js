@@ -8,7 +8,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const resultado = await registrarSignos(req.body);
+    const usuarioHeader = req.headers['x-user'];
+    const usuarioLogueado = usuarioHeader ? JSON.parse(usuarioHeader) : null;
+    const resultado = await registrarSignos(req.body, usuarioLogueado);
     return res.status(resultado.status).json(resultado);
   } catch (err) {
     console.error('Error en /api/signos-vitales/registrar:', err);

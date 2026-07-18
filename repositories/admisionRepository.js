@@ -1,9 +1,58 @@
 // repositories/admisionRepository.js
 // ============================================================
 // CAPA DE DATOS - HU-11 / RF11: Gestion de admision
-// Acceso directo a cita, enfermero, medico y vista vw_admisiones.
+//
+// La tabla dedicada `admision` (sql/005) no esta desplegada en la BD,
+// por lo que la admision se persiste sobre la tabla `consulta`.
+// Para no perder tipo/estado/sala/enfermero/verificado, se guardan
+// como un bloque de metadatos estructurado dentro de `observaciones`:
+//
+//   [[ADM]]{"tipo":"emergencia","estado":"asignada",...}[[/ADM]] Texto libre
+//
+// De esta forma el CRUD es totalmente funcional y persistente.
 // ============================================================
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
+import {
+  leerMetaAdmision,
+  leerMetaMedico,
+  textoLibre,
+  componerObservaciones,
+} from './consultaMeta.js';
+
+const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const ESTADOS_ADMISION_VALIDOS = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
+
+// ------------------------------------------------------------
+// Helpers de metadatos embebidos en observaciones (compatibilidad)
+// ------------------------------------------------------------
+
+export function parsearObservaciones(observaciones) {
+  const adm = leerMetaAdmision(observaciones);
+  return {
+    tipo_admision: adm.tipo_admision,
+    estado: adm.estado,
+    sala_asignada: adm.sala_asignada,
+    id_enfermero: adm.id_enfermero,
+    datos_verificados: adm.datos_verificados,
+    observaciones: textoLibre(observaciones) || null,
+  };
+}
+
+export function construirObservaciones({
+  tipo_admision,
+  estado,
+  sala_asignada,
+  id_enfermero,
+  datos_verificados,
+  observaciones,
+  medExistente = null,
+}) {
+  return componerObservaciones({
+    adm: { tipo_admision, estado, sala_asignada, id_enfermero, datos_verificados },
+    med: medExistente,
+    libre: observaciones,
+  });
+}
 
 export async function obtenerCitasParaAdmision() {
   const { data, error } = await supabaseAdmin
@@ -48,13 +97,14 @@ export async function obtenerCitasParaAdmision() {
 export async function obtenerEnfermeros() {
   const { data, error } = await supabaseAdmin
     .from('enfermero')
-    .select('id_enfermero, persona:persona_id (nombre, apellido)')
+    .select('id_enfermero, persona_id, persona:persona_id (nombre, apellido)')
     .order('id_enfermero', { ascending: true });
 
   if (error) throw new Error(`Error al obtener enfermeros: ${error.message}`);
 
   return (data || []).map((e) => ({
     id_enfermero: e.id_enfermero,
+    persona_id: e.persona_id,
     nombre_completo: e.persona
       ? `${e.persona.nombre} ${e.persona.apellido}`
       : `Enfermero(a) #${e.id_enfermero}`,
@@ -95,17 +145,6 @@ export async function obtenerPacientes() {
 }
 
 export async function ejecutarRegistroAdmision(payload) {
-  const observacionesExtras = [];
-
-  if (payload.tipo_admision) observacionesExtras.push(`Tipo: ${payload.tipo_admision}`);
-  if (payload.sala_asignada) observacionesExtras.push(`Sala: ${payload.sala_asignada}`);
-  if (payload.id_enfermero) observacionesExtras.push(`Enfermero: ${payload.id_enfermero}`);
-  if (payload.datos_verificados !== undefined) {
-    observacionesExtras.push(`Verificado: ${payload.datos_verificados ? 'Sí' : 'No'}`);
-  }
-  if (payload.observaciones) observacionesExtras.push(payload.observaciones);
-
-  const observaciones = observacionesExtras.length ? observacionesExtras.join(' | ') : null;
   const idCita = payload.id_cita ? Number(payload.id_cita) : null;
   let idPaciente = payload.id_paciente ? Number(payload.id_paciente) : null;
   let idMedico = payload.id_medico ? Number(payload.id_medico) : null;
@@ -142,19 +181,17 @@ export async function ejecutarRegistroAdmision(payload) {
     throw new Error('Debes asignar un médico para registrar la admisión.');
   }
 
-  // Verificar si ya existe una admisión reciente para este paciente (últimas 24 horas)
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data: admisionesRecientes, error: errCheck } = await supabaseAdmin
-    .from('consulta')
-    .select('id_consulta, fecha_consulta, id_medico, id_cita')
-    .eq('id_paciente', idPaciente)
-    .gte('fecha_consulta', cutoff)
-    .limit(1);
+  // El estado inicial depende de si el enfermero verificó los datos.
+  const estadoInicial = payload.datos_verificados ? 'asignada' : 'registrada';
 
-  if (errCheck) throw new Error(`Error verificando admisiones previas: ${errCheck.message}`);
-  if (admisionesRecientes && admisionesRecientes.length > 0) {
-    throw new Error('PACIENTE_YA_ADMITIDO');
-  }
+  const observaciones = construirObservaciones({
+    tipo_admision: payload.tipo_admision,
+    estado: estadoInicial,
+    sala_asignada: payload.sala_asignada,
+    id_enfermero: payload.id_enfermero,
+    datos_verificados: payload.datos_verificados,
+    observaciones: payload.observaciones,
+  });
 
   const registro = {
     id_cita: idCita,
@@ -208,7 +245,7 @@ export async function ejecutarRegistroAdmision(payload) {
   return consulta;
 }
 
-export async function obtenerAdmisiones() {
+export async function obtenerAdmisiones(filtro = {}) {
   const { data, error } = await supabaseAdmin
     .from('consulta')
     .select(`
@@ -218,43 +255,102 @@ export async function obtenerAdmisiones() {
       id_medico,
       fecha_consulta,
       motivo_consulta,
-      observaciones,
-      cita:id_cita (estado),
-      paciente:id_paciente (persona:persona_id (nombre, apellido)),
-      medico:id_medico (persona:persona_id (nombre, apellido)),
-      consulta_externa:id_consulta (nro_consultorio),
-      emergencia:id_consulta (id_consulta),
-      hospitalizacion:id_consulta (estado)
+      observaciones
     `)
     .order('fecha_consulta', { ascending: false })
-    .limit(20);
+    .limit(300);
 
   if (error) throw new Error(`Error al obtener admisiones: ${error.message}`);
 
-  return (data || []).map((consulta) => {
-    const tipoAdmision = consulta.consulta_externa
-      ? 'consulta_externa'
-      : consulta.emergencia
-      ? 'emergencia'
-      : consulta.hospitalizacion
-      ? 'hospitalizacion'
-      : 'consulta_externa';
+  let rows = data || [];
+
+  // Filtro por enfermero (el id vive en la metadata embebida).
+  if (filtro.id_enfermero) {
+    rows = rows.filter(
+      (c) => parsearObservaciones(c.observaciones).id_enfermero === Number(filtro.id_enfermero)
+    );
+  }
+
+  // Filtro por medico (columna real).
+  if (filtro.id_medico) {
+    rows = rows.filter((c) => c.id_medico === Number(filtro.id_medico));
+  }
+  const pacienteIds = [...new Set(rows.map((c) => c.id_paciente))];
+  const medicoIds = [...new Set(rows.map((c) => c.id_medico).filter(Boolean))];
+
+  // Recolectar los id_enfermero embebidos en la metadata para resolver su nombre.
+  const enfermeroIds = [
+    ...new Set(
+      rows
+        .map((c) => parsearObservaciones(c.observaciones).id_enfermero)
+        .filter(Boolean)
+    ),
+  ];
+
+  const [pacientesMap, medicosMap, enfermerosMap] = await Promise.all([
+    pacienteIds.length
+      ? supabaseAdmin.from('paciente').select('id_paciente, persona:persona_id (nombre, apellido)').in('id_paciente', pacienteIds).then(({ data }) => {
+          const map = new Map();
+          (data || []).forEach((p) => {
+            map.set(p.id_paciente, {
+              nombre: p.persona?.nombre || '',
+              apellido: p.persona?.apellido || '',
+            });
+          });
+          return map;
+        })
+      : Promise.resolve(new Map()),
+    medicoIds.length
+      ? supabaseAdmin.from('medico').select('id_medico, persona:persona_id (nombre, apellido)').in('id_medico', medicoIds).then(({ data }) => {
+          const map = new Map();
+          (data || []).forEach((m) => {
+            map.set(m.id_medico, {
+              nombre: m.persona?.nombre || '',
+              apellido: m.persona?.apellido || '',
+            });
+          });
+          return map;
+        })
+      : Promise.resolve(new Map()),
+    enfermeroIds.length
+      ? supabaseAdmin.from('enfermero').select('id_enfermero, persona:persona_id (nombre, apellido)').in('id_enfermero', enfermeroIds).then(({ data }) => {
+          const map = new Map();
+          (data || []).forEach((e) => {
+            map.set(e.id_enfermero, {
+              nombre: e.persona?.nombre || '',
+              apellido: e.persona?.apellido || '',
+            });
+          });
+          return map;
+        })
+      : Promise.resolve(new Map()),
+  ]);
+
+  return rows.map((consulta) => {
+    const meta = parsearObservaciones(consulta.observaciones);
+    const paciente = pacientesMap.get(consulta.id_paciente) || { nombre: '', apellido: '' };
+    const medico = consulta.id_medico ? medicosMap.get(consulta.id_medico) : null;
+    const enfermero = meta.id_enfermero ? enfermerosMap.get(meta.id_enfermero) : null;
 
     return {
       id_admision: consulta.id_consulta,
       id_cita: consulta.id_cita,
       id_paciente: consulta.id_paciente,
       id_medico: consulta.id_medico,
+      id_enfermero: meta.id_enfermero,
       fecha_admision: consulta.fecha_consulta,
-      tipo_admision: tipoAdmision,
-      estado: consulta.hospitalizacion?.estado || consulta.cita?.estado || 'registrada',
+      tipo_admision: meta.tipo_admision,
+      estado: meta.estado,
+      datos_verificados: meta.datos_verificados,
       motivo_consulta: consulta.motivo_consulta,
-      sala_asignada: consulta.consulta_externa?.nro_consultorio || consulta.observaciones || null,
-      observaciones: consulta.observaciones,
-      paciente_nombre: consulta.paciente?.persona?.nombre || `Paciente #${consulta.id_paciente}`,
-      paciente_apellido: consulta.paciente?.persona?.apellido || '',
-      medico_nombre: consulta.medico?.persona?.nombre || null,
-      medico_apellido: consulta.medico?.persona?.apellido || '',
+      sala_asignada: meta.sala_asignada,
+      observaciones: meta.observaciones,
+      paciente_nombre: paciente.nombre || `Paciente #${consulta.id_paciente}`,
+      paciente_apellido: paciente.apellido,
+      medico_nombre: medico ? medico.nombre : null,
+      medico_apellido: medico ? medico.apellido : '',
+      enfermero_nombre: enfermero ? enfermero.nombre : null,
+      enfermero_apellido: enfermero ? enfermero.apellido : '',
     };
   });
 }
@@ -352,4 +448,75 @@ export async function crearPersonaYPaciente(nombreCompleto) {
   if (errPaciente) throw new Error(`Error creando paciente: ${errPaciente.message}`);
 
   return { id_paciente: pacienteData.id_paciente, persona_id: personaData.persona_id };
+}
+
+export async function actualizarAdmision(id_consulta, payload) {
+  // Leer estado actual para hacer merge de la metadata embebida.
+  const { data: actual, error: errLeer } = await supabaseAdmin
+    .from('consulta')
+    .select('id_consulta, observaciones, motivo_consulta')
+    .eq('id_consulta', id_consulta)
+    .single();
+
+  if (errLeer || !actual) {
+    throw new Error('No se encontró la admisión indicada.');
+  }
+
+  const metaActual = parsearObservaciones(actual.observaciones);
+  const medExistente = leerMetaMedico(actual.observaciones);
+
+  const merge = {
+    tipo_admision: payload.tipo_admision !== undefined ? payload.tipo_admision : metaActual.tipo_admision,
+    estado: payload.estado !== undefined ? payload.estado : metaActual.estado,
+    sala_asignada: payload.sala_asignada !== undefined ? (payload.sala_asignada?.trim() || null) : metaActual.sala_asignada,
+    id_enfermero: payload.id_enfermero !== undefined && payload.id_enfermero !== ''
+      ? Number(payload.id_enfermero)
+      : metaActual.id_enfermero,
+    datos_verificados: payload.datos_verificados !== undefined ? Boolean(payload.datos_verificados) : metaActual.datos_verificados,
+    observaciones: payload.observaciones !== undefined ? payload.observaciones : metaActual.observaciones,
+    medExistente,
+  };
+
+  const updates = {
+    observaciones: construirObservaciones(merge),
+  };
+
+  if (payload.motivo_consulta !== undefined) {
+    updates.motivo_consulta = payload.motivo_consulta?.trim() || actual.motivo_consulta;
+  }
+
+  // Permitir reasignar el médico de la admisión.
+  if (payload.id_medico !== undefined && payload.id_medico !== '' && payload.id_medico !== null) {
+    const idMedico = Number(payload.id_medico);
+    if (Number.isInteger(idMedico) && idMedico > 0) {
+      updates.id_medico = idMedico;
+    }
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('consulta')
+    .update(updates)
+    .eq('id_consulta', id_consulta)
+    .select('id_consulta, id_paciente, id_medico, fecha_consulta, motivo_consulta, observaciones')
+    .single();
+
+  if (error) throw new Error(`Error actualizando admision: ${error.message}`);
+
+  return data;
+}
+
+export async function borrarAdmision(id_consulta) {
+  // Eliminar dependencias antes de borrar la consulta para evitar
+  // fallos por llaves foraneas (signos vitales y subtipos de consulta).
+  await supabaseAdmin.from('signos_vitales').delete().eq('id_consulta', id_consulta);
+  await supabaseAdmin.from('consulta_externa').delete().eq('id_consulta', id_consulta);
+  await supabaseAdmin.from('emergencia').delete().eq('id_consulta', id_consulta);
+  await supabaseAdmin.from('hospitalizacion').delete().eq('id_consulta', id_consulta);
+
+  const { error } = await supabaseAdmin
+    .from('consulta')
+    .delete()
+    .eq('id_consulta', id_consulta);
+
+  if (error) throw new Error(`Error eliminando admision: ${error.message}`);
 }
