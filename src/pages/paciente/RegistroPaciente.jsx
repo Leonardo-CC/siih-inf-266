@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // Inicializamos Supabase directamente en el componente
 // (Lo ideal a futuro es tener esto en un archivo separado, pero así funcionará perfecto ahora)
+
+console.log("URL:", import.meta.env.VITE_SUPABASE_URL);
+console.log("ANON:", import.meta.env.VITE_SUPABASE_ANON_KEY);
+
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY

@@ -13,27 +13,31 @@ import path from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const envPath = path.join(__dirname, '.env.local');
-const result = dotenv.config({ path: envPath });
+const envLocalPath = path.join(__dirname, '.env.local');
+const envPath = path.join(__dirname, '.env');
 
-if (result.error) {
-  console.warn(`⚠️ No se pudo cargar .env.local: ${result.error.message}`);
-}
+// Primero cargar .env
+dotenv.config({ path: envPath });
+
+// Después cargar .env.local si existe (sobrescribe variables)
+dotenv.config({
+  path: envLocalPath,
+  override: true,
+});
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "Cargada ✅" : "No encontrada ❌");
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('❌ ERROR: Faltan variables SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en .env.local');
-  console.error('   Asegúrate de que el archivo .env.local existe en la raíz del proyecto');
-  console.error('   con las credenciales de Supabase correctas.');
+  console.error("❌ No se cargaron las variables de Supabase.");
   process.exit(1);
 }
-
 console.log('✅ Variables de entorno cargadas correctamente');
 
 // PASO 2: Importar Express y crear la app
 import express from 'express';
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 // Middleware
 app.use(express.json());
@@ -124,6 +128,54 @@ async function setupRoutes() {
     app.get('/api/citas/agenda-medico', async (req, res) => {
       req.method = 'GET';
       return agendaMedicoHandler(req, res);
+    });
+
+    // ============================================================
+    // Cargar endpoints de /api/admisiones/
+    // ============================================================
+    const { default: opcionesAdmisionHandler } = await import('./api/admisiones/opciones.js');
+    app.get('/api/admisiones/opciones', async (req, res) => {
+      req.method = 'GET';
+      return opcionesAdmisionHandler(req, res);
+    });
+
+    const { default: registrarAdmisionHandler } = await import('./api/admisiones/registrar.js');
+    app.post('/api/admisiones/registrar', async (req, res) => {
+      req.method = 'POST';
+      return registrarAdmisionHandler(req, res);
+    });
+
+    const { default: listarAdmisionHandler } = await import('./api/admisiones/listar.js');
+    app.get('/api/admisiones/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarAdmisionHandler(req, res);
+    });
+
+    const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
+    app.get('/api/admisiones/buscar', async (req, res) => {
+      req.method = 'GET';
+      return buscarAdmisionHandler(req, res);
+    });
+
+    // ============================================================
+    // Cargar endpoints de /api/signos-vitales/  (HU-10)
+    // ============================================================
+    const { default: opcionesSignosHandler } = await import('./api/signos-vitales/opciones.js');
+    app.get('/api/signos-vitales/opciones', async (req, res) => {
+      req.method = 'GET';
+      return opcionesSignosHandler(req, res);
+    });
+
+    const { default: registrarSignosHandler } = await import('./api/signos-vitales/registrar.js');
+    app.post('/api/signos-vitales/registrar', async (req, res) => {
+      req.method = 'POST';
+      return registrarSignosHandler(req, res);
+    });
+
+    const { default: listarSignosHandler } = await import('./api/signos-vitales/listar.js');
+    app.get('/api/signos-vitales/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarSignosHandler(req, res);
     });
 
     // ============================================================
