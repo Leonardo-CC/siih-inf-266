@@ -54,5 +54,46 @@ farmacia@prueba.com
 123456
 
 
+## Issue Nro 09: 
+Instalar la dependencia: npm install pdf-lib
+ejecutar en terminal: npm install --global yarn
+no olvidar ejecutar npm run server primero
+ejecutar en terminal: vercel dev
 
+**Como** médico, **quiero** generar un resumen exportable de la consulta
+**para** entregarlo al paciente o guardarlo como archivo.
 
+- **Issue:** [#12](https://github.com/Ayca19/SIIH-INF-266/issues/12)
+- **Depende de:** HU-06 (Registrar historia clínica)
+- **Criterio de aceptación:** Genera y exporta automáticamente un PDF con
+  el resumen formal de diagnóstico y tratamiento.
+
+### Flujo
+
+1. El médico abre una consulta ya atendida desde **Mis Consultas** →
+   botón **Editar**.
+2. Si la consulta tiene diagnóstico guardado, se habilita el botón
+   **📄 Descargar reporte PDF**.
+3. El frontend pide `GET /api/medico/reporte-consulta?id_consulta=X&id_medico=Y`.
+4. El backend valida (en este orden): que la consulta exista, que
+   pertenezca al médico que la solicita, y que tenga diagnóstico
+   registrado (si no, responde `409` pidiendo completar HU-06 primero).
+5. Se arma el PDF con `pdf-lib` (sin fuentes externas, compatible con
+   funciones serverless) y se devuelve como archivo adjunto
+   (`application/pdf`).
+
+### Arquitectura (3 capas)
+
+| Capa | Archivo |
+|---|---|
+| Presentación | `src/pages/medico/GestionConsultasMedico.jsx` (botón + descarga), `src/styles/reporteConsulta.css` |
+| Lógica y Seguridad | `api/medico/reporte-consulta.js` (endpoint), `services/reporteConsultaService.js` (validaciones + reglas de negocio), `services/reporteConsultaPdf.js` (armado del PDF) |
+| Datos | `repositories/medicoRepository.js` → `obtenerConsultaParaReporte()`, `repositories/pacienteRepository.js` → `obtenerDetallePaciente()` |
+
+### Notas técnicas
+
+- El diagnóstico/tratamiento/receta no viven en columnas propias de
+  `consulta`; se decodifican desde `observaciones` (bloque `[[MED]]`)
+  vía `repositories/consultaMeta.js`.
+- Dependencia nueva: `pdf-lib` (`npm install pdf-lib`).
+- Requiere `vercel dev` para probarse en local (Vite solo no ejecuta `/api`).

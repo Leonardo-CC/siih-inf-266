@@ -52,10 +52,10 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro }) {
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, tipo_seguro: tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
     .select('id_paciente')
     .single();
 
@@ -70,13 +70,59 @@ export async function eliminarPersona(persona_id) {
   await supabaseAdmin.from('persona').delete().eq('persona_id', persona_id);
 }
 
+// Detalle de un solo paciente (nombre, CI, fecha_nac, seguro), usado
+// por el reporte PDF de consulta (HU-09) para armar el encabezado.
+export async function obtenerDetallePaciente(id_paciente) {
+  const { data: p, error } = await supabaseAdmin
+    .from('paciente')
+    .select(`
+      id_paciente,
+      persona_id,
+      id_tipo_seguro,
+      numero_seguro,
+      persona:persona_id (
+        nombre,
+        apellido,
+        telefono,
+        sexo,
+        fecha_nac
+      )
+    `)
+    .eq('id_paciente', id_paciente)
+    .maybeSingle();
+
+  if (error) throw new Error(`Error al obtener el paciente: ${error.message}`);
+  if (!p) return null;
+
+  const { data: usuario, error: errorUsuario } = await supabaseAdmin
+    .from('usuario')
+    .select('ci, correo')
+    .eq('persona_id', p.persona_id)
+    .maybeSingle();
+
+  if (errorUsuario) throw new Error(`Error al obtener el usuario del paciente: ${errorUsuario.message}`);
+
+  return {
+    id_paciente: p.id_paciente,
+    nombre: p.persona?.nombre || '',
+    apellido: p.persona?.apellido || '',
+    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
+    ci: usuario?.ci || '',
+    fecha_nac: p.persona?.fecha_nac || '',
+    telefono: p.persona?.telefono || '',
+    sexo: p.persona?.sexo || '',
+  id_tipo_seguro: p.id_tipo_seguro || '',
+    numero_seguro: p.numero_seguro || '',
+  };
+}
+
 export async function listarPacientes() {
   const { data, error } = await supabaseAdmin
     .from('paciente')
     .select(`
       id_paciente,
       persona_id,
-      tipo_seguro,
+      id_tipo_seguro,
       numero_seguro,
       persona:persona_id (
         nombre,
@@ -100,7 +146,7 @@ export async function listarPacientes() {
     telefono: p.persona?.telefono || '',
     sexo: p.persona?.sexo || '',
     fecha_nac: p.persona?.fecha_nac || '',
-    tipo_seguro: p.tipo_seguro || '',
+    id_tipo_seguro: p.id_tipo_seguro || '',
     numero_seguro: p.numero_seguro || '',
   }));
 
@@ -229,7 +275,7 @@ export async function actualizarPaciente(id_paciente, datos) {
   }
 
   const updatesPaciente = {};
-  if (datos.tipo_seguro !== undefined) updatesPaciente.tipo_seguro = datos.tipo_seguro || null;
+  if (datos.id_tipo_seguro !== undefined) updatesPaciente.id_tipo_seguro = datos.id_tipo_seguro || null;
   if (datos.numero_seguro !== undefined) updatesPaciente.numero_seguro = datos.numero_seguro || null;
 
   if (Object.keys(updatesPaciente).length > 0) {
