@@ -130,6 +130,8 @@ async function setupRoutes() {
       return listarAdmisionHandler(req, res);
     });
 
+    
+
     const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
     app.get('/api/admisiones/buscar', async (req, res) => {
       req.method = 'GET';
@@ -466,6 +468,14 @@ async function setupRoutes() {
       req.method = 'GET';
       return farmaciaStatsHandler(req, res);
     });
+    
+    // Reporte de consulta en PDF
+    const { default: reporteConsultaHandler } = await import('./api/medico/reporte-consulta.js');
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
+      req.method = 'GET';
+      return reporteConsultaHandler(req, res);
+    });
+
 
     // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
     const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
@@ -511,3 +521,5 @@ app.listen(PORT, () => {
   console.log(`-> Frontend conecta a http://localhost:5173`);
   console.log(`-> Endpoints disponibles en http://localhost:${PORT}/api/`);
 });
+
+

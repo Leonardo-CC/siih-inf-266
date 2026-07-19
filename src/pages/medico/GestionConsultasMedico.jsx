@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
+import '../../styles/reporteConsulta.css';
 import { IconoEdit, IconoPlus, IconoTrash, IconoDocumentText } from '../../components/Iconos.jsx';
 
 const ESTADOS = {
@@ -59,6 +60,7 @@ export default function GestionConsultasMedico() {
   const [medicamentos, setMedicamentos] = useState([]);
   const [cargandoMedicamentos, setCargandoMedicamentos] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [descargando, setDescargando] = useState(false);
   const [errores, setErrores] = useState({});
   const [mensaje, setMensaje] = useState(null);
   const [errorGeneral, setErrorGeneral] = useState(null);
@@ -354,6 +356,39 @@ export default function GestionConsultasMedico() {
     setItemsEdicion((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // HU-09 / RF09: descarga el resumen formal de la consulta en PDF.
+  // Depende de HU-06: el servidor rechaza (409) si aún no hay diagnóstico.
+  async function handleDescargarPdf() {
+    setDescargando(true);
+    setErrorGeneral(null);
+    setMensaje(null);
+    try {
+      const res = await fetch(
+        `/api/medico/reporte-consulta?id_consulta=${form.id_consulta}&id_medico=${usuario.id_medico}`
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(
+          data?.errores?.general || data?.mensaje || 'No se pudo generar el reporte.'
+        );
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte_consulta_${form.id_consulta}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setErrorGeneral(err.message);
+    } finally {
+      setDescargando(false);
+    }
+  }
   const consultasFiltradas = consultas.filter((c) => {
     const texto = filtroTexto.trim().toLowerCase();
     const coincideTexto =
@@ -878,6 +913,24 @@ export default function GestionConsultasMedico() {
             {editandoReceta ? 'Guardando...' : 'Guardar cambios de receta'}
           </button>
         </form>
+
+        {/* HU-09: exportar el resumen formal en PDF (requiere diagnóstico ya guardado) */}
+        <button
+          type="button"
+          onClick={handleDescargarPdf}
+          disabled={descargando || !form.diagnostico}
+          title={!form.diagnostico ? 'Registra y guarda un diagnóstico antes de exportar el PDF' : ''}
+          className="w-full mt-3 border border-primary text-primary hover:bg-primary hover:text-white font-semibold py-3 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-primary"
+        >
+          {descargando ? (
+            <>
+              <span className="btn-pdf-spinner" />
+              Generando PDF...
+            </>
+          ) : (
+            '📄 Descargar reporte PDF'
+          )}
+        </button>
       </Modal>
     </div>
   );
