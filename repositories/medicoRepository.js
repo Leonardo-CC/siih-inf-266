@@ -41,11 +41,27 @@ async function mapaPacientes(ids) {
 }
 
 // -------- Listar consultas/atenciones del medico --------
-export async function obtenerConsultasMedico(id_medico, { limite = 200 } = {}) {
+// -------- Listar consultas/atenciones del medico --------
+export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } = {}) {
+  // 1. Obtenemos el texto YYYY-MM-DD. Si no envían fecha, calculamos la de hoy local.
+  let fechaFiltro = fecha;
+  if (!fechaFiltro) {
+    const hoy = new Date();
+    fechaFiltro = hoy.getFullYear() + '-' + 
+                  String(hoy.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(hoy.getDate()).padStart(2, '0');
+  }
+
+  // 2. Armamos el inicio y fin como TEXTO LITERAL, para que JavaScript no nos cambie la zona horaria
+  const inicioFiltro = `${fechaFiltro}T00:00:00`;
+  const finFiltro = `${fechaFiltro}T23:59:59`;
+
   const { data, error } = await supabaseAdmin
     .from('consulta')
     .select('id_consulta, id_cita, id_paciente, id_medico, fecha_consulta, motivo_consulta, observaciones')
     .eq('id_medico', id_medico)
+    .gte('fecha_consulta', inicioFiltro) // Ejemplo: "2026-07-18T00:00:00"
+    .lte('fecha_consulta', finFiltro)    // Ejemplo: "2026-07-18T23:59:59"
     .order('fecha_consulta', { ascending: false })
     .limit(limite);
 
@@ -67,7 +83,7 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200 } = {}) {
       motivo_consulta: c.motivo_consulta,
       tipo_admision: adm.tipo_admision,
       sala_asignada: adm.sala_asignada,
-      estado_atencion: med.estado_atencion,
+      estado_atencion: med.estado_atencion || 'pendiente',
       diagnostico: med.diagnostico,
       tratamiento: med.tratamiento,
       receta: med.receta,

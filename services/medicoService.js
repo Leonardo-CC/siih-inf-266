@@ -23,9 +23,9 @@ function claveFecha(fechaISO) {
   return new Date(fechaISO).toISOString().slice(0, 10);
 }
 
-export async function listarConsultasMedico(id_medico) {
+export async function listarConsultasMedico(id_medico, opciones = {}) {
   if (!id_medico) return { ok: false, status: 400, mensaje: 'Falta el identificador del médico.' };
-  const consultas = await obtenerConsultasMedico(id_medico);
+  const consultas = await obtenerConsultasMedico(id_medico, opciones);
   return { ok: true, status: 200, consultas, estados_atencion: ESTADOS_ATENCION };
 }
 
