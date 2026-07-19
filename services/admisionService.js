@@ -19,6 +19,7 @@ import {
   actualizarAdmision,
   borrarAdmision,
 } from '../repositories/admisionRepository.js';
+import { traducirError } from '../lib/errorMessages.js';
 
 const TIPOS_ADMISION = ['consulta_externa', 'emergencia', 'hospitalizacion'];
 const ESTADOS_ADMISION = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
@@ -124,7 +125,7 @@ export async function registrarAdmision(payload = {}) {
         }
       }
     } catch (e) {
-      return { ok: false, status: 500, errores: { general: e.message } };
+      return { ok: false, status: 500, errores: { general: traducirError(e) } };
     }
   }
 
@@ -145,7 +146,7 @@ export async function registrarAdmision(payload = {}) {
       return { ok: false, status: 409, errores: { general: 'Paciente ya tiene una admisión reciente.' } };
     }
 
-    return { ok: false, status: 500, errores: { general: err.message } };
+    return { ok: false, status: 500, errores: { general: traducirError(err) } };
   }
 }
 
@@ -175,7 +176,7 @@ export async function editarAdmision(id_consulta, payload = {}) {
       admision,
     };
   } catch (err) {
-    return { ok: false, status: 500, errores: { general: err.message } };
+    return { ok: false, status: 500, errores: { general: traducirError(err) } };
   }
 }
 
@@ -190,6 +191,6 @@ export async function eliminarAdmision(id_consulta) {
       mensaje: 'Admision eliminada correctamente.',
     };
   } catch (err) {
-    return { ok: false, status: 500, errores: { general: err.message } };
+    return { ok: false, status: 500, errores: { general: traducirError(err) } };
   }
 }

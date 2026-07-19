@@ -13,7 +13,12 @@ import {
   existeCitaEnHorario,
   crearCita,
   obtenerCitasPorMedico,
+  listarTodasCitas,
+  actualizarCita,
+  eliminarCita,
+  listarPacientesParaCita,
 } from '../repositories/citaRepository.js';
+import { traducirError } from '../lib/errorMessages.js';
 
 // --- Configuración de horario de atención ---------------------------------
 // AJUSTAR AQUÍ si el hospital define otro rango u otra duración de consulta.
@@ -141,6 +146,53 @@ export async function solicitarCita({ id_paciente, id_medico, fecha_hora, motivo
   };
 }
 
+// --- ADMIN: gestión de citas -----------------------------------------------
+
+export async function adminListarCitas() {
+  const citas = await listarTodasCitas();
+  return { ok: true, status: 200, citas };
+}
+
+export async function adminActualizarCita(id_cita, datos) {
+  if (!id_cita) {
+    return { ok: false, status: 400, mensaje: 'ID de cita requerido.' };
+  }
+  try {
+    await actualizarCita(id_cita, datos);
+    return { ok: true, status: 200, mensaje: 'Cita actualizada correctamente.' };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
+  }
+}
+
+export async function adminEliminarCita(id_cita) {
+  if (!id_cita) {
+    return { ok: false, status: 400, mensaje: 'ID de cita requerido.' };
+  }
+  await eliminarCita(id_cita);
+  return { ok: true, status: 200, mensaje: 'Cita eliminada correctamente.' };
+}
+
+export async function adminObtenerPacientesCita() {
+  const pacientes = await listarPacientesParaCita();
+  return { ok: true, status: 200, pacientes };
+}
+
+export async function adminObtenerEspecialidadesCita() {
+  const especialidades = await obtenerEspecialidades();
+  return { ok: true, status: 200, especialidades };
+}
+
+export async function adminObtenerMedicosCita(especialidad) {
+  if (!especialidad) {
+    return { ok: false, status: 400, mensaje: 'Debes indicar una especialidad.' };
+  }
+  const medicos = await obtenerMedicosPorEspecialidad(especialidad);
+  return { ok: true, status: 200, medicos };
+}
+
+// --- AGENDA DEL MÉDICO ----------------------------------------------------
+
 // Obtiene la agenda del médico para un rango de fechas.
 // Permite ver en tiempo real el cronograma de citas.
 export async function obtenerAgendaMedico({ id_medico, fecha, filtroEspecialidad }) {
@@ -193,4 +245,3 @@ export async function obtenerAgendaMedico({ id_medico, fecha, filtroEspecialidad
     };
   }
 }
-

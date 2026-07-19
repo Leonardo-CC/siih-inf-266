@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS usuario (
   correo        VARCHAR(100) UNIQUE NOT NULL,
   "contraseña"  VARCHAR(255) NOT NULL,
   rol           VARCHAR(20) NOT NULL CHECK (
-                  rol IN ('paciente', 'medico', 'enfermero', 'farmaceutico', 'administrativo', 'direccion')
+                  rol IN ('paciente', 'medico', 'enfermero', 'farmaceutico', 'administrativo')
                 ),
   estado        VARCHAR(10) NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo'))
 );

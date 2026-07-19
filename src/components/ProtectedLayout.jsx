@@ -15,6 +15,12 @@ const navPorRol = {
     { to: '/enfermeria/signos-vitales', label: 'Signos vitales', icono: '❤️' },
     { to: '/enfermeria/pacientes', label: 'Pacientes', icono: '👥' },
   ],
+  tecnico_laboratorio: [
+    { to: '/dashboard', label: 'Dashboard', icono: '📊' },
+    { to: '/laboratorio/analisis', label: 'Análisis', icono: '🧪' },
+    { to: '/laboratorio/pacientes', label: 'Pacientes', icono: '👥' },
+    { to: '/laboratorio/perfil', label: 'Mi perfil', icono: '⚙️' },
+  ],
   medico: [
     { to: '/dashboard', label: 'Dashboard', icono: '📊' },
     { to: '/medico/consultas', label: 'Mis consultas', icono: '🩺' },
@@ -25,11 +31,12 @@ const navPorRol = {
   ],
   administrativo: [
     { to: '/dashboard', label: 'Dashboard', icono: '📊' },
-    { to: '/paciente/registro', label: 'Registrar paciente', icono: '👤' },
-    { to: '/enfermeria/admisiones', label: 'Admisiones', icono: '📋' },
-  ],
-  direccion: [
-    { to: '/dashboard', label: 'Dashboard', icono: '📊' },
+    { to: '/admin/usuarios', label: 'Usuarios', icono: '👥' },
+    { to: '/admin/pacientes', label: 'Pacientes', icono: '🏥' },
+    { to: '/admin/citas', label: 'Citas', icono: '📅' },
+    { to: '/admin/admisiones', label: 'Admisiones', icono: '📋' },
+    { to: '/admin/signos-vitales', label: 'Signos vitales', icono: '❤️' },
+    { to: '/admin/configuracion', label: 'Configuración', icono: '⚙️' },
   ],
 };
 

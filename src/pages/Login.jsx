@@ -44,7 +44,7 @@ export default function Login() {
           <span className="text-4xl font-bold tracking-tight mb-4">SIIH</span>
           <h1 className="text-3xl font-bold mb-4 leading-tight">Sistema Integrado de Informacion Hospitalaria</h1>
           <p className="text-blue-100 leading-relaxed">
-            Acceso por roles para paciente, enfermeria, medico, farmacia, administracion y direccion.
+            Acceso por roles para paciente, enfermeria, medico, farmacia, administracion y laboratorio.
           </p>
         </div>
 

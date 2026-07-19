@@ -14,6 +14,17 @@ import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
 import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
 import MiPerfil from './pages/paciente/MiPerfil.jsx';
 import MisCitas from './pages/paciente/MisCitas.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+import AdminUsuarios from './pages/admin/AdminUsuarios.jsx';
+import AdminPacientes from './pages/admin/AdminPacientes.jsx';
+import AdminCitas from './pages/admin/AdminCitas.jsx';
+import AdminAdmisiones from './pages/admin/AdminAdmisiones.jsx';
+import AdminSignosVitales from './pages/admin/AdminSignosVitales.jsx';
+import AdminConfiguracion from './pages/admin/AdminConfiguracion.jsx';
+import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioDashboard.jsx';
+import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
+import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
+import MiPerfilTecnico from './pages/laboratorio/MiPerfilTecnico.jsx';
 
 function App() {
   return (
@@ -72,6 +83,24 @@ function App() {
             }
           />
           <Route
+            path="/laboratorio/analisis"
+            element={
+              <ProtectedRoute ruta="/laboratorio/analisis" element={<GestionAnalisisLaboratorio />} />
+            }
+          />
+          <Route
+            path="/laboratorio/pacientes"
+            element={
+              <ProtectedRoute ruta="/laboratorio/pacientes" element={<PacientesLaboratorio />} />
+            }
+          />
+          <Route
+            path="/laboratorio/perfil"
+            element={
+              <ProtectedRoute ruta="/laboratorio/perfil" element={<MiPerfilTecnico />} />
+            }
+          />
+          <Route
             path="/medico/consultas"
             element={
               <ProtectedRoute ruta="/medico/consultas" element={<GestionConsultasMedico />} />
@@ -81,6 +110,48 @@ function App() {
             path="/medico/signos"
             element={
               <ProtectedRoute ruta="/medico/signos" element={<SignosVitalesMedico />} />
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute ruta="/admin" element={<AdminDashboard />} />
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <ProtectedRoute ruta="/admin/usuarios" element={<AdminUsuarios />} />
+            }
+          />
+          <Route
+            path="/admin/pacientes"
+            element={
+              <ProtectedRoute ruta="/admin/pacientes" element={<AdminPacientes />} />
+            }
+          />
+          <Route
+            path="/admin/citas"
+            element={
+              <ProtectedRoute ruta="/admin/citas" element={<AdminCitas />} />
+            }
+          />
+          <Route
+            path="/admin/admisiones"
+            element={
+              <ProtectedRoute ruta="/admin/admisiones" element={<AdminAdmisiones />} />
+            }
+          />
+          <Route
+            path="/admin/signos-vitales"
+            element={
+              <ProtectedRoute ruta="/admin/signos-vitales" element={<AdminSignosVitales />} />
+            }
+          />
+          <Route
+            path="/admin/configuracion"
+            element={
+              <ProtectedRoute ruta="/admin/configuracion" element={<AdminConfiguracion />} />
             }
           />
         </Route>

@@ -4,6 +4,7 @@
 // Lista todas las citas propias del paciente con su estado.
 // ============================================================
 import { obtenerCitasPaciente, cancelarCitaPaciente } from '../repositories/pacienteDashboardRepository.js';
+import { traducirError } from '../lib/errorMessages.js';
 
 export async function obtenerCitasDelPaciente(id_paciente) {
   if (!id_paciente) {
@@ -31,6 +32,6 @@ export async function cancelarCita(id_paciente, id_cita) {
     await cancelarCitaPaciente(Number(id_paciente), Number(id_cita));
     return { ok: true, status: 200, mensaje: 'Cita cancelada correctamente.' };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
