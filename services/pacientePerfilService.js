@@ -41,7 +41,7 @@ export async function actualizarPerfilPaciente(id_paciente, payload = {}) {
   // ---- Campos editables ----
   const correo = (payload.correo || '').trim();
   const telefono = (payload.telefono || '').trim();
-  const tipo_seguro = payload.tipo_seguro ?? perfilActual.tipo_seguro;
+  const id_tipo_seguro = payload.id_tipo_seguro ?? perfilActual.id_tipo_seguro;
   const numero_seguro = (payload.numero_seguro || '').trim();
   const contrasenaActual = payload.contrasenaActual || '';
   const contrasenaNueva = payload.contrasenaNueva || '';
@@ -91,7 +91,7 @@ export async function actualizarPerfilPaciente(id_paciente, payload = {}) {
       ci: perfilActual.ci,
       correo,
       telefono,
-      tipo_seguro,
+      id_tipo_seguro,
       numero_seguro,
     });
 

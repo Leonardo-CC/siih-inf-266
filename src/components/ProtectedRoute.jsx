@@ -6,6 +6,7 @@ const rolesPermitidos = {
   '/paciente/cita': ['paciente', 'administrativo'],
   '/paciente/citas': ['paciente'],
   '/paciente/perfil': ['paciente'],
+  '/paciente/historial': ['paciente', 'medico'],
   '/enfermeria/admisiones': ['enfermero', 'administrativo', 'medico'],
   '/enfermeria/signos-vitales': ['enfermero', 'administrativo'],
   '/enfermeria/pacientes': ['enfermero', 'administrativo'],
@@ -21,7 +22,10 @@ const rolesPermitidos = {
   '/admin/admisiones': ['administrativo'],
   '/admin/signos-vitales': ['administrativo'],
   '/admin/configuracion': ['administrativo'],
+  '/admin/catalogo': ['administrativo'],
+  '/admin/stock': ['administrativo'],
   '/farmacia/inventario': ['farmaceutico'],
+  '/farmacia/despachos': ['farmaceutico'],
 };
 
 export default function ProtectedRoute({ element, ruta }) {

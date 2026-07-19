@@ -161,7 +161,8 @@ export async function obtenerPerfilPaciente(id_paciente) {
     .from('paciente')
     .select(`
       id_paciente,
-      tipo_seguro,
+      id_tipo_seguro,
+      tipo_seguro:id_tipo_seguro (nombre),
       numero_seguro,
       persona:persona_id (
         persona_id,
@@ -198,7 +199,8 @@ export async function obtenerPerfilPaciente(id_paciente) {
     correo: usuario?.correo || '',
     rol: usuario?.rol || 'paciente',
     estado: usuario?.estado || 'activo',
-    tipo_seguro: data.tipo_seguro || '',
+    id_tipo_seguro: data.id_tipo_seguro || null,
+    tipo_seguro: data.tipo_seguro?.nombre || '',
     numero_seguro: data.numero_seguro || '',
   };
 }

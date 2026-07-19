@@ -5,6 +5,18 @@ import StatCard from '../components/StatCard.jsx';
 import Modal from '../components/Modal.jsx';
 import { GraficaDona, GraficaBarras } from '../components/Graficas.jsx';
 import TablaCRUD from '../components/TablaCRUD.jsx';
+import {
+  IconoCalendar,
+  IconoUser,
+  IconoClipboardDocument,
+  IconoHeart,
+  IconoUsers,
+  IconoBeaker,
+  IconoCog,
+  IconoChart,
+  IconoDocumentText,
+  IconoPill,
+} from '../components/Iconos.jsx';
 import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
 import PacienteDashboard from './paciente/PacienteDashboard.jsx';
@@ -13,28 +25,28 @@ import FarmaciaDashboard from './farmacia/FarmaciaDashboard.jsx';
 
 const accionesPorRol = {
   paciente: [
-    { to: '/paciente/cita', titulo: 'Solicitar cita medica', texto: 'Elige especialidad, medico y horario disponible.', icono: '📅', color: 'from-sky-500 to-sky-600' },
-    { to: '/paciente/perfil', titulo: 'Mi perfil', texto: 'Revisa y actualiza tus datos personales.', icono: '👤', color: 'from-violet-500 to-violet-600' },
+    { to: '/paciente/cita', titulo: 'Solicitar cita medica', texto: 'Elige especialidad, medico y horario disponible.', icono: <IconoCalendar className="w-6 h-6" />, color: 'from-sky-500 to-sky-600' },
+    { to: '/paciente/perfil', titulo: 'Mi perfil', texto: 'Revisa y actualiza tus datos personales.', icono: <IconoUser className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
   ],
   enfermero: [
-    { to: '/enfermeria/admisiones', titulo: 'Gestion de admision', texto: 'Verifica datos, motivo de consulta y asignacion.', icono: '📋', color: 'from-rose-500 to-rose-600' },
-    { to: '/enfermeria/signos-vitales', titulo: 'Signos vitales', texto: 'Registra presion, temperatura y frecuencia cardiaca.', icono: '❤️', color: 'from-emerald-500 to-emerald-600' },
-    { to: '/enfermeria/pacientes', titulo: 'Pacientes', texto: 'Busca y consulta la informacion de pacientes.', icono: '🧑‍🤝‍🧑', color: 'from-amber-500 to-amber-600' },
+    { to: '/enfermeria/admisiones', titulo: 'Gestion de admision', texto: 'Verifica datos, motivo de consulta y asignacion.', icono: <IconoClipboardDocument className="w-6 h-6" />, color: 'from-rose-500 to-rose-600' },
+    { to: '/enfermeria/signos-vitales', titulo: 'Signos vitales', texto: 'Registra presion, temperatura y frecuencia cardiaca.', icono: <IconoHeart className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
+    { to: '/enfermeria/pacientes', titulo: 'Pacientes', texto: 'Busca y consulta la informacion de pacientes.', icono: <IconoUsers className="w-6 h-6" />, color: 'from-amber-500 to-amber-600' },
   ],
   tecnico_laboratorio: [
-    { to: '/laboratorio/analisis', titulo: 'Analisis de laboratorio', texto: 'Registra y gestiona analisis clinicos.', icono: '🧪', color: 'from-blue-500 to-blue-600' },
-    { to: '/laboratorio/pacientes', titulo: 'Pacientes', texto: 'Consulta informacion de pacientes.', icono: '👥', color: 'from-emerald-500 to-emerald-600' },
-    { to: '/laboratorio/perfil', titulo: 'Mi perfil', texto: 'Actualiza tu correo y contrasena.', icono: '⚙️', color: 'from-violet-500 to-violet-600' },
+    { to: '/laboratorio/analisis', titulo: 'Analisis de laboratorio', texto: 'Registra y gestiona analisis clinicos.', icono: <IconoBeaker className="w-6 h-6" />, color: 'from-blue-500 to-blue-600' },
+    { to: '/laboratorio/pacientes', titulo: 'Pacientes', texto: 'Consulta informacion de pacientes.', icono: <IconoUsers className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
+    { to: '/laboratorio/perfil', titulo: 'Mi perfil', texto: 'Actualiza tu correo y contrasena.', icono: <IconoCog className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
   ],
   medico: [],
   administrativo: [
-    { to: '/paciente/registro', titulo: 'Registrar paciente', texto: 'Crea persona, usuario y perfil de paciente.', icono: '👤', color: 'from-sky-500 to-sky-600' },
-    { to: '/admin/usuarios', titulo: 'Gestionar usuarios', texto: 'Crea y administra las cuentas del sistema.', icono: '🧑‍💼', color: 'from-violet-500 to-violet-600' },
-    { to: '/admin/admisiones', titulo: 'Admisiones', texto: 'Consulta ingresos recientes y asignaciones.', icono: '📋', color: 'from-rose-500 to-rose-600' },
-    { to: '/admin/citas', titulo: 'Citas', texto: 'Administra las citas medicas del hospital.', icono: '📅', color: 'from-emerald-500 to-emerald-600' },
+    { to: '/paciente/registro', titulo: 'Registrar paciente', texto: 'Crea persona, usuario y perfil de paciente.', icono: <IconoUser className="w-6 h-6" />, color: 'from-sky-500 to-sky-600' },
+    { to: '/admin/usuarios', titulo: 'Gestionar usuarios', texto: 'Crea y administra las cuentas del sistema.', icono: <IconoUsers className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
+    { to: '/admin/admisiones', titulo: 'Admisiones', texto: 'Consulta ingresos recientes y asignaciones.', icono: <IconoClipboardDocument className="w-6 h-6" />, color: 'from-rose-500 to-rose-600' },
+    { to: '/admin/citas', titulo: 'Citas', texto: 'Administra las citas medicas del hospital.', icono: <IconoCalendar className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
   ],
   farmaceutico: [
-    { to: '/dashboard', titulo: 'Farmacia', texto: 'Modulo listo para conectar inventario y recetas.', icono: '💊', color: 'from-teal-500 to-teal-600' },
+    { to: '/dashboard', titulo: 'Farmacia', texto: 'Modulo listo para conectar inventario y recetas.', icono: <IconoPill className="w-6 h-6" />, color: 'from-teal-500 to-teal-600' },
   ],
 };
 
@@ -228,8 +240,8 @@ export default function Dashboard() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-500 to-slate-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
                 <div className="relative flex items-start gap-4">
-                  <div className="shrink-0 text-2xl bg-gradient-to-br from-slate-500 to-slate-600 text-white rounded-xl p-3 shadow-md group-hover:scale-110 transition-transform duration-300">
-                    👥
+                  <div className="shrink-0 bg-gradient-to-br from-slate-500 to-slate-600 text-white rounded-xl p-3 shadow-md group-hover:scale-110 transition-transform duration-300">
+                    <IconoUsers className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-800 group-hover:text-primary transition-colors">Gestionar pacientes</h3>

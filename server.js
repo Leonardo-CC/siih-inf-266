@@ -130,6 +130,8 @@ async function setupRoutes() {
       return listarAdmisionHandler(req, res);
     });
 
+    
+
     const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
     app.get('/api/admisiones/buscar', async (req, res) => {
       req.method = 'GET';
@@ -212,6 +214,12 @@ async function setupRoutes() {
       return pacienteCitasHandler(req, res);
     });
 
+    const { default: historialPacienteHandler } = await import('./api/paciente/historial.js');
+    app.get('/api/paciente/historial', async (req, res) => {
+      req.method = 'GET';
+      return historialPacienteHandler(req, res);
+    });
+
     const { default: cancelarCitaHandler } = await import('./api/paciente/citas/cancelar.js');
     app.post('/api/paciente/citas/cancelar', async (req, res) => {
       req.method = 'POST';
@@ -279,9 +287,39 @@ async function setupRoutes() {
     });
 
     const { default: medicoReporteHandler } = await import('./api/medico/reporte-consulta.js');
-    app.get('/api/medico/reporte-consulta', (req, res) => {
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
       req.method = 'GET';
       return medicoReporteHandler(req, res);
+    });
+
+    const { default: medicoMedicamentosHandler } = await import('./api/medico/medicamentos.js');
+    app.get('/api/medico/medicamentos', async (req, res) => {
+      req.method = 'GET';
+      return medicoMedicamentosHandler(req, res);
+    });
+
+    const { default: medicoPrescripcionHandler } = await import('./api/medico/prescripcion.js');
+    app.post('/api/medico/prescripcion', async (req, res) => {
+      req.method = 'POST';
+      return medicoPrescripcionHandler(req, res);
+    });
+
+    const { default: medicoRecetasHandler } = await import('./api/medico/recetas.js');
+    app.get('/api/medico/recetas', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetasHandler(req, res);
+    });
+
+    const { default: medicoRecetaVerHandler } = await import('./api/medico/receta-ver.js');
+    app.get('/api/medico/receta-ver', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetaVerHandler(req, res);
+    });
+
+    const { default: medicoRecetaEditarHandler } = await import('./api/medico/receta-editar.js');
+    app.put('/api/medico/receta-editar', async (req, res) => {
+      req.method = 'PUT';
+      return medicoRecetaEditarHandler(req, res);
     });
 
     const { default: laboratorioDashboardHandler } = await import('./api/tecnico-laboratorio/dashboard.js');
@@ -442,6 +480,44 @@ async function setupRoutes() {
       req.method = 'GET';
       return farmaciaStatsHandler(req, res);
     });
+    
+    // Reporte de consulta en PDF
+    const { default: reporteConsultaHandler } = await import('./api/medico/reporte-consulta.js');
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
+      req.method = 'GET';
+      return reporteConsultaHandler(req, res);
+    });
+
+
+    // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
+    const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
+    app.get('/api/farmacia/stock', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaStockHandler(req, res);
+    });
+    app.put('/api/farmacia/stock', async (req, res) => {
+      req.method = 'PUT';
+      return farmaciaStockHandler(req, res);
+    });
+
+    // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
+    const { default: catalogoHandler } = await import('./api/catalogo/index.js');
+    app.get('/api/catalogo', async (req, res) => {
+      req.method = 'GET';
+      return catalogoHandler(req, res);
+    });
+    app.post('/api/catalogo', async (req, res) => {
+      req.method = 'POST';
+      return catalogoHandler(req, res);
+    });
+    app.put('/api/catalogo', async (req, res) => {
+      req.method = 'PUT';
+      return catalogoHandler(req, res);
+    });
+    app.delete('/api/catalogo', async (req, res) => {
+      req.method = 'DELETE';
+      return catalogoHandler(req, res);
+    });
 
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
@@ -457,3 +533,5 @@ app.listen(PORT, () => {
   console.log(`-> Frontend conecta a http://localhost:5173`);
   console.log(`-> Endpoints disponibles en http://localhost:${PORT}/api/`);
 });
+
+

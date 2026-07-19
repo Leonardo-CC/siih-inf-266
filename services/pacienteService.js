@@ -61,7 +61,7 @@ export async function registrarPaciente(payload) {
     ci,
     correo,
     contrasena,
-    tipo_seguro,
+    id_tipo_seguro,
     numero_seguro,
   } = payload || {};
 
@@ -131,7 +131,7 @@ export async function registrarPaciente(payload) {
     // Crear paciente
     const id_paciente = await crearPaciente({
       persona_id: personaId,
-      tipo_seguro,
+      id_tipo_seguro,
       numero_seguro,
     });
 
@@ -180,14 +180,14 @@ export async function borrarPaciente(id_paciente) {
 }
 
 export async function editarPaciente(payload) {
-  const { id_paciente, nombre, apellido, ci, telefono, correo, tipo_seguro, numero_seguro } = payload || {};
+  const { id_paciente, nombre, apellido, ci, telefono, correo, id_tipo_seguro, numero_seguro } = payload || {};
 
   if (!id_paciente) {
     return { ok: false, status: 400, errores: { general: 'ID de paciente requerido.' } };
   }
 
   try {
-    await actualizarPaciente(id_paciente, { nombre, apellido, ci, telefono, correo, tipo_seguro, numero_seguro });
+    await actualizarPaciente(id_paciente, { nombre, apellido, ci, telefono, correo, id_tipo_seguro, numero_seguro });
     return { ok: true, status: 200, mensaje: 'Paciente actualizado correctamente.' };
   } catch (err) {
     return { ok: false, status: 400, errores: { general: traducirError(err) } };

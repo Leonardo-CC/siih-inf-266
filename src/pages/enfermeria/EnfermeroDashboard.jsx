@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  IconoClipboardDocument,
+  IconoClock,
+  IconoExclamation,
+  IconoHeart,
+  IconoChart,
+  IconoUsers,
+  IconoCog,
+} from '../../components/Iconos.jsx';
 
 const ESTADO_COLORES = {
   registrada: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -47,7 +56,7 @@ function KpiCard({ titulo, valor, icono, color, sub }) {
     <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{titulo}</p>
-        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center text-lg`}>{icono}</div>
+        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center`}>{icono}</div>
       </div>
       <p className="text-3xl font-bold text-slate-800 mt-2">{valor}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -198,11 +207,11 @@ export default function EnfermeroDashboard({ usuario }) {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard titulo="Admisiones hoy" valor={kpis.admisionesHoy} icono="📋" color="bg-blue-500" />
-        <KpiCard titulo="Pendientes" valor={kpis.admisionesPendientes} icono="⏳" color="bg-amber-500" sub="Registradas / en triage" />
-        <KpiCard titulo="Sin verificar" valor={kpis.admisionesSinVerificar} icono="⚠️" color="bg-orange-500" />
-        <KpiCard titulo="Signos hoy" valor={kpis.signosHoy} icono="❤️" color="bg-rose-500" />
-        <KpiCard titulo="Total admisiones" valor={kpis.totalAdmisiones} icono="📊" color="bg-slate-700" />
+        <KpiCard titulo="Admisiones hoy" valor={kpis.admisionesHoy} icono={<IconoClipboardDocument className="w-5 h-5" />} color="bg-blue-500" />
+        <KpiCard titulo="Pendientes" valor={kpis.admisionesPendientes} icono={<IconoClock className="w-5 h-5" />} color="bg-amber-500" sub="Registradas / en triage" />
+        <KpiCard titulo="Sin verificar" valor={kpis.admisionesSinVerificar} icono={<IconoExclamation className="w-5 h-5" />} color="bg-orange-500" />
+        <KpiCard titulo="Signos hoy" valor={kpis.signosHoy} icono={<IconoHeart className="w-5 h-5" />} color="bg-rose-500" />
+        <KpiCard titulo="Total admisiones" valor={kpis.totalAdmisiones} icono={<IconoChart className="w-5 h-5" />} color="bg-slate-700" />
       </div>
 
       {/* Graficos */}
@@ -237,7 +246,10 @@ export default function EnfermeroDashboard({ usuario }) {
       {/* Alertas clinicas */}
       {alertas.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-          <h2 className="font-semibold text-red-800 mb-3 flex items-center gap-2">🚨 Signos vitales fuera de rango</h2>
+          <h2 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
+            <IconoExclamation className="w-5 h-5" />
+            Signos vitales fuera de rango
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {alertas.map((a) => (
               <div key={a.id_signos} className="bg-white rounded-lg border border-red-200 p-3">
@@ -301,20 +313,32 @@ export default function EnfermeroDashboard({ usuario }) {
 
       {/* Accesos rapidos */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link to="/enfermeria/admisiones" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-          <div className="text-3xl mb-2">📋</div>
-          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Gestión de admisión</h3>
-          <p className="text-sm text-slate-500 mt-1">Registrar, editar y dar seguimiento a admisiones.</p>
+        <Link to="/enfermeria/admisiones" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-blue-50 text-blue-600 rounded-xl p-3 group-hover:bg-blue-100 transition-colors">
+            <IconoClipboardDocument className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Gestion de admision</h3>
+            <p className="text-sm text-slate-500 mt-1">Registrar, editar y dar seguimiento a admisiones.</p>
+          </div>
         </Link>
-        <Link to="/enfermeria/signos-vitales" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-          <div className="text-3xl mb-2">❤️</div>
-          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Signos vitales</h3>
-          <p className="text-sm text-slate-500 mt-1">Registrar presión, temperatura y frecuencia cardíaca.</p>
+        <Link to="/enfermeria/signos-vitales" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-rose-50 text-rose-600 rounded-xl p-3 group-hover:bg-rose-100 transition-colors">
+            <IconoHeart className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Signos vitales</h3>
+            <p className="text-sm text-slate-500 mt-1">Registrar presion, temperatura y frecuencia cardiaca.</p>
+          </div>
         </Link>
-        <Link to="/enfermeria/pacientes" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-          <div className="text-3xl mb-2">👥</div>
-          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Pacientes</h3>
-          <p className="text-sm text-slate-500 mt-1">Consultar y administrar pacientes registrados.</p>
+        <Link to="/enfermeria/pacientes" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-amber-50 text-amber-600 rounded-xl p-3 group-hover:bg-amber-100 transition-colors">
+            <IconoUsers className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Pacientes</h3>
+            <p className="text-sm text-slate-500 mt-1">Consultar y administrar pacientes registrados.</p>
+          </div>
         </Link>
       </div>
     </div>

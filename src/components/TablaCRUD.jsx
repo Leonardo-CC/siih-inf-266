@@ -6,6 +6,9 @@ export default function TablaCRUD({
   onEliminar,
   renderAcciones,
   emptyMessage = 'Sin registros',
+  iconoEditar,
+  iconoEliminar,
+  acciones,
 }) {
   if (cargando) {
     return (
@@ -38,7 +41,7 @@ export default function TablaCRUD({
                 {col.titulo}
               </th>
             ))}
-            {tieneAcciones && (
+            {(onEditar || onEliminar || (acciones && acciones.length) || renderAcciones) && (
               <th className="text-right px-4 py-3 font-semibold text-slate-600 border-b border-slate-200">
                 Acciones
               </th>
@@ -53,24 +56,39 @@ export default function TablaCRUD({
                   {col.render ? col.render(fila[col.clave], fila) : fila[col.clave] ?? '-'}
                 </td>
               ))}
-              {tieneAcciones && (
+              {(onEditar || onEliminar || (acciones && acciones.length) || renderAcciones) && (
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  {onEditar && (
-                    <button
-                      onClick={() => onEditar(fila)}
-                      className="text-primary hover:text-primary-dark font-medium mr-3"
-                    >
-                      Editar
-                    </button>
-                  )}
-                  {renderAcciones && renderAcciones(fila)}
-                  {onEliminar && (
-                    <button
-                      onClick={() => onEliminar(fila)}
-                      className="text-red-600 hover:text-red-700 font-medium"
-                    >
-                      Eliminar
-                    </button>
+                  {renderAcciones ? renderAcciones(fila) : (
+                    <>
+                      {acciones && acciones.map((acc, i) => (
+                        <button
+                          key={i}
+                          onClick={() => acc.onClick(fila)}
+                          className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors mr-1 ${acc.className || 'text-slate-600 hover:bg-slate-100'}`}
+                          title={acc.title || 'Acción'}
+                        >
+                          {acc.icono || '•'}
+                        </button>
+                      ))}
+                      {onEditar && (
+                        <button
+                          onClick={() => onEditar(fila)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors mr-1"
+                          title="Editar"
+                        >
+                          {iconoEditar || 'Editar'}
+                        </button>
+                      )}
+                      {onEliminar && (
+                        <button
+                          onClick={() => onEliminar(fila)}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors ml-1"
+                          title="Eliminar"
+                        >
+                          {iconoEliminar || 'Eliminar'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </td>
               )}

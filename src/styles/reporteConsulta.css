@@ -1,0 +1,25 @@
+/* src/styles/reporteConsulta.css */
+/* ============================================================
+   CAPA DE PRESENTACIÓN — Estilos para el botón de exportación
+   de reporte PDF (HU-09). El resto de la vista ya usa Tailwind;
+   esto solo cubre lo que Tailwind no resuelve con utilidades
+   (la animación del spinner de carga).
+   ============================================================ */
+
+.btn-pdf-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-pdf-spin 0.6s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes btn-pdf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

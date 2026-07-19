@@ -182,3 +182,83 @@ export function IconoEye({ className }) {
     </Svg>
   );
 }
+
+export function IconoHome({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125a1.125 1.125 0 0 0 1.125 1.125H9.75v-4.875a1.125 1.125 0 0 1 1.125-1.125h2.25a1.125 1.125 0 0 1 1.125 1.125v4.875h4.125a1.125 1.125 0 0 0 1.125-1.125V9.75M8.25 21h8.25" />
+    </Svg>
+  );
+}
+
+export function IconoCalendar({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+    </Svg>
+  );
+}
+
+export function IconoClipboardDocument({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v8.25A2.25 2.25 0 0 0 6 16.5h.75m3.75 0h.375a2.25 2.25 0 0 1 2.25 2.25v.375a2.25 2.25 0 0 1-2.25 2.25h-.375m3.75 0h.375a2.25 2.25 0 0 1 2.25 2.25v.375a2.25 2.25 0 0 1-2.25 2.25h-.375m-12 3.75h.375a2.25 2.25 0 0 0 2.25-2.25v-.375a2.25 2.25 0 0 0-2.25-2.25h-.375a2.25 2.25 0 0 0-2.25 2.25v.375a2.25 2.25 0 0 0 2.25 2.25h.375m12-9h.375a2.25 2.25 0 0 1 2.25 2.25v.375a2.25 2.25 0 0 1-2.25 2.25h-.375a2.25 2.25 0 0 1-2.25-2.25v-.375A2.25 2.25 0 0 1 18 9h.375M3.75 15.75h16.5" />
+    </Svg>
+  );
+}
+
+export function IconoHeart({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+    </Svg>
+  );
+}
+
+export function IconoStethoscope({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 6.375a3.375 3.375 0 1 1 6.75 0 3.375 3.375 0 0 1-6.75 0ZM18.75 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM9 21.75a3.375 3.375 0 1 1 6.75 0 3.375 3.375 0 0 1-6.75 0ZM15.75 3.75a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM3.375 13.125a2.625 2.625 0 1 1 5.25 0 2.625 2.625 0 0 1-5.25 0Zm13.5 0a2.625 2.625 0 1 1 5.25 0 2.625 2.625 0 0 1-5.25 0Z" />
+    </Svg>
+  );
+}
+
+export function IconoPill({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 17.25 11.25V9a2.25 2.25 0 0 0-2.25-2.25H13.5m-3-3L9 1.5m6 0-3 3m0 0h3.75A2.25 2.25 0 0 1 21 6.75v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5m0-12.75L13.5 3m0 0 3 3m0-3h3.75A2.25 2.25 0 0 1 21 6.75v7.5a2.25 2.25 0 0 1-2.25 2.25H16.5m0-12.75v12.75" />
+    </Svg>
+  );
+}
+
+export function IconoBuildingHospital({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6v.75a2.25 2.25 0 0 1-2.25 2.25h-1.5A2.25 2.25 0 0 1 15 9.75V15h3.75a2.25 2.25 0 0 1 2.25 2.25v1.5a2.25 2.25 0 0 1-2.25 2.25h-1.5A2.25 2.25 0 0 1 15 21v-7.5M3 9h18M3 9v11.25a2.25 2.25 0 0 0 2.25 2.25h1.5A2.25 2.25 0 0 0 9 20.25V9" />
+    </Svg>
+  );
+}
+
+export function IconoDocumentText({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625A2.625 2.625 0 0 0 3 8.625v11.25A2.625 2.625 0 0 0 5.625 22.5h13.5A2.625 2.625 0 0 0 21.75 19.875V8.625A2.625 2.625 0 0 0 19.125 6H15m2.25 0v2.625a2.25 2.25 0 0 1-2.25 2.25H15m0 0h2.625a2.25 2.25 0 0 1 2.25 2.25v2.625m0 0v2.625" />
+    </Svg>
+  );
+}
+
+export function IconoArchiveBox({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+    </Svg>
+  );
+}
+
+export function IconoUserGroup({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+    </Svg>
+  );
+}

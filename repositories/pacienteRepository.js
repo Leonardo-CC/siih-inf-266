@@ -52,10 +52,14 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, numero_seguro, id_tipo_seguro }) {
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, tipo_seguro: tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([{
+      persona_id,
+      numero_seguro: numero_seguro || null,
+      id_tipo_seguro: id_tipo_seguro || null,
+    }])
     .select('id_paciente')
     .single();
 
@@ -70,64 +74,8 @@ export async function eliminarPersona(persona_id) {
   await supabaseAdmin.from('persona').delete().eq('persona_id', persona_id);
 }
 
-export async function listarPacientes() {
-  const { data, error } = await supabaseAdmin
-    .from('paciente')
-    .select(`
-      id_paciente,
-      persona_id,
-      tipo_seguro,
-      numero_seguro,
-      persona:persona_id (
-        nombre,
-        apellido,
-        telefono,
-        sexo,
-        fecha_nac
-      )
-    `)
-    .order('id_paciente', { ascending: false })
-    .limit(100);
-
-  if (error) throw new Error(`Error al listar pacientes: ${error.message}`);
-
-  const pacientes = (data || []).map((p) => ({
-    id_paciente: p.id_paciente,
-    persona_id: p.persona_id,
-    nombre: p.persona?.nombre || '',
-    apellido: p.persona?.apellido || '',
-    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
-    telefono: p.persona?.telefono || '',
-    sexo: p.persona?.sexo || '',
-    fecha_nac: p.persona?.fecha_nac || '',
-    tipo_seguro: p.tipo_seguro || '',
-    numero_seguro: p.numero_seguro || '',
-  }));
-
-  if (pacientes.length === 0) {
-    return pacientes;
-  }
-
-  const personaIds = pacientes.map((p) => p.persona_id);
-  const { data: usuarios, error: errorUsuarios } = await supabaseAdmin
-    .from('usuario')
-    .select('persona_id, ci, correo')
-    .in('persona_id', personaIds);
-
-  if (errorUsuarios) throw new Error(`Error al listar usuarios: ${errorUsuarios.message}`);
-
-  const usuarioMap = new Map((usuarios || []).map((u) => [u.persona_id, u]));
-
-  return pacientes.map((p) => {
-    const usuario = usuarioMap.get(p.persona_id);
-    return {
-      ...p,
-      correo: usuario?.correo || '',
-      ci: usuario?.ci || '',
-    };
-  });
-}
-
+// Detalle de un solo paciente (nombre, CI, fecha_nac, seguro), usado
+// por el reporte PDF de consulta (HU-09) para armar el encabezado.
 export async function obtenerDetallePaciente(id_paciente) {
   const { data: p, error } = await supabaseAdmin
     .from('paciente')
@@ -167,9 +115,69 @@ export async function obtenerDetallePaciente(id_paciente) {
     fecha_nac: p.persona?.fecha_nac || '',
     telefono: p.persona?.telefono || '',
     sexo: p.persona?.sexo || '',
-    id_tipo_seguro: p.id_tipo_seguro || '',
+  id_tipo_seguro: p.id_tipo_seguro || '',
     numero_seguro: p.numero_seguro || '',
   };
+}
+
+export async function listarPacientes() {
+  const { data, error } = await supabaseAdmin
+    .from('paciente')
+    .select(`
+      id_paciente,
+      persona_id,
+      id_tipo_seguro,
+      tipo_seguro:id_tipo_seguro (nombre),
+      numero_seguro,
+      persona:persona_id (
+        nombre,
+        apellido,
+        telefono,
+        sexo,
+        fecha_nac
+      )
+    `)
+    .order('id_paciente', { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(`Error al listar pacientes: ${error.message}`);
+
+  const pacientes = (data || []).map((p) => ({
+    id_paciente: p.id_paciente,
+    persona_id: p.persona_id,
+    nombre: p.persona?.nombre || '',
+    apellido: p.persona?.apellido || '',
+    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
+    telefono: p.persona?.telefono || '',
+    sexo: p.persona?.sexo || '',
+    fecha_nac: p.persona?.fecha_nac || '',
+      tipo_seguro: p.tipo_seguro?.nombre || '',
+      id_tipo_seguro: p.id_tipo_seguro || null,
+      numero_seguro: p.numero_seguro || '',
+  }));
+
+  if (pacientes.length === 0) {
+    return pacientes;
+  }
+
+  const personaIds = pacientes.map((p) => p.persona_id);
+  const { data: usuarios, error: errorUsuarios } = await supabaseAdmin
+    .from('usuario')
+    .select('persona_id, ci, correo')
+    .in('persona_id', personaIds);
+
+  if (errorUsuarios) throw new Error(`Error al listar usuarios: ${errorUsuarios.message}`);
+
+  const usuarioMap = new Map((usuarios || []).map((u) => [u.persona_id, u]));
+
+  return pacientes.map((p) => {
+    const usuario = usuarioMap.get(p.persona_id);
+    return {
+      ...p,
+      correo: usuario?.correo || '',
+      ci: usuario?.ci || '',
+    };
+  });
 }
 
 export async function eliminarPaciente(id_paciente) {
@@ -273,7 +281,7 @@ export async function actualizarPaciente(id_paciente, datos) {
   }
 
   const updatesPaciente = {};
-  if (datos.tipo_seguro !== undefined) updatesPaciente.tipo_seguro = datos.tipo_seguro || null;
+  if (datos.id_tipo_seguro !== undefined) updatesPaciente.id_tipo_seguro = datos.id_tipo_seguro || null;
   if (datos.numero_seguro !== undefined) updatesPaciente.numero_seguro = datos.numero_seguro || null;
 
   if (Object.keys(updatesPaciente).length > 0) {

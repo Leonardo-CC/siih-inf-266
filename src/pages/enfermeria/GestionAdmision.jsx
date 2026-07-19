@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
+import { IconoPlus, IconoEdit, IconoTrash } from '../../components/Iconos.jsx';
 
 const TIPOS = {
   consulta_externa: 'Consulta externa',
@@ -264,9 +265,10 @@ export default function GestionAdmision() {
           </div>
           <button
             onClick={abrirModalCrear}
-            className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
           >
-            + Nueva admisión
+            <IconoPlus className="w-4 h-4" />
+            Nueva admision
           </button>
         </div>
 
@@ -342,6 +344,8 @@ export default function GestionAdmision() {
               emptyMessage="No hay admisiones que coincidan con el filtro"
               onEditar={abrirModalEditar}
               onEliminar={handleEliminar}
+              iconoEditar={<IconoEdit className="w-4 h-4" />}
+              iconoEliminar={<IconoTrash className="w-4 h-4" />}
             />
           )}
         </div>
