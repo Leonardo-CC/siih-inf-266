@@ -431,6 +431,36 @@ async function setupRoutes() {
       return farmaciaStatsHandler(req, res);
     });
 
+    // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
+    const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
+    app.get('/api/farmacia/stock', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaStockHandler(req, res);
+    });
+    app.put('/api/farmacia/stock', async (req, res) => {
+      req.method = 'PUT';
+      return farmaciaStockHandler(req, res);
+    });
+
+    // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
+    const { default: catalogoHandler } = await import('./api/catalogo/index.js');
+    app.get('/api/catalogo', async (req, res) => {
+      req.method = 'GET';
+      return catalogoHandler(req, res);
+    });
+    app.post('/api/catalogo', async (req, res) => {
+      req.method = 'POST';
+      return catalogoHandler(req, res);
+    });
+    app.put('/api/catalogo', async (req, res) => {
+      req.method = 'PUT';
+      return catalogoHandler(req, res);
+    });
+    app.delete('/api/catalogo', async (req, res) => {
+      req.method = 'DELETE';
+      return catalogoHandler(req, res);
+    });
+
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
     console.error('X Error al cargar los endpoints:', error.message);

@@ -52,10 +52,14 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, numero_seguro, id_tipo_seguro }) {
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, tipo_seguro: tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([{
+      persona_id,
+      numero_seguro: numero_seguro || null,
+      id_tipo_seguro: id_tipo_seguro || null,
+    }])
     .select('id_paciente')
     .single();
 
@@ -76,7 +80,8 @@ export async function listarPacientes() {
     .select(`
       id_paciente,
       persona_id,
-      tipo_seguro,
+      id_tipo_seguro,
+      tipo_seguro:id_tipo_seguro (nombre),
       numero_seguro,
       persona:persona_id (
         nombre,
@@ -100,8 +105,9 @@ export async function listarPacientes() {
     telefono: p.persona?.telefono || '',
     sexo: p.persona?.sexo || '',
     fecha_nac: p.persona?.fecha_nac || '',
-    tipo_seguro: p.tipo_seguro || '',
-    numero_seguro: p.numero_seguro || '',
+      tipo_seguro: p.tipo_seguro?.nombre || '',
+      id_tipo_seguro: p.id_tipo_seguro || null,
+      numero_seguro: p.numero_seguro || '',
   }));
 
   if (pacientes.length === 0) {
@@ -229,7 +235,7 @@ export async function actualizarPaciente(id_paciente, datos) {
   }
 
   const updatesPaciente = {};
-  if (datos.tipo_seguro !== undefined) updatesPaciente.tipo_seguro = datos.tipo_seguro || null;
+  if (datos.id_tipo_seguro !== undefined) updatesPaciente.id_tipo_seguro = datos.id_tipo_seguro || null;
   if (datos.numero_seguro !== undefined) updatesPaciente.numero_seguro = datos.numero_seguro || null;
 
   if (Object.keys(updatesPaciente).length > 0) {

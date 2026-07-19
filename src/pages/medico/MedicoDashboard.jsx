@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  IconoStethoscope,
+  IconoClock,
+  IconoCheck,
+  IconoCalendar,
+  IconoUsers,
+  IconoHeart,
+  IconoExclamation,
+} from '../../components/Iconos.jsx';
 
 const ESTADO_COLORES = {
   pendiente: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -40,7 +49,7 @@ function KpiCard({ titulo, valor, icono, color, sub }) {
     <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{titulo}</p>
-        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center text-lg`}>{icono}</div>
+        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center`}>{icono}</div>
       </div>
       <p className="text-3xl font-bold text-slate-800 mt-2">{valor}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -171,11 +180,11 @@ export default function MedicoDashboard({ usuario }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard titulo="Consultas hoy" valor={kpis.consultasHoy} icono="🩺" color="bg-blue-500" />
-        <KpiCard titulo="Por atender" valor={kpis.pendientes} icono="⏳" color="bg-amber-500" sub="Pendientes / en atención" />
-        <KpiCard titulo="Atendidas" valor={kpis.atendidas} icono="✅" color="bg-green-600" />
-        <KpiCard titulo="Citas pendientes" valor={kpis.citasPendientes} icono="📅" color="bg-indigo-500" />
-        <KpiCard titulo="Mis pacientes" valor={kpis.totalPacientes} icono="👥" color="bg-slate-700" />
+        <KpiCard titulo="Consultas hoy" valor={kpis.consultasHoy} icono={<IconoStethoscope className="w-5 h-5" />} color="bg-blue-500" />
+        <KpiCard titulo="Por atender" valor={kpis.pendientes} icono={<IconoClock className="w-5 h-5" />} color="bg-amber-500" sub="Pendientes / en atención" />
+        <KpiCard titulo="Atendidas" valor={kpis.atendidas} icono={<IconoCheck className="w-5 h-5" />} color="bg-green-600" />
+        <KpiCard titulo="Citas pendientes" valor={kpis.citasPendientes} icono={<IconoCalendar className="w-5 h-5" />} color="bg-indigo-500" />
+        <KpiCard titulo="Mis pacientes" valor={kpis.totalPacientes} icono={<IconoUsers className="w-5 h-5" />} color="bg-slate-700" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -191,7 +200,10 @@ export default function MedicoDashboard({ usuario }) {
 
       {alertas.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-          <h2 className="font-semibold text-red-800 mb-3 flex items-center gap-2">🚨 Signos vitales de riesgo en mis pacientes</h2>
+          <h2 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
+            <IconoExclamation className="w-5 h-5" />
+            Signos vitales de riesgo en mis pacientes
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {alertas.map((a) => (
               <div key={a.id_signos} className="bg-white rounded-lg border border-red-200 p-3">
@@ -248,15 +260,23 @@ export default function MedicoDashboard({ usuario }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link to="/medico/consultas" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-          <div className="text-3xl mb-2">🩺</div>
-          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mis consultas</h3>
-          <p className="text-sm text-slate-500 mt-1">Registrar diagnóstico, tratamiento y estado de atención.</p>
+        <Link to="/medico/consultas" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-blue-50 text-blue-600 rounded-xl p-3 group-hover:bg-blue-100 transition-colors">
+            <IconoStethoscope className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mis consultas</h3>
+            <p className="text-sm text-slate-500 mt-1">Registrar diagnostico, tratamiento y estado de atencion.</p>
+          </div>
         </Link>
-        <Link to="/medico/signos" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-          <div className="text-3xl mb-2">❤️</div>
-          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Signos vitales</h3>
-          <p className="text-sm text-slate-500 mt-1">Consultar los signos vitales de mis pacientes.</p>
+        <Link to="/medico/signos" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-rose-50 text-rose-600 rounded-xl p-3 group-hover:bg-rose-100 transition-colors">
+            <IconoHeart className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Signos vitales</h3>
+            <p className="text-sm text-slate-500 mt-1">Consultar los signos vitales de mis pacientes.</p>
+          </div>
         </Link>
       </div>
     </div>

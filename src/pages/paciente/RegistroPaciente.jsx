@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const initialForm = {
   nombre: '',
@@ -9,16 +9,24 @@ const initialForm = {
   ci: '',
   correo: '',
   contrasena: '',
-  tipo_seguro: '',
+  id_tipo_seguro: '',
   numero_seguro: '',
 };
 
 export default function RegistroPaciente() {
   const [form, setForm] = useState(initialForm);
+  const [tiposSeguro, setTiposSeguro] = useState([]);
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [errorGeneral, setErrorGeneral] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/catalogo?entidad=tipo_seguro')
+      .then((r) => r.json())
+      .then((json) => setTiposSeguro(json.tipos_seguro || []))
+      .catch(() => setTiposSeguro([]));
+  }, []);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -181,15 +189,17 @@ export default function RegistroPaciente() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de seguro</label>
                 <select
-                  name="tipo_seguro"
-                  value={form.tipo_seguro}
+                  name="id_tipo_seguro"
+                  value={form.id_tipo_seguro}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
                 >
                   <option value="">Ninguno</option>
-                  <option value="Universitario">Universitario</option>
-                  <option value="SUS">SUS</option>
-                  <option value="Privado">Privado</option>
+                  {tiposSeguro.map((ts) => (
+                    <option key={ts.id_tipo_seguro} value={ts.id_tipo_seguro}>
+                      {ts.nombre}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
