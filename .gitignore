@@ -10,6 +10,9 @@ dist-ssr/
 .env.local
 .env.*.local
 
+# generarHash.js (genera contraseñas hash para pruebas)
+generarHash.js
+
 # Vercel CLI (se genera con `vercel link`)
 .vercel/
 

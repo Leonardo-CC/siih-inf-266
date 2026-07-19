@@ -22,6 +22,13 @@ function formatearFecha(fecha) {
   return new Date(fecha).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function obtenerFechaHoy() {
+  const hoy = new Date();
+  return hoy.getFullYear() + '-' + 
+         String(hoy.getMonth() + 1).padStart(2, '0') + '-' + 
+         String(hoy.getDate()).padStart(2, '0');
+}
+
 const estadoInicial = {
   id_consulta: null,
   paciente: '',
@@ -45,6 +52,7 @@ export default function GestionConsultasMedico() {
   const [errorGeneral, setErrorGeneral] = useState(null);
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroFecha, setFiltroFecha] = useState(obtenerFechaHoy());
 
   async function cargar() {
     setCargando(true);
@@ -55,7 +63,7 @@ export default function GestionConsultasMedico() {
         setCargando(false);
         return;
       }
-      const res = await fetch(`/api/medico/consultas?id_medico=${usuario.id_medico}`);
+      const res = await fetch(`/api/medico/consultas?id_medico=${usuario.id_medico}&fecha=${filtroFecha}`);
       const data = await res.json();
       if (data.ok) setConsultas(data.consultas || []);
       else setErrorGeneral(data.mensaje || 'No se pudieron cargar las consultas.');
@@ -68,7 +76,7 @@ export default function GestionConsultasMedico() {
 
   useEffect(() => {
     cargar();
-  }, []);
+  }, [filtroFecha]);
 
   function abrirModalAtender(consulta) {
     setForm({
@@ -148,18 +156,33 @@ export default function GestionConsultasMedico() {
             <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorGeneral}</div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <div className="flex items-center gap-2">
+              <label htmlFor="filtroFecha" className="text-sm font-semibold text-slate-700 whitespace-nowrap">
+                Fecha:
+              </label>
+              <input
+                type="date"
+                id="filtroFecha"
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value)}
+                className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition bg-white"
+              />
+            </div>
+            
+            <div className="hidden sm:block w-px bg-slate-300 mx-2"></div>
+
             <input
               type="text"
               value={filtroTexto}
               onChange={(e) => setFiltroTexto(e.target.value)}
               placeholder="Buscar por paciente, motivo o diagnóstico..."
-              className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             />
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              className="px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition bg-white"
             >
               <option value="">Todos los estados</option>
               {Object.entries(ESTADOS).map(([v, l]) => (
@@ -192,7 +215,11 @@ export default function GestionConsultasMedico() {
               ]}
               datos={consultasFiltradas}
               cargando={cargando}
-              emptyMessage="No tienes consultas que coincidan con el filtro"
+              emptyMessage={
+                filtroFecha === obtenerFechaHoy() 
+                  ? "No tienes consultas agendadas para el día de hoy."
+                  : `No hay consultas registradas para la fecha seleccionada.`
+              }
               onEditar={abrirModalAtender}
             />
           )}
