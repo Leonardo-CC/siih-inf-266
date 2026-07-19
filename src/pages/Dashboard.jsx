@@ -9,6 +9,7 @@ import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
 import PacienteDashboard from './paciente/PacienteDashboard.jsx';
 import TecnicoLaboratorioDashboard from './laboratorio/TecnicoLaboratorioDashboard.jsx';
+import FarmaciaDashboard from './farmacia/FarmaciaDashboard.jsx';
 
 const accionesPorRol = {
   paciente: [
@@ -73,13 +74,14 @@ export default function Dashboard() {
   const esMedico = usuario?.rol === 'medico';
   const esPaciente = usuario?.rol === 'paciente';
   const esTecnicoLaboratorio = usuario?.rol === 'tecnico_laboratorio';
+  const esFarmaceutico = usuario?.rol === 'farmaceutico';
   const rol = usuario?.rol;
   const nombre = usuario?.nombre || usuario?.correo || '';
   const horaAct = new Date().getHours();
   const saludo = horaAct < 12 ? 'Buenos dias' : horaAct < 19 ? 'Buenas tardes' : 'Buenas noches';
 
   useEffect(() => {
-    if (esEnfermero || esMedico || esTecnicoLaboratorio) {
+    if (esEnfermero || esMedico || esFarmaceutico || esTecnicoLaboratorio) {
       setCargando(false);
       return;
     }
@@ -104,7 +106,7 @@ export default function Dashboard() {
       }
     }
     cargarStats();
-  }, [usuario, esEnfermero, esMedico, esTecnicoLaboratorio]);
+  }, [usuario, esEnfermero, esMedico, esTecnicoLaboratorio, esFarmaceutico]);
 
   async function abrirCRUD() {
     setShowPacientesModal(true);
@@ -126,6 +128,7 @@ export default function Dashboard() {
   if (esMedico) return <MedicoDashboard usuario={usuario} />;
   if (esPaciente) return <PacienteDashboard usuario={usuario} />;
   if (esTecnicoLaboratorio) return <TecnicoLaboratorioDashboard usuario={usuario} />;
+  if (esFarmaceutico) { return <FarmaciaDashboard usuario={usuario} />; }
 
   return (
     <div className="space-y-6 fade-in">

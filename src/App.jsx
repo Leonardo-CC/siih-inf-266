@@ -25,6 +25,8 @@ import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioD
 import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
 import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
 import MiPerfilTecnico from './pages/laboratorio/MiPerfilTecnico.jsx';
+import InventarioFarmacia from './pages/farmacia/InventarioFarmacia.jsx';
+import DespachoRecetas from './pages/farmacia/DespachoRecetas.jsx';
 
 function App() {
   return (
@@ -153,6 +155,18 @@ function App() {
             element={
               <ProtectedRoute ruta="/admin/configuracion" element={<AdminConfiguracion />} />
             }
+          />
+          <Route
+            path="/farmacia/inventario"
+            element={
+              <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
+            }
+          />
+          <Route 
+            path="farmacia/despachos" 
+            element={
+              <DespachoRecetas ruta="/farmacia/despachos" element={<DespachoRecetas />} />
+            } 
           />
         </Route>
 

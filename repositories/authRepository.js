@@ -108,3 +108,12 @@ export async function obtenerIdTecnicoLaboratorioPorPersona(persona_id) {
     .maybeSingle();
   return data?.id_tecnico_laboratorio ?? null;
 }
+// Resuelve el id_farmaceutico a partir del persona_id (null si no es farmaceutico).
+export async function obtenerIdFarmaceuticoPorPersona(persona_id) {
+  const { data } = await supabaseAdmin
+    .from('farmaceutico')
+    .select('id_farmaceutico')
+    .eq('persona_id', persona_id)
+    .maybeSingle();
+  return data?.id_farmaceutico ?? null;
+}

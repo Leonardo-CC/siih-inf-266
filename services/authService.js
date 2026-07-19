@@ -3,12 +3,14 @@
 // CAPA DE LOGICA - Login del SIIH.
 // Valida usuario activo y compara contraseña con bcrypt.
 // ============================================================
+
 import bcrypt from 'bcryptjs';
 import {
   buscarUsuarioLogin,
   obtenerIdEnfermeroPorPersona,
   obtenerIdMedicoPorPersona,
   obtenerIdTecnicoLaboratorioPorPersona,
+  obtenerIdFarmaceuticoPorPersona 
 } from '../repositories/authRepository.js';
 
 export async function iniciarSesion(payload = {}) {
@@ -54,12 +56,15 @@ export async function iniciarSesion(payload = {}) {
   let id_enfermero = null;
   let id_medico = null;
   let id_tecnico_laboratorio = null;
+  let id_farmaceutico = null; 
   if (usuario.rol === 'enfermero') {
     id_enfermero = await obtenerIdEnfermeroPorPersona(usuario.persona_id);
   } else if (usuario.rol === 'medico') {
     id_medico = await obtenerIdMedicoPorPersona(usuario.persona_id);
   } else if (usuario.rol === 'tecnico_laboratorio') {
     id_tecnico_laboratorio = await obtenerIdTecnicoLaboratorioPorPersona(usuario.persona_id);
+  } else if (usuario.rol === 'farmaceutico') {
+    id_farmaceutico = await obtenerIdFarmaceuticoPorPersona(usuario.persona_id);
   }
 
   return {
@@ -77,6 +82,7 @@ export async function iniciarSesion(payload = {}) {
       id_enfermero,
       id_medico,
       id_tecnico_laboratorio,
+      id_farmaceutico,
     },
   };
 }

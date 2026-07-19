@@ -21,6 +21,7 @@ const rolesPermitidos = {
   '/admin/admisiones': ['administrativo'],
   '/admin/signos-vitales': ['administrativo'],
   '/admin/configuracion': ['administrativo'],
+  '/farmacia/inventario': ['farmaceutico'],
 };
 
 export default function ProtectedRoute({ element, ruta }) {

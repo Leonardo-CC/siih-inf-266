@@ -41,7 +41,6 @@ async function mapaPacientes(ids) {
 }
 
 // -------- Listar consultas/atenciones del medico --------
-// -------- Listar consultas/atenciones del medico --------
 export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } = {}) {
   // 1. Obtenemos el texto YYYY-MM-DD. Si no envían fecha, calculamos la de hoy local.
   let fechaFiltro = fecha;
