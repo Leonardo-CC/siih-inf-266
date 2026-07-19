@@ -15,7 +15,8 @@ import {
   IconoCog,
   IconoChart,
   IconoDocumentText,
-  IconoPill,
+  IconoStethoscope,
+  IconoArchiveBox,
 } from '../components/Iconos.jsx';
 import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
@@ -38,7 +39,11 @@ const accionesPorRol = {
     { to: '/laboratorio/pacientes', titulo: 'Pacientes', texto: 'Consulta informacion de pacientes.', icono: <IconoUsers className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
     { to: '/laboratorio/perfil', titulo: 'Mi perfil', texto: 'Actualiza tu correo y contrasena.', icono: <IconoCog className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
   ],
-  medico: [],
+  medico: [
+    { to: '/medico/consultas', titulo: 'Mis consultas', texto: 'Registrar diagnostico, tratamiento y estado de atencion.', icono: <IconoStethoscope className="w-6 h-6" />, color: 'from-blue-500 to-blue-600' },
+    { to: '/medico/signos', titulo: 'Signos vitales', texto: 'Consultar los signos vitales de mis pacientes.', icono: <IconoHeart className="w-6 h-6" />, color: 'from-rose-500 to-rose-600' },
+    { to: '/medico/perfil', titulo: 'Mi perfil', texto: 'Actualiza tu correo y contrasena.', icono: <IconoCog className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
+  ],
   administrativo: [
     { to: '/paciente/registro', titulo: 'Registrar paciente', texto: 'Crea persona, usuario y perfil de paciente.', icono: <IconoUser className="w-6 h-6" />, color: 'from-sky-500 to-sky-600' },
     { to: '/admin/usuarios', titulo: 'Gestionar usuarios', texto: 'Crea y administra las cuentas del sistema.', icono: <IconoUsers className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
@@ -46,7 +51,9 @@ const accionesPorRol = {
     { to: '/admin/citas', titulo: 'Citas', texto: 'Administra las citas medicas del hospital.', icono: <IconoCalendar className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
   ],
   farmaceutico: [
-    { to: '/dashboard', titulo: 'Farmacia', texto: 'Modulo listo para conectar inventario y recetas.', icono: <IconoPill className="w-6 h-6" />, color: 'from-teal-500 to-teal-600' },
+    { to: '/farmacia/despachos', titulo: 'Despachar recetas', texto: 'Atender fila virtual de recetas medicas.', icono: <IconoDocumentText className="w-6 h-6" />, color: 'from-teal-500 to-teal-600' },
+    { to: '/farmacia/inventario', titulo: 'Inventario', texto: 'Controlar stock, lotes y alertas de medicamentos.', icono: <IconoArchiveBox className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
+    { to: '/farmacia/perfil', titulo: 'Mi perfil', texto: 'Actualiza tu correo y contrasena.', icono: <IconoCog className="w-6 h-6" />, color: 'from-violet-500 to-violet-600' },
   ],
 };
 

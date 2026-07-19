@@ -4,7 +4,7 @@
 // farmacéuticos, técnicos de laboratorio y tipos de seguro.
 // El stock (mínimo/máximo) se gestiona aparte en stock.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
@@ -21,6 +21,10 @@ import {
 } from '../../components/Iconos.jsx';
 
 const ESTADOS = { activo: 'Activo', inactivo: 'Inactivo' };
+
+function claseEstado(v) {
+  return `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ` + (v === 'activo' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-700 border-red-200');
+}
 
 const TABS = [
   { id: 'especialidad', label: 'Especialidades', icono: IconoStethoscope, entidad: 'especialidad' },
@@ -246,7 +250,7 @@ export default function AdminCatalogo() {
         )}
 
         {tab === 'tipo_seguro' && (
-          <>
+          <Fragment>
             {faltaMigracion && (
               <div className="mb-4 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">
                 La tabla <b>tipo_seguro</b> aún no existe. Ejecuta la migración <b>sql/008_catalogo_administracion.sql</b> en el SQL Editor de Supabase para habilitar el registro y la lista de tipos de seguro.
@@ -259,7 +263,7 @@ export default function AdminCatalogo() {
                 { clave: 'nombre', titulo: 'Nombre' },
                 { clave: 'descripcion', titulo: 'Descripción', render: (v) => v || '—' },
                 { clave: 'estado', titulo: 'Estado', render: (v) => (
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${v === 'activo' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>{ESTADOS[v] || v}</span>
+                  <span className={claseEstado(v)}>{ESTADOS[v] || v}</span>
                 ) },
               ]}
               datos={datos}
@@ -268,23 +272,30 @@ export default function AdminCatalogo() {
               iconoEditar={<IconoEdit className="w-4 h-4" />}
               iconoEliminar={<IconoTrash className="w-4 h-4" />}
             />
-          </>
+          </Fragment>
         )}
 
         {esPersonal && (
           <TablaCRUD
             cargando={cargando}
             emptyMessage={`No hay ${tabActual.label.toLowerCase()} registrados`}
-            columnas={[
-              { clave: 'nombre_completo', titulo: 'Nombre completo' },
-              { clave: 'ci', titulo: 'CI' },
-              { clave: 'correo', titulo: 'Correo' },
-              ...(tab === 'medico' ? [{ clave: 'especialidad', titulo: 'Especialidad', render: (v) => v || '—' }] : []),
-              ...(tab !== 'enfermero' ? [{ clave: 'nro_licencia', titulo: 'Nro. Licencia', render: (v) => v || (tab === 'tecnico' ? form.numero_licencia : '—') }] : []),
-              { clave: 'estado', titulo: 'Estado', render: (v) => (
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${v === 'activo' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>{ESTADOS[v] || v}</span>
-              ) },
-            ]}
+            columnas={(() => {
+              const cols = [
+                { clave: 'nombre_completo', titulo: 'Nombre completo' },
+                { clave: 'ci', titulo: 'CI' },
+                { clave: 'correo', titulo: 'Correo' },
+              ];
+              if (tab === 'medico') {
+                cols.push({ clave: 'especialidad', titulo: 'Especialidad', render: (v) => v || '—' });
+              }
+              if (tab !== 'enfermero') {
+                cols.push({ clave: 'nro_licencia', titulo: 'Nro. Licencia', render: (v) => v || (tab === 'tecnico' ? form.numero_licencia : '—') });
+              }
+              cols.push({ clave: 'estado', titulo: 'Estado', render: (v) => (
+                <span className={claseEstado(v)}>{ESTADOS[v] || v}</span>
+              ) });
+              return cols;
+            })()}
             datos={datos}
             onEditar={abrirEditar}
             onEliminar={handleEliminar}

@@ -42,11 +42,13 @@ const navPorRol = {
     { to: '/dashboard', label: 'Dashboard', icono: IconoHome },
     { to: '/medico/consultas', label: 'Mis consultas', icono: IconoStethoscope },
     { to: '/medico/signos', label: 'Signos vitales', icono: IconoHeart },
+    { to: '/medico/perfil', label: 'Mi perfil', icono: IconoUser },
   ],
   farmaceutico: [
     { to: '/dashboard', label: 'Dashboard', icono: IconoHome },
     { to: '/farmacia/despachos', label: 'Despachos', icono: IconoDocumentText },
     { to: '/farmacia/inventario', label: 'Inventario', icono: IconoArchiveBox },
+    { to: '/farmacia/perfil', label: 'Mi perfil', icono: IconoUser },
   ],
   administrativo: [
     { to: '/dashboard', label: 'Dashboard', icono: IconoHome },

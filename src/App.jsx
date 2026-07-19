@@ -11,6 +11,7 @@ import RegistroSignosVitales from './pages/enfermeria/RegistroSignosVitales.jsx'
 import GestionPacientesEnfermeria from './pages/enfermeria/GestionPacientesEnfermeria.jsx';
 import GestionConsultasMedico from './pages/medico/GestionConsultasMedico.jsx';
 import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
+import MiPerfilMedico from './pages/medico/MiPerfilMedico.jsx';
 import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
 import MiPerfil from './pages/paciente/MiPerfil.jsx';
 import MisCitas from './pages/paciente/MisCitas.jsx';
@@ -30,6 +31,7 @@ import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
 import MiPerfilTecnico from './pages/laboratorio/MiPerfilTecnico.jsx';
 import InventarioFarmacia from './pages/farmacia/InventarioFarmacia.jsx';
 import DespachoRecetas from './pages/farmacia/DespachoRecetas.jsx';
+import MiPerfilFarmacia from './pages/farmacia/MiPerfilFarmacia.jsx';
 
 function App() {
   return (
@@ -125,6 +127,12 @@ function App() {
             }
           />
           <Route
+            path="/medico/perfil"
+            element={
+              <ProtectedRoute ruta="/medico/perfil" element={<MiPerfilMedico />} />
+            }
+          />
+          <Route
             path="/admin"
             element={
               <ProtectedRoute ruta="/admin" element={<AdminDashboard />} />
@@ -183,14 +191,20 @@ function App() {
             element={
               <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
             }
-          />
-          <Route
-            path="/farmacia/despachos"
-            element={
-              <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
-            }
-          />
-        </Route>
+           />
+           <Route
+             path="/farmacia/despachos"
+             element={
+               <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
+             }
+           />
+           <Route
+             path="/farmacia/perfil"
+             element={
+               <ProtectedRoute ruta="/farmacia/perfil" element={<MiPerfilFarmacia />} />
+             }
+           />
+         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
