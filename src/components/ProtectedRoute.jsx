@@ -15,6 +15,7 @@ const rolesPermitidos = {
   '/laboratorio/perfil': ['tecnico_laboratorio'],
   '/medico/consultas': ['medico'],
   '/medico/signos': ['medico'],
+  '/medico/perfil': ['medico'],
   '/admin': ['administrativo'],
   '/admin/usuarios': ['administrativo'],
   '/admin/pacientes': ['administrativo'],
@@ -25,6 +26,8 @@ const rolesPermitidos = {
   '/admin/catalogo': ['administrativo'],
   '/admin/stock': ['administrativo'],
   '/farmacia/inventario': ['farmaceutico'],
+  '/farmacia/despachos': ['farmaceutico'],
+  '/farmacia/perfil': ['farmaceutico'],
 };
 
 export default function ProtectedRoute({ element, ruta }) {

@@ -284,6 +284,28 @@ async function setupRoutes() {
       return medicoSignosHandler(req, res);
     });
 
+    const { default: medicoMiIdHandler } = await import('./api/medico/mi-id.js');
+    app.post('/api/medico/mi-id', async (req, res) => {
+      req.method = 'POST';
+      return medicoMiIdHandler(req, res);
+    });
+
+    const { default: medicoPerfilHandler } = await import('./api/medico/perfil.js');
+    app.get('/api/medico/perfil', async (req, res) => {
+      req.method = 'GET';
+      return medicoPerfilHandler(req, res);
+    });
+    app.put('/api/medico/perfil', async (req, res) => {
+      req.method = 'PUT';
+      return medicoPerfilHandler(req, res);
+    });
+
+    const { default: medicoRecuperarHandler } = await import('./api/medico/recuperar-contrasena.js');
+    app.post('/api/medico/recuperar-contrasena', async (req, res) => {
+      req.method = 'POST';
+      return medicoRecuperarHandler(req, res);
+    });
+
     const { default: laboratorioDashboardHandler } = await import('./api/tecnico-laboratorio/dashboard.js');
     app.get('/api/tecnico-laboratorio/dashboard', async (req, res) => {
       req.method = 'GET';
@@ -436,7 +458,6 @@ async function setupRoutes() {
       req.method = 'GET';
       return farmaciaStatsHandler(req, res);
     });
-
     // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
     const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
     app.get('/api/farmacia/stock', async (req, res) => {
@@ -446,6 +467,28 @@ async function setupRoutes() {
     app.put('/api/farmacia/stock', async (req, res) => {
       req.method = 'PUT';
       return farmaciaStockHandler(req, res);
+    });
+
+    const { default: farmaceuticoMiIdHandler } = await import('./api/farmaceutico/mi-id.js');
+    app.post('/api/farmaceutico/mi-id', async (req, res) => {
+      req.method = 'POST';
+      return farmaceuticoMiIdHandler(req, res);
+    });
+
+    const { default: farmaceuticoPerfilHandler } = await import('./api/farmaceutico/perfil.js');
+    app.get('/api/farmaceutico/perfil', async (req, res) => {
+      req.method = 'GET';
+      return farmaceuticoPerfilHandler(req, res);
+    });
+    app.put('/api/farmaceutico/perfil', async (req, res) => {
+      req.method = 'PUT';
+      return farmaceuticoPerfilHandler(req, res);
+    });
+
+    const { default: farmaceuticoRecuperarHandler } = await import('./api/farmaceutico/recuperar-contrasena.js');
+    app.post('/api/farmaceutico/recuperar-contrasena', async (req, res) => {
+      req.method = 'POST';
+      return farmaceuticoRecuperarHandler(req, res);
     });
 
     // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
