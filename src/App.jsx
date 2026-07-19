@@ -191,20 +191,20 @@ function App() {
             element={
               <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
             }
-          />
-          <Route
-            path="/farmacia/despachos"
-            element={
-              <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
-            }
-          />
-          <Route
-            path="/farmacia/perfil"
-            element={
-              <ProtectedRoute ruta="/farmacia/perfil" element={<MiPerfilFarmacia />} />
-            }
-          />
-        </Route>
+           />
+           <Route
+             path="/farmacia/despachos"
+             element={
+               <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
+             }
+           />
+           <Route
+             path="/farmacia/perfil"
+             element={
+               <ProtectedRoute ruta="/farmacia/perfil" element={<MiPerfilFarmacia />} />
+             }
+           />
+         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

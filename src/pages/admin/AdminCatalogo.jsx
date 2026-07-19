@@ -274,7 +274,6 @@ export default function AdminCatalogo() {
             />
           </Fragment>
         )}
-        )}
 
         {esPersonal && (
           <TablaCRUD

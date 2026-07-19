@@ -130,6 +130,8 @@ async function setupRoutes() {
       return listarAdmisionHandler(req, res);
     });
 
+    
+
     const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
     app.get('/api/admisiones/buscar', async (req, res) => {
       req.method = 'GET';
@@ -279,7 +281,7 @@ async function setupRoutes() {
     });
 
     const { default: medicoSignosHandler } = await import('./api/medico/signos.js');
-    app.get('/api/medico/signos', async (req, res) => {
+    app.get('/api/medico/signos', (req, res) => {
       req.method = 'GET';
       return medicoSignosHandler(req, res);
     });
@@ -304,6 +306,42 @@ async function setupRoutes() {
     app.post('/api/medico/recuperar-contrasena', async (req, res) => {
       req.method = 'POST';
       return medicoRecuperarHandler(req, res);
+    });
+
+    const { default: medicoReporteHandler } = await import('./api/medico/reporte-consulta.js');
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
+      req.method = 'GET';
+      return medicoReporteHandler(req, res);
+    });
+
+    const { default: medicoMedicamentosHandler } = await import('./api/medico/medicamentos.js');
+    app.get('/api/medico/medicamentos', async (req, res) => {
+      req.method = 'GET';
+      return medicoMedicamentosHandler(req, res);
+    });
+
+    const { default: medicoPrescripcionHandler } = await import('./api/medico/prescripcion.js');
+    app.post('/api/medico/prescripcion', async (req, res) => {
+      req.method = 'POST';
+      return medicoPrescripcionHandler(req, res);
+    });
+
+    const { default: medicoRecetasHandler } = await import('./api/medico/recetas.js');
+    app.get('/api/medico/recetas', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetasHandler(req, res);
+    });
+
+    const { default: medicoRecetaVerHandler } = await import('./api/medico/receta-ver.js');
+    app.get('/api/medico/receta-ver', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetaVerHandler(req, res);
+    });
+
+    const { default: medicoRecetaEditarHandler } = await import('./api/medico/receta-editar.js');
+    app.put('/api/medico/receta-editar', async (req, res) => {
+      req.method = 'PUT';
+      return medicoRecetaEditarHandler(req, res);
     });
 
     const { default: laboratorioDashboardHandler } = await import('./api/tecnico-laboratorio/dashboard.js');
@@ -340,6 +378,12 @@ async function setupRoutes() {
     app.get('/api/tecnico-laboratorio/pacientes', async (req, res) => {
       req.method = 'GET';
       return laboratorioPacientesHandler(req, res);
+    });
+
+    const { default: laboratorioConsultasPacienteHandler } = await import('./api/tecnico-laboratorio/consultas-paciente.js');
+    app.get('/api/tecnico-laboratorio/consultas-paciente', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioConsultasPacienteHandler(req, res);
     });
 
     const { default: laboratorioMiIdHandler } = await import('./api/tecnico-laboratorio/mi-id.js');
@@ -458,6 +502,15 @@ async function setupRoutes() {
       req.method = 'GET';
       return farmaciaStatsHandler(req, res);
     });
+
+    // Reporte de consulta en PDF
+    const { default: reporteConsultaHandler } = await import('./api/medico/reporte-consulta.js');
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
+      req.method = 'GET';
+      return reporteConsultaHandler(req, res);
+    });
+
+
     // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
     const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
     app.get('/api/farmacia/stock', async (req, res) => {
@@ -524,3 +577,5 @@ app.listen(PORT, () => {
   console.log(`-> Frontend conecta a http://localhost:5173`);
   console.log(`-> Endpoints disponibles en http://localhost:${PORT}/api/`);
 });
+
+

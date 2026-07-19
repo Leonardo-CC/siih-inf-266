@@ -13,6 +13,8 @@ import {
   actualizarAnalisisLaboratorio,
   eliminarAnalisisLaboratorio,
   listarPacientesLaboratorio,
+  consultaPerteneceAPaciente,
+  obtenerConsultasPorPaciente,
 } from '../repositories/tecnicoLaboratorioRepository.js';
 import { buscarUsuarioPorCiOCorreo } from '../repositories/pacienteRepository.js';
 import { traducirError } from '../lib/errorMessages.js';
@@ -84,6 +86,7 @@ export async function registrarAnalisis(payload) {
   const {
     id_paciente,
     id_tecnico_laboratorio,
+    id_consulta,
     tipo_analisis,
     fecha_solicitud,
     fecha_resultado,
@@ -94,8 +97,8 @@ export async function registrarAnalisis(payload) {
 
   const errores = {};
   if (!id_paciente) errores.id_paciente = 'Selecciona un paciente.';
-  if (!id_tecnico_laboratorio) errores.id_tecnico_laboratorio = 'Selecciona un técnico.';
   if (!tipo_analisis || !tipo_analisis.trim()) errores.tipo_analisis = 'El tipo de análisis es obligatorio.';
+  if (!fecha_solicitud) errores.fecha_solicitud = 'La fecha de solicitud es obligatoria.';
   if (!estado || !ESTADOS_ANALISIS.includes(estado)) errores.estado = 'Selecciona un estado válido.';
 
   if (Object.keys(errores).length > 0) {
@@ -103,11 +106,37 @@ export async function registrarAnalisis(payload) {
   }
 
   try {
+    // HU-15: la tabla analisis_laboratorio requiere id_tecnico_laboratorio (NOT NULL).
+    // Cuando la solicitud la origina un medico (no un tecnico), se asigna un
+    // tecnico por defecto para cumplir la restriccion de la BD.
+    let idTecnico = id_tecnico_laboratorio ? Number(id_tecnico_laboratorio) : null;
+    if (!idTecnico) {
+      const tecnicos = await listarTecnicosLaboratorio();
+      if (!tecnicos.length) {
+        return { ok: false, status: 400, errores: { id_tecnico_laboratorio: 'No hay técnicos de laboratorio registrados para asignar la solicitud.' } };
+      }
+      idTecnico = tecnicos[0].id_tecnico_laboratorio;
+    }
+
+    // HU-15: si la solicitud se origina en una consulta (dependencia HU-06),
+    // validar que dicha consulta pertenezca al paciente vinculado.
+    if (id_consulta) {
+      const valida = await consultaPerteneceAPaciente(Number(id_consulta), Number(id_paciente));
+      if (!valida) {
+        return {
+          ok: false,
+          status: 400,
+          errores: { id_consulta: 'La consulta seleccionada no pertenece al paciente indicado.' },
+        };
+      }
+    }
+
     const analisis = await crearAnalisisLaboratorio({
-      id_paciente,
-      id_tecnico_laboratorio,
+      id_paciente: Number(id_paciente),
+      id_tecnico_laboratorio: idTecnico,
+      id_consulta: id_consulta ? Number(id_consulta) : null,
       tipo_analisis: tipo_analisis.trim(),
-      fecha_solicitud: fecha_solicitud || new Date().toISOString(),
+      fecha_solicitud,
       fecha_resultado: fecha_resultado || null,
       estado: estado || 'pendiente',
       resultado: resultado || null,
@@ -117,7 +146,7 @@ export async function registrarAnalisis(payload) {
     return {
       ok: true,
       status: 201,
-      mensaje: 'Análisis registrado correctamente.',
+      mensaje: 'Solicitud de análisis registrada correctamente.',
       analisis,
     };
   } catch (err) {
@@ -160,6 +189,19 @@ export async function obtenerPacientes() {
   try {
     const pacientes = await listarPacientesLaboratorio();
     return { ok: true, status: 200, pacientes };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
+  }
+}
+
+// HU-15: consultas de un paciente para vincular la solicitud de analisis (dependencia HU-06).
+export async function obtenerConsultasPaciente(id_paciente) {
+  if (!id_paciente) {
+    return { ok: false, status: 400, errores: { general: 'Falta el paciente.' } };
+  }
+  try {
+    const consultas = await obtenerConsultasPorPaciente(Number(id_paciente));
+    return { ok: true, status: 200, consultas };
   } catch (err) {
     return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }

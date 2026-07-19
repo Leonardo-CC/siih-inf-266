@@ -11,6 +11,7 @@ export default async function handler(req, res) {
     const filtro = {};
     if (req.query?.id_tecnico_laboratorio) filtro.id_tecnico_laboratorio = Number(req.query.id_tecnico_laboratorio);
     if (req.query?.id_paciente) filtro.id_paciente = Number(req.query.id_paciente);
+    if (req.query?.id_consulta) filtro.id_consulta = Number(req.query.id_consulta);
     if (req.query?.estado) filtro.estado = req.query.estado;
     if (req.query?.tipo_analisis) filtro.tipo_analisis = req.query.tipo_analisis;
 
