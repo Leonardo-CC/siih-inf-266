@@ -281,9 +281,15 @@ async function setupRoutes() {
     });
 
     const { default: medicoSignosHandler } = await import('./api/medico/signos.js');
-    app.get('/api/medico/signos', async (req, res) => {
+    app.get('/api/medico/signos', (req, res) => {
       req.method = 'GET';
       return medicoSignosHandler(req, res);
+    });
+
+    const { default: medicoReporteHandler } = await import('./api/medico/reporte-consulta.js');
+    app.get('/api/medico/reporte-consulta', async (req, res) => {
+      req.method = 'GET';
+      return medicoReporteHandler(req, res);
     });
 
     const { default: medicoMedicamentosHandler } = await import('./api/medico/medicamentos.js');
@@ -350,6 +356,12 @@ async function setupRoutes() {
     app.get('/api/tecnico-laboratorio/pacientes', async (req, res) => {
       req.method = 'GET';
       return laboratorioPacientesHandler(req, res);
+    });
+
+    const { default: laboratorioConsultasPacienteHandler } = await import('./api/tecnico-laboratorio/consultas-paciente.js');
+    app.get('/api/tecnico-laboratorio/consultas-paciente', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioConsultasPacienteHandler(req, res);
     });
 
     const { default: laboratorioMiIdHandler } = await import('./api/tecnico-laboratorio/mi-id.js');

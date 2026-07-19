@@ -3,6 +3,7 @@
 // CAPA DE LOGICA Y SEGURIDAD (punto de entrada HTTP)
 // HU-09: GET /api/medico/reporte-consulta?id_consulta=X&id_medico=Y
 // Devuelve el PDF como archivo adjunto (application/pdf).
+// Delega la generación a services/reporteConsultaService.js
 // ============================================================
 import { generarReporteConsulta } from '../../services/reporteConsultaService.js';
 

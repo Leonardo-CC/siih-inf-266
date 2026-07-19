@@ -4,11 +4,11 @@ export default function TablaCRUD({
   cargando,
   onEditar,
   onEliminar,
+  renderAcciones,
   emptyMessage = 'Sin registros',
   iconoEditar,
   iconoEliminar,
   acciones,
-  renderAcciones,
 }) {
   if (cargando) {
     return (
@@ -25,6 +25,8 @@ export default function TablaCRUD({
       </div>
     );
   }
+
+  const tieneAcciones = Boolean(onEditar || onEliminar || renderAcciones);
 
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200">

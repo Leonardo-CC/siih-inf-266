@@ -270,7 +270,6 @@ export default function AdminCatalogo() {
             />
           </>
         )}
-        )}
 
         {esPersonal && (
           <TablaCRUD
