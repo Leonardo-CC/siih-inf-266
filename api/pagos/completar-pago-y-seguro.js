@@ -10,7 +10,7 @@
 //
 // Body: {
 //   id_cita, id_paciente, id_medico, monto, metodo_pago,
-//   tipo_seguro, numero_seguro, fecha_vigencia_seguro
+//   id_tipo_seguro, numero_seguro, fecha_vigencia_seguro
 // }
 // ============================================================
 
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
       id_medico,
       monto,
       metodo_pago,
-      tipo_seguro,
+      id_tipo_seguro,
       numero_seguro,
       fecha_vigencia_seguro,
     } = req.body;
@@ -71,14 +71,14 @@ export default async function handler(req, res) {
 
     // PASO 4: Registrar validación de seguro
     let resultadoSeguro = null;
-    if (tipo_seguro && numero_seguro) {
+    if (id_tipo_seguro && numero_seguro) {
       const estado_validacion = validacionSeguro.vigente ? 'vigente' : 'vencido';
       
       resultadoSeguro = await registrarValidacionSeguro(
         id_cita,
         id_paciente,
         {
-          tipo_seguro,
+          id_tipo_seguro,
           numero_seguro,
           vigencia: fecha_vigencia_seguro,
           estado_validacion,

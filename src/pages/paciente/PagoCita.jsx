@@ -154,7 +154,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                   body: JSON.stringify({
                     id_cita: parseInt(idCita),
                     id_paciente: parseInt(idPaciente),
-                    tipo_seguro: seguroValidacion.tipo_seguro,
+                    id_tipo_seguro: seguroValidacion.id_tipo_seguro || null,
                     numero_seguro: seguroValidacion.numero_seguro,
                     vigencia: seguroValidacion.fecha_vigencia,
                     estado_validacion: 'vigente',

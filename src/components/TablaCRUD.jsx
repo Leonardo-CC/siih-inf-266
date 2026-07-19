@@ -5,6 +5,8 @@ export default function TablaCRUD({
   onEditar,
   onEliminar,
   emptyMessage = 'Sin registros',
+  iconoEditar,
+  iconoEliminar,
 }) {
   if (cargando) {
     return (
@@ -55,17 +57,19 @@ export default function TablaCRUD({
                   {onEditar && (
                     <button
                       onClick={() => onEditar(fila)}
-                      className="text-primary hover:text-primary-dark font-medium mr-3"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors mr-1"
+                      title="Editar"
                     >
-                      Editar
+                      {iconoEditar || 'Editar'}
                     </button>
                   )}
                   {onEliminar && (
                     <button
                       onClick={() => onEliminar(fila)}
-                      className="text-red-600 hover:text-red-700 font-medium"
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors ml-1"
+                      title="Eliminar"
                     >
-                      Eliminar
+                      {iconoEliminar || 'Eliminar'}
                     </button>
                   )}
                 </td>

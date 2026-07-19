@@ -3,6 +3,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatCard from '../../components/StatCard.jsx';
 import { obtenerUsuario } from '../../lib/authSession.js';
+import {
+  IconoExclamation,
+  IconoClock,
+  IconoDocumentText,
+  IconoClipboardDocument,
+  IconoArchiveBox,
+  IconoPill,
+} from '../../components/Iconos.jsx';
 
 // --- SUB-COMPONENTE: DONA DE ESTADO DE STOCK REAL ---
 function DonaStock({ normal, critico, agotado }) {
@@ -145,10 +153,10 @@ export default function FarmaciaDashboard() {
 
       {/* TARJETAS DE ESTADÍSTICAS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard titulo="En Catálogo" valor={stats.enCatalogo} icono="💊" color="text-emerald-600" />
-        <StatCard titulo="Bajo Stock" valor={stats.stockCritico + stats.sinStock} icono="⚠️" color="text-amber-500" />
-        <StatCard titulo="Lotes x Vencer" valor={stats.porVencer} icono="⏳" color="text-orange-500" />
-        <StatCard titulo="Recetas en Espera" valor={stats.recetasPendientes} icono="📝" color="text-blue-600" />
+        <StatCard titulo="En Catálogo" valor={stats.enCatalogo} icono={<IconoPill className="w-6 h-6" />} color="text-emerald-600" />
+        <StatCard titulo="Bajo Stock" valor={stats.stockCritico + stats.sinStock} icono={<IconoExclamation className="w-6 h-6" />} color="text-amber-500" />
+        <StatCard titulo="Lotes x Vencer" valor={stats.porVencer} icono={<IconoClock className="w-6 h-6" />} color="text-orange-500" />
+        <StatCard titulo="Recetas en Espera" valor={stats.recetasPendientes} icono={<IconoDocumentText className="w-6 h-6" />} color="text-blue-600" />
       </div>
 
       {/* SECCIÓN DE GRÁFICOS REALES (Mismo formato estructural que el Médico) */}
@@ -185,7 +193,9 @@ export default function FarmaciaDashboard() {
           <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Navegación Operativa</h2>
           
           <Link to="/farmacia/despachos" className="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition group flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-2xl group-hover:bg-emerald-100 transition-colors">📋</div>
+            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors text-emerald-600">
+              <IconoClipboardDocument className="w-6 h-6" />
+            </div>
             <div>
               <h3 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">Despachar Medicinas</h3>
               <p className="text-xs text-slate-400 mt-0.5">Atender fila virtual de recetas.</p>
@@ -193,10 +203,12 @@ export default function FarmaciaDashboard() {
           </Link>
 
           <Link to="/farmacia/inventario" className="flex-1 bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:shadow-md transition group flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-2xl group-hover:bg-emerald-100 transition-colors">🗄️</div>
+            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 transition-colors text-emerald-600">
+              <IconoArchiveBox className="w-6 h-6" />
+            </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">Almacén e Inventario</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Controlar fechas de lotes físicos.</p>
+              <h3 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">Almacen e Inventario</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Controlar fechas de lotes fisicos.</p>
             </div>
           </Link>
         </div>

@@ -20,7 +20,12 @@ export async function validarVigenciaSeguro(id_paciente) {
     // Obtener datos de seguro del paciente
     const { data: paciente, error: errorPaciente } = await supabaseAdmin
       .from('paciente')
-      .select('tipo_seguro, numero_seguro, fecha_vigencia_seguro')
+      .select(`
+        id_tipo_seguro,
+        tipo_seguro:id_tipo_seguro (nombre),
+        numero_seguro,
+        fecha_vigencia_seguro
+      `)
       .eq('id_paciente', id_paciente)
       .single();
 
@@ -29,15 +34,24 @@ export async function validarVigenciaSeguro(id_paciente) {
         vigente: false,
         razon: 'Paciente no encontrado',
         tiene_seguro: false,
+        id_tipo_seguro: null,
+        tipo_seguro: '',
+        numero_seguro: '',
       };
     }
 
+    const nombreTipoSeguro = paciente.tipo_seguro?.nombre || '';
+    const idTipoSeguro = paciente.id_tipo_seguro || null;
+
     // Si no tiene seguro registrado
-    if (!paciente.tipo_seguro || !paciente.numero_seguro) {
+    if (!paciente.id_tipo_seguro || !paciente.numero_seguro) {
       return {
         vigente: false,
         razon: 'Paciente sin seguro registrado',
         tiene_seguro: false,
+        id_tipo_seguro: idTipoSeguro,
+        tipo_seguro: nombreTipoSeguro,
+        numero_seguro: '',
       };
     }
 
@@ -47,7 +61,8 @@ export async function validarVigenciaSeguro(id_paciente) {
         vigente: false,
         razon: 'Fecha de vigencia de seguro no registrada',
         tiene_seguro: true,
-        tipo_seguro: paciente.tipo_seguro,
+        id_tipo_seguro: idTipoSeguro,
+        tipo_seguro: nombreTipoSeguro,
         numero_seguro: paciente.numero_seguro,
       };
     }
@@ -59,7 +74,8 @@ export async function validarVigenciaSeguro(id_paciente) {
 
     return {
       vigente,
-      tipo_seguro: paciente.tipo_seguro,
+      id_tipo_seguro: idTipoSeguro,
+      tipo_seguro: nombreTipoSeguro,
       numero_seguro: paciente.numero_seguro,
       fecha_vigencia: paciente.fecha_vigencia_seguro,
       razon: vigente ? 'Seguro vigente' : 'Seguro vencido',
@@ -271,7 +287,7 @@ async function validarPagoEnBackground(id_pago, id_cita, metodo_pago) {
  */
 export async function registrarValidacionSeguro(id_cita, id_paciente, datosSeguro) {
   try {
-    const { validacion, tipo_seguro, numero_seguro, vigencia, estado_validacion } = datosSeguro;
+    const { validacion, id_tipo_seguro, numero_seguro, vigencia, estado_validacion } = datosSeguro;
 
     const { data, error } = await supabaseAdmin
       .from('validacion_seguro')
@@ -279,7 +295,7 @@ export async function registrarValidacionSeguro(id_cita, id_paciente, datosSegur
         {
           id_cita,
           id_paciente,
-          tipo_seguro,
+          id_tipo_seguro,
           numero_seguro,
           vigencia,
           estado_validacion,

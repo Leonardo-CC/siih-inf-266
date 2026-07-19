@@ -1,6 +1,14 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerUsuario } from '../../lib/authSession.js';
+import {
+  IconoUsers,
+  IconoBuildingHospital,
+  IconoCalendar,
+  IconoClipboardDocument,
+  IconoHeart,
+  IconoCog,
+} from '../../components/Iconos.jsx';
 
 export default function AdminDashboard() {
   const usuario = obtenerUsuario();
@@ -50,12 +58,20 @@ export default function AdminDashboard() {
   }, []);
 
   const tarjetas = [
-    { titulo: 'Usuarios', valor: stats.usuarios, icono: '👥', to: '/admin/usuarios', color: 'from-blue-500 to-blue-600' },
-    { titulo: 'Pacientes', valor: stats.pacientes, icono: '🏥', to: '/admin/pacientes', color: 'from-emerald-500 to-emerald-600' },
-    { titulo: 'Citas', valor: stats.citas, icono: '📅', to: '/admin/citas', color: 'from-amber-500 to-amber-600' },
-    { titulo: 'Admisiones', valor: stats.admisiones, icono: '📋', to: '/admin/admisiones', color: 'from-purple-500 to-purple-600' },
-    { titulo: 'Signos vitales', valor: stats.signos, icono: '❤️', to: '/admin/signos-vitales', color: 'from-rose-500 to-rose-600' },
+    { titulo: 'Usuarios', valor: stats.usuarios, icono: 'IconoUsers', to: '/admin/usuarios', color: 'from-blue-500 to-blue-600' },
+    { titulo: 'Pacientes', valor: stats.pacientes, icono: 'IconoBuildingHospital', to: '/admin/pacientes', color: 'from-emerald-500 to-emerald-600' },
+    { titulo: 'Citas', valor: stats.citas, icono: 'IconoCalendar', to: '/admin/citas', color: 'from-amber-500 to-amber-600' },
+    { titulo: 'Admisiones', valor: stats.admisiones, icono: 'IconoClipboardDocument', to: '/admin/admisiones', color: 'from-purple-500 to-purple-600' },
+    { titulo: 'Signos vitales', valor: stats.signos, icono: 'IconoHeart', to: '/admin/signos-vitales', color: 'from-rose-500 to-rose-600' },
   ];
+
+  const iconMap = {
+    IconoUsers,
+    IconoBuildingHospital,
+    IconoCalendar,
+    IconoClipboardDocument,
+    IconoHeart,
+  };
 
   return (
     <div className="space-y-6">
@@ -82,7 +98,7 @@ export default function AdminDashboard() {
               to={stat.to}
               className={`bg-gradient-to-br ${stat.color} rounded-xl p-5 text-white shadow-md hover:shadow-lg transition group`}
             >
-              <div className="text-3xl mb-2">{stat.icono}</div>
+              <div className="mb-2">{React.createElement(iconMap[stat.icono], { className: 'w-8 h-8' })}</div>
               <p className="text-sm font-medium text-white/80">{stat.titulo}</p>
               <p className="text-2xl font-bold">{stat.valor}</p>
             </Link>

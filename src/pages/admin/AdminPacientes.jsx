@@ -16,9 +16,10 @@ export default function AdminPacientes() {
     ci: '',
     telefono: '',
     correo: '',
-    tipo_seguro: '',
+    id_tipo_seguro: '',
     numero_seguro: '',
   });
+  const [tiposSeguro, setTiposSeguro] = useState([]);
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -44,6 +45,10 @@ export default function AdminPacientes() {
 
   useEffect(() => {
     cargarPacientes();
+    fetch('/api/catalogo?entidad=tipo_seguro')
+      .then((r) => r.json())
+      .then((json) => setTiposSeguro(json.tipos_seguro || []))
+      .catch(() => setTiposSeguro([]));
   }, []);
 
   function abrirModalCrear() {
@@ -55,7 +60,7 @@ export default function AdminPacientes() {
       ci: '',
       telefono: '',
       correo: '',
-      tipo_seguro: '',
+      id_tipo_seguro: '',
       numero_seguro: '',
     });
     setErrores({});
@@ -73,7 +78,7 @@ export default function AdminPacientes() {
       ci: paciente?.ci || '',
       telefono: paciente?.telefono || '',
       correo: paciente?.correo || '',
-      tipo_seguro: paciente?.tipo_seguro || '',
+      id_tipo_seguro: paciente?.id_tipo_seguro || '',
       numero_seguro: paciente?.numero_seguro || '',
     });
     setErrores({});
@@ -266,15 +271,17 @@ export default function AdminPacientes() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de seguro</label>
               <select
-                name="tipo_seguro"
-                value={form.tipo_seguro}
+                name="id_tipo_seguro"
+                value={form.id_tipo_seguro}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
               >
                 <option value="">Ninguno</option>
-                <option value="Universitario">Universitario</option>
-                <option value="SUS">SUS</option>
-                <option value="Privado">Privado</option>
+                {tiposSeguro.map((ts) => (
+                  <option key={ts.id_tipo_seguro} value={ts.id_tipo_seguro}>
+                    {ts.nombre}
+                  </option>
+                ))}
               </select>
             </div>
             <div>

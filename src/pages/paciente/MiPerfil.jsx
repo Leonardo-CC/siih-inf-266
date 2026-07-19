@@ -16,12 +16,13 @@ export default function MiPerfil() {
   const [form, setForm] = useState({
     correo: '',
     telefono: '',
-    tipo_seguro: '',
+    id_tipo_seguro: '',
     numero_seguro: '',
     contrasenaActual: '',
     contrasenaNueva: '',
     repetirContrasena: '',
   });
+  const [tiposSeguro, setTiposSeguro] = useState([]);
   const [bloqueados, setBloqueados] = useState({ ci: '', rol: '', nombre: '', apellido: '' });
   const [cargando, setCargando] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -42,6 +43,10 @@ export default function MiPerfil() {
       setCargando(true);
       setErrorGeneral(null);
       try {
+        const resCat = await fetch('/api/catalogo?entidad=tipo_seguro');
+        const jsonCat = await resCat.json();
+        setTiposSeguro(jsonCat.tipos_seguro || []);
+
         const resId = await fetch('/api/pacientes/mi-id', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -66,7 +71,7 @@ export default function MiPerfil() {
           ...prev,
           correo: p.correo || '',
           telefono: p.telefono || '',
-          tipo_seguro: p.tipo_seguro || '',
+          id_tipo_seguro: p.id_tipo_seguro || '',
           numero_seguro: p.numero_seguro || '',
         }));
       } catch (e) {
@@ -115,7 +120,7 @@ export default function MiPerfil() {
           id_paciente: idPaciente,
           correo: form.correo,
           telefono: form.telefono,
-          tipo_seguro: form.tipo_seguro,
+          id_tipo_seguro: form.id_tipo_seguro || null,
           numero_seguro: form.numero_seguro,
           contrasenaActual: form.contrasenaActual,
           contrasenaNueva: form.contrasenaNueva,
@@ -297,15 +302,17 @@ export default function MiPerfil() {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de seguro</label>
                   <select
-                    name="tipo_seguro"
-                    value={form.tipo_seguro}
+                    name="id_tipo_seguro"
+                    value={form.id_tipo_seguro}
                     onChange={handleChange}
                     className={`${inputBase} border-slate-300`}
                   >
                     <option value="">Ninguno</option>
-                    <option value="Universitario">Universitario</option>
-                    <option value="SUS">SUS</option>
-                    <option value="Privado">Privado</option>
+                    {tiposSeguro.map((ts) => (
+                      <option key={ts.id_tipo_seguro} value={ts.id_tipo_seguro}>
+                        {ts.nombre}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
