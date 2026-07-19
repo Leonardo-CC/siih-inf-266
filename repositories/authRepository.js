@@ -43,6 +43,42 @@ export async function buscarUsuarioLogin(correo) {
   throw new Error(`Error al buscar usuario: ${ultimoError?.message || 'columna de contraseña no encontrada'}`);
 }
 
+// Variantes de encoding de la columna de contraseña (problemas de ñ en el schema cache).
+export const COLUMNAS_CONTRASENA = ['contrasena', 'contraseña', 'contraseÃ±a'];
+
+// Intenta leer la contraseña de un registro de usuario probando las 3 variantes.
+export async function leerContrasenaPorPersona(persona_id) {
+  const { supabaseAdmin } = await import('../lib/supabaseAdmin.js');
+  let ultimoError = null;
+  for (const col of COLUMNAS_CONTRASENA) {
+    const { data, error } = await supabaseAdmin
+      .from('usuario')
+      .select(col)
+      .eq('persona_id', persona_id)
+      .maybeSingle();
+    if (!error && data) {
+      return { hash: data[col] || data['contrasena'] || data['contraseña'] || data['contraseÃ±a'], error: null };
+    }
+    if (error) ultimoError = error;
+  }
+  return { hash: null, error: ultimoError };
+}
+
+// Intenta actualizar la contraseña de un usuario probando las 3 variantes de columna.
+export async function actualizarContrasenaPorPersona(persona_id, hash) {
+  const { supabaseAdmin } = await import('../lib/supabaseAdmin.js');
+  let ultimoError = null;
+  for (const col of COLUMNAS_CONTRASENA) {
+    const { error } = await supabaseAdmin
+      .from('usuario')
+      .update({ [col]: hash })
+      .eq('persona_id', persona_id);
+    if (!error) return { error: null };
+    ultimoError = error;
+  }
+  return { error: ultimoError };
+}
+
 // Resuelve el id_enfermero a partir del persona_id (null si no es enfermero).
 export async function obtenerIdEnfermeroPorPersona(persona_id) {
   const { data } = await supabaseAdmin
@@ -61,4 +97,14 @@ export async function obtenerIdMedicoPorPersona(persona_id) {
     .eq('persona_id', persona_id)
     .maybeSingle();
   return data?.id_medico ?? null;
+}
+
+// Resuelve el id_tecnico_laboratorio a partir del persona_id (null si no es tecnico de laboratorio).
+export async function obtenerIdTecnicoLaboratorioPorPersona(persona_id) {
+  const { data } = await supabaseAdmin
+    .from('tecnico_laboratorio')
+    .select('id_tecnico_laboratorio')
+    .eq('persona_id', persona_id)
+    .maybeSingle();
+  return data?.id_tecnico_laboratorio ?? null;
 }

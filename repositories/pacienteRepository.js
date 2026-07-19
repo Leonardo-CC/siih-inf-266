@@ -190,17 +190,42 @@ export async function actualizarPaciente(id_paciente, datos) {
   }
 
   // ci y correo viven en la tabla usuario (no en persona)
-  const updatesUsuario = {};
-  if (datos.ci !== undefined && datos.ci !== '') updatesUsuario.ci = datos.ci;
-  if (datos.correo !== undefined && datos.correo !== '') updatesUsuario.correo = datos.correo;
+  const { data: usuarioExistente, error: errorBusqueda } = await supabaseAdmin
+    .from('usuario')
+    .select('id_usuario')
+    .eq('persona_id', paciente.persona_id)
+    .maybeSingle();
 
-  if (Object.keys(updatesUsuario).length > 0) {
-    const { error } = await supabaseAdmin
+  if (errorBusqueda) throw new Error(`Error buscando usuario: ${errorBusqueda.message}`);
+
+  if (!usuarioExistente && (datos.ci || datos.correo)) {
+    // El paciente no tiene usuario: lo creamos para no perder ci/correo.
+    // La contrasena por defecto es el CI (igual que en el registro).
+    const contrasenaHash = await import('bcryptjs').then((m) => m.default.hash(datos.ci || 'paciente123', 10));
+    const { error: errorCrear } = await supabaseAdmin
       .from('usuario')
-      .update(updatesUsuario)
-      .eq('persona_id', paciente.persona_id);
+      .insert([{
+        persona_id: paciente.persona_id,
+        ci: datos.ci || '',
+        correo: datos.correo || '',
+        contrasena: contrasenaHash,
+        rol: 'paciente',
+        estado: 'activo',
+      }]);
+    if (errorCrear) throw new Error(`Error creando usuario: ${errorCrear.message}`);
+  } else {
+    const updatesUsuario = {};
+    if (datos.ci !== undefined && datos.ci !== '') updatesUsuario.ci = datos.ci;
+    if (datos.correo !== undefined && datos.correo !== '') updatesUsuario.correo = datos.correo;
 
-    if (error) throw new Error(`Error actualizando usuario: ${error.message}`);
+    if (Object.keys(updatesUsuario).length > 0) {
+      const { error } = await supabaseAdmin
+        .from('usuario')
+        .update(updatesUsuario)
+        .eq('persona_id', paciente.persona_id);
+
+      if (error) throw new Error(`Error actualizando usuario: ${error.message}`);
+    }
   }
 
   const updatesPaciente = {};

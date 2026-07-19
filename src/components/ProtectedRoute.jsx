@@ -2,15 +2,25 @@ import { Navigate } from 'react-router-dom';
 import { obtenerUsuario } from '../lib/authSession.js';
 
 const rolesPermitidos = {
-  '/dashboard': ['paciente', 'enfermero', 'medico', 'administrativo', 'farmaceutico', 'direccion'],
+  '/dashboard': ['paciente', 'enfermero', 'medico', 'administrativo', 'farmaceutico', 'tecnico_laboratorio'],
   '/paciente/cita': ['paciente', 'administrativo'],
   '/paciente/citas': ['paciente'],
   '/paciente/perfil': ['paciente'],
   '/enfermeria/admisiones': ['enfermero', 'administrativo', 'medico'],
   '/enfermeria/signos-vitales': ['enfermero', 'administrativo'],
   '/enfermeria/pacientes': ['enfermero', 'administrativo'],
+  '/laboratorio/analisis': ['tecnico_laboratorio', 'administrativo'],
+  '/laboratorio/pacientes': ['tecnico_laboratorio', 'administrativo'],
+  '/laboratorio/perfil': ['tecnico_laboratorio'],
   '/medico/consultas': ['medico'],
   '/medico/signos': ['medico'],
+  '/admin': ['administrativo'],
+  '/admin/usuarios': ['administrativo'],
+  '/admin/pacientes': ['administrativo'],
+  '/admin/citas': ['administrativo'],
+  '/admin/admisiones': ['administrativo'],
+  '/admin/signos-vitales': ['administrativo'],
+  '/admin/configuracion': ['administrativo'],
 };
 
 export default function ProtectedRoute({ element, ruta }) {

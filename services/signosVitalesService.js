@@ -13,6 +13,7 @@ import {
   actualizarSignosVitales,
   eliminarSignosVitales,
 } from '../repositories/signosVitalesRepository.js';
+import { traducirError } from '../lib/errorMessages.js';
 
 function toIntOrNull(value) {
   if (value === undefined || value === null || value === '') return null;
@@ -123,7 +124,7 @@ export async function registrarSignos(payload = {}, usuarioLogueado = null) {
       signos,
     };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
 
@@ -153,7 +154,7 @@ export async function editarSignos(id_signos, payload = {}, usuarioLogueado = nu
       signos,
     };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
 
@@ -176,6 +177,6 @@ export async function eliminarSignos(id_signos, usuarioLogueado = null) {
       mensaje: 'Signos vitales eliminados correctamente.',
     };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }

@@ -21,8 +21,8 @@ export async function obtenerEspecialidades() {
   return (data || []).map((e) => e.nombre);
 }
 
-// Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
-// especialidad: nombre de especialidad (string), ej. "Cardiología"
+  // Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
+  // especialidad: nombre de especialidad (string), ej. "Cardiología"
 export async function obtenerMedicosPorEspecialidad(especialidad) {
   if (!especialidad) {
     return [];
@@ -107,4 +107,91 @@ export async function crearCita({ id_paciente, id_medico, fecha_hora, motivo }) 
 
   if (error) throw new Error(`Error al crear la cita: ${error.message}`);
   return data;
+}
+
+export async function listarTodasCitas() {
+  const { data, error } = await supabaseAdmin
+    .from('cita')
+    .select(`
+      id_cita,
+      id_paciente,
+      id_medico,
+      fecha_hora,
+      motivo,
+      estado,
+      paciente:id_paciente (
+        persona:persona_id (
+          nombre,
+          apellido
+        )
+      ),
+      medico:id_medico (
+        persona:persona_id (
+          nombre,
+          apellido
+        )
+      )
+    `)
+    .order('fecha_hora', { ascending: false })
+    .limit(200);
+
+  if (error) throw new Error(`Error al listar citas: ${error.message}`);
+
+  return (data || []).map((c) => ({
+    id_cita: c.id_cita,
+    id_paciente: c.id_paciente,
+    id_medico: c.id_medico,
+    fecha_hora: c.fecha_hora,
+    motivo: c.motivo || '',
+    estado: c.estado || 'pendiente',
+    paciente_nombre: c.paciente?.persona?.nombre || '',
+    paciente_apellido: c.paciente?.persona?.apellido || '',
+    medico_nombre: c.medico?.persona?.nombre || '',
+    medico_apellido: c.medico?.persona?.apellido || '',
+    paciente_completo: c.paciente?.persona ? `${c.paciente.persona.nombre} ${c.paciente.persona.apellido}` : `Paciente #${c.id_paciente}`,
+    medico_completo: c.medico?.persona ? `Dr(a). ${c.medico.persona.nombre} ${c.medico.persona.apellido}` : `Médico #${c.id_medico}`,
+  }));
+}
+
+export async function actualizarCita(id_cita, datos) {
+  const { data, error } = await supabaseAdmin
+    .from('cita')
+    .update(datos)
+    .eq('id_cita', id_cita)
+    .select('id_cita')
+    .single();
+
+  if (error) throw new Error(`Error al actualizar cita: ${error.message}`);
+  return data;
+}
+
+export async function eliminarCita(id_cita) {
+  const { error } = await supabaseAdmin
+    .from('cita')
+    .delete()
+    .eq('id_cita', id_cita);
+
+  if (error) throw new Error(`Error al eliminar cita: ${error.message}`);
+  return { ok: true };
+}
+
+export async function listarPacientesParaCita() {
+  const { data, error } = await supabaseAdmin
+    .from('paciente')
+    .select(`
+      id_paciente,
+      persona:persona_id (
+        nombre,
+        apellido
+      )
+    `)
+    .order('id_paciente', { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(`Error al listar pacientes: ${error.message}`);
+
+  return (data || []).map((p) => ({
+    id_paciente: p.id_paciente,
+    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
+  }));
 }

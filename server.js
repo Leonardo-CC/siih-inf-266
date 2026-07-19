@@ -278,6 +278,122 @@ async function setupRoutes() {
       return medicoSignosHandler(req, res);
     });
 
+    const { default: laboratorioDashboardHandler } = await import('./api/tecnico-laboratorio/dashboard.js');
+    app.get('/api/tecnico-laboratorio/dashboard', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioDashboardHandler(req, res);
+    });
+
+    const { default: laboratorioAnalisisListarHandler } = await import('./api/tecnico-laboratorio/analisis/listar.js');
+    app.get('/api/tecnico-laboratorio/analisis/listar', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioAnalisisListarHandler(req, res);
+    });
+
+    const { default: laboratorioAnalisisRegistrarHandler } = await import('./api/tecnico-laboratorio/analisis/registrar.js');
+    app.post('/api/tecnico-laboratorio/analisis/registrar', async (req, res) => {
+      req.method = 'POST';
+      return laboratorioAnalisisRegistrarHandler(req, res);
+    });
+
+    const { default: laboratorioAnalisisActualizarHandler } = await import('./api/tecnico-laboratorio/analisis/actualizar.js');
+    app.put('/api/tecnico-laboratorio/analisis/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return laboratorioAnalisisActualizarHandler(req, res);
+    });
+
+    const { default: laboratorioAnalisisEliminarHandler } = await import('./api/tecnico-laboratorio/analisis/eliminar.js');
+    app.post('/api/tecnico-laboratorio/analisis/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return laboratorioAnalisisEliminarHandler(req, res);
+    });
+
+    const { default: laboratorioPacientesHandler } = await import('./api/tecnico-laboratorio/pacientes.js');
+    app.get('/api/tecnico-laboratorio/pacientes', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioPacientesHandler(req, res);
+    });
+
+    const { default: laboratorioMiIdHandler } = await import('./api/tecnico-laboratorio/mi-id.js');
+    app.post('/api/tecnico-laboratorio/mi-id', async (req, res) => {
+      req.method = 'POST';
+      return laboratorioMiIdHandler(req, res);
+    });
+
+    const { default: laboratorioPerfilHandler } = await import('./api/tecnico-laboratorio/perfil.js');
+    app.get('/api/tecnico-laboratorio/perfil', async (req, res) => {
+      req.method = 'GET';
+      return laboratorioPerfilHandler(req, res);
+    });
+    app.put('/api/tecnico-laboratorio/perfil', async (req, res) => {
+      req.method = 'PUT';
+      return laboratorioPerfilHandler(req, res);
+    });
+
+    const { default: laboratorioRecuperarHandler } = await import('./api/tecnico-laboratorio/recuperar-contrasena.js');
+    app.post('/api/tecnico-laboratorio/recuperar-contrasena', async (req, res) => {
+      req.method = 'POST';
+      return laboratorioRecuperarHandler(req, res);
+    });
+
+    const { default: listarUsuariosHandler } = await import('./api/usuarios/listar.js');
+    app.get('/api/usuarios/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarUsuariosHandler(req, res);
+    });
+
+    const { default: registroUsuarioHandler } = await import('./api/usuarios/registro.js');
+    app.post('/api/usuarios/registro', async (req, res) => {
+      req.method = 'POST';
+      return registroUsuarioHandler(req, res);
+    });
+
+    const { default: actualizarUsuarioHandler } = await import('./api/usuarios/actualizar.js');
+    app.put('/api/usuarios/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return actualizarUsuarioHandler(req, res);
+    });
+
+    const { default: eliminarUsuarioHandler } = await import('./api/usuarios/eliminar.js');
+    app.post('/api/usuarios/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return eliminarUsuarioHandler(req, res);
+    });
+
+    const { default: adminPerfilHandler } = await import('./api/administrativo/perfil.js');
+    app.get('/api/administrativo/perfil', async (req, res) => {
+      req.method = 'GET';
+      return adminPerfilHandler(req, res);
+    });
+    app.put('/api/administrativo/perfil', async (req, res) => {
+      req.method = 'PUT';
+      return adminPerfilHandler(req, res);
+    });
+
+    const { default: listarCitasHandler } = await import('./api/citas/listar.js');
+    app.get('/api/citas/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarCitasHandler(req, res);
+    });
+
+    const { default: actualizarCitaHandler } = await import('./api/citas/actualizar.js');
+    app.put('/api/citas/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return actualizarCitaHandler(req, res);
+    });
+
+    const { default: eliminarCitaHandler } = await import('./api/citas/eliminar.js');
+    app.post('/api/citas/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return eliminarCitaHandler(req, res);
+    });
+
+    const { default: opcionesCitaHandler } = await import('./api/citas/opciones.js');
+    app.get('/api/citas/opciones', async (req, res) => {
+      req.method = 'GET';
+      return opcionesCitaHandler(req, res);
+    });
+
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
     console.error('X Error al cargar los endpoints:', error.message);

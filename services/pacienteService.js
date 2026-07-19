@@ -22,6 +22,7 @@ import {
 } from '../repositories/pacienteRepository.js';
 
 import { enviarNotificacion } from './notificacionService.js';
+import { traducirError } from '../lib/errorMessages.js';
 
 const CI_REGEX = /^[0-9]{5,10}$/;
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -152,7 +153,7 @@ export async function registrarPaciente(payload) {
       ok: false,
       status: 500,
       errores: {
-        general: err.message,
+        general: traducirError(err),
       },
     };
   }
@@ -174,7 +175,7 @@ export async function borrarPaciente(id_paciente) {
     await eliminarPaciente(id_paciente);
     return { ok: true, status: 200, mensaje: 'Paciente eliminado correctamente.' };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
 
@@ -189,6 +190,6 @@ export async function editarPaciente(payload) {
     await actualizarPaciente(id_paciente, { nombre, apellido, ci, telefono, correo, tipo_seguro, numero_seguro });
     return { ok: true, status: 200, mensaje: 'Paciente actualizado correctamente.' };
   } catch (err) {
-    return { ok: false, status: 400, errores: { general: err.message } };
+    return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
