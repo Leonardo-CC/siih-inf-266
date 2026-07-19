@@ -30,11 +30,24 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 SUPABASE_SERVICE_ROLE_KEY=pega_aqui_la_clave_secreta_que_copiaste_del_panel
 
 
-## Issue Nro 07: 
+## Issue Nro xxx: 
 Descripcion
-Para quien es: Como medico puedes verificar las consultas dependiendo la fecha puedes seleccionar estados para filtrar entre Pendiente, En atencion, Atendida y Derivada, dependiendo de la especialidad y el medico cambia ya que esta asignado a su id medico.
+Para quien es: Como ... puedo ... 
 
+## Issue Nro 07: 
+Como medico puedes verificar las consultas dependiendo la fecha puedes seleccionar estados para filtrar
+entre Pendiente, En atencion, Atendida y Derivada, dependiendo de la especialidad y el medico cambia ya
+que esta asignado a su id medico.
+correo y contraseña de pruebas
+medico@hospital.com
+123456
 
+## Issue Nro 08: 
+Como farmaceutico puedo verificar el dashboard, verificar el inventario y ver que lotes estan proximos a 
+vencer y tambien aplico FEFO para el despacho de medicamentos, los medicamentos se verifican mediante la
+receta y el medico que la asigno, se pueden agregar nuevos lotes de medicamentos.
+farmacia@prueba.com
+123456
 
 
 
