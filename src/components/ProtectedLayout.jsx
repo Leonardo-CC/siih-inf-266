@@ -7,6 +7,7 @@ const navPorRol = {
     { to: '/dashboard', label: 'Dashboard', icono: '📊' },
     { to: '/paciente/cita', label: 'Solicitar cita', icono: '📅' },
     { to: '/paciente/citas', label: 'Mis citas', icono: '🗂️' },
+    { to: '/paciente/historial', label: 'Mi Historial', icono: '🏥' },
     { to: '/paciente/perfil', label: 'Mi perfil', icono: '⚙️' },
   ],
   enfermero: [
