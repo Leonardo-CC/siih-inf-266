@@ -46,6 +46,10 @@ medico@hospital.com
 Como farmaceutico puedo verificar el dashboard, verificar el inventario y ver que lotes estan proximos a 
 vencer y tambien aplico FEFO para el despacho de medicamentos, los medicamentos se verifican mediante la
 receta y el medico que la asigno, se pueden agregar nuevos lotes de medicamentos.
+## Issue Nro 13: 
+Como farmaceutico puedo dispensar medicamentos ver la cantidad, el medico que la receto, el 
+paciente que la necesita, la fecha de emision y todo se comprueba antes de la dispensacion aplicando 
+FEFO
 farmacia@prueba.com
 123456
 
