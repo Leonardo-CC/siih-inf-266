@@ -27,6 +27,7 @@ export default async function handler(req, res) {
           cantidad,
           dosis,
           frecuencia,
+          duracion,
           medicamento ( nombre )
         )
       `)
@@ -42,20 +43,28 @@ export default async function handler(req, res) {
       const medicoFull = r.historial_clinico?.consulta?.medico;
       const personaMedico = medicoFull?.persona;
       
-      const resumenMedicamentos = r.detalle_receta
-        .map(d => `${d.cantidad}x ${d.medicamento?.nombre} (${d.dosis})`)
+      const detalles = (r.detalle_receta || []).map(d => ({
+        cantidad: d.cantidad,
+        nombre: d.medicamento?.nombre || 'Medicamento',
+        dosis: d.dosis,
+        frecuencia: d.frecuencia,
+        duracion: d.duracion,
+      }));
+
+      const resumenMedicamentos = detalles
+        .map(d => `${d.cantidad}x ${d.nombre} (${d.dosis})`)
         .join(', ');
 
       return {
         id_receta: r.id_receta,
-        fecha: r.fecha_emision, // Usamos el nombre correcto de tu columna
+        fecha: r.fecha_emision,
         observaciones: r.observaciones,
         paciente: `${personaPaciente?.nombre || ''} ${personaPaciente?.apellido || ''}`.trim() || 'Paciente Anónimo',
-        // Como el CI está en la tabla usuario, usamos el teléfono como identificador alternativo del paciente
-        ci_paciente: personaPaciente?.telefono || 'No registrado', 
+        ci_paciente: personaPaciente?.telefono || 'No registrado',
         medico: `${personaMedico?.nombre || ''} ${personaMedico?.apellido || ''}`.trim() || 'Médico General',
         especialidad: medicoFull?.especialidad || 'Medicina General',
-        medicamentos: resumenMedicamentos || 'Sin detalles'
+        medicamentos: resumenMedicamentos || 'Sin detalles',
+        detalles,
       };
     });
 

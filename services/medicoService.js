@@ -8,6 +8,15 @@ import {
   obtenerSignosDelMedico,
   obtenerCitasMedico,
   obtenerPerfilMedico,
+  obtenerMedicamentosCatalogo,
+  obtenerHistorialClinicoPorConsulta,
+  crearHistorialClinico,
+  actualizarHistorialClinico,
+  crearReceta,
+  crearDetallesReceta,
+  obtenerRecetasMedico,
+  obtenerRecetaPorConsulta,
+  actualizarRecetaCompleta,
 } from '../repositories/medicoRepository.js';
 
 const ESTADOS_ATENCION = ['pendiente', 'en_atencion', 'atendida', 'derivada'];
@@ -145,4 +154,127 @@ export async function obtenerDashboardMedico(id_medico) {
       fecha: c.fecha_consulta,
     })),
   };
+}
+
+// -------- Prescripción electrónica (HU-08) --------
+export async function registrarPrescripcionMedico(id_consulta, id_medico, payload = {}) {
+  if (!id_consulta) {
+    return { ok: false, status: 400, errores: { general: 'Falta el identificador de la consulta.' } };
+  }
+
+  try {
+    const items = payload.items_prescripcion || [];
+    const itemsValidos = items.filter(
+      (it) => it.id_medicamento && it.cantidad > 0 && it.dosis.trim() && it.frecuencia.trim() && it.duracion.trim()
+    );
+
+    if (!itemsValidos.length) {
+      return { ok: false, status: 400, errores: { items: 'Debes agregar al menos un medicamento con dosis, frecuencia y duración.' } };
+    }
+
+    const historial = await obtenerHistorialClinicoPorConsulta(id_consulta);
+    let id_historial = historial?.id_historial || null;
+
+    if (!id_historial) {
+      const nuevo = await crearHistorialClinico(id_consulta, {
+        diagnostico: payload.diagnostico,
+        observaciones: payload.observaciones,
+        alergias: null,
+      });
+      id_historial = nuevo.id_historial;
+    } else {
+      await actualizarHistorialClinico(id_historial, {
+        diagnostico: payload.diagnostico,
+        observaciones: payload.observaciones,
+      });
+    }
+
+    const receta = await crearReceta(id_historial, payload.observaciones_receta);
+    const detalles = await crearDetallesReceta(receta.id_receta, itemsValidos);
+
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Prescripción registrada correctamente.',
+      receta: {
+        id_receta: receta.id_receta,
+        id_historial,
+        detalles,
+      },
+    };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
+}
+
+export async function listarMedicamentosCatalogo() {
+  try {
+    const medicamentos = await obtenerMedicamentosCatalogo();
+    return { ok: true, status: 200, medicamentos };
+  } catch (err) {
+    return { ok: false, status: 400, mensaje: err.message };
+  }
+}
+
+export async function listarRecetasMedico() {
+  try {
+    const recetas = await obtenerRecetasMedico();
+    return { ok: true, status: 200, recetas };
+  } catch (err) {
+    return { ok: false, status: 400, mensaje: err.message };
+  }
+}
+
+export async function verRecetaMedico(id_consulta) {
+  try {
+    const receta = await obtenerRecetaPorConsulta(id_consulta);
+    if (!receta) return { ok: false, status: 404, mensaje: 'No se encontró la receta para esta consulta.' };
+    return { ok: true, status: 200, receta };
+  } catch (err) {
+    return { ok: false, status: 400, mensaje: err.message };
+  }
+}
+
+export async function editarRecetaMedico(id_consulta, payload = {}) {
+  if (!id_consulta) {
+    return { ok: false, status: 400, errores: { general: 'Falta el identificador de la consulta.' } };
+  }
+
+  try {
+    const receta = await obtenerRecetaPorConsulta(id_consulta);
+    if (!receta) {
+      return { ok: false, status: 404, mensaje: 'No se encontró la receta para editar.' };
+    }
+
+    const items = payload.items_prescripcion || [];
+    const itemsValidos = items.filter(
+      (it) => it.id_medicamento && it.cantidad > 0 && it.dosis.trim() && it.frecuencia.trim() && it.duracion.trim()
+    );
+
+    if (!itemsValidos.length) {
+      return { ok: false, status: 400, errores: { items: 'Debes agregar al menos un medicamento.' } };
+    }
+
+    const resultado = await actualizarRecetaCompleta(receta.id_receta, receta.id_historial, {
+      diagnostico: payload.diagnostico,
+      observaciones: payload.observaciones,
+      items: itemsValidos.map((it) => ({
+        id_detalle: it.id_detalle || null,
+        id_medicamento: Number(it.id_medicamento),
+        cantidad: Number(it.cantidad),
+        dosis: it.dosis.trim(),
+        frecuencia: it.frecuencia.trim(),
+        duracion: it.duracion.trim(),
+      })),
+    });
+
+    return {
+      ok: true,
+      status: 200,
+      mensaje: 'Receta actualizada correctamente.',
+      receta: resultado,
+    };
+  } catch (err) {
+    return { ok: false, status: 400, errores: { general: err.message } };
+  }
 }

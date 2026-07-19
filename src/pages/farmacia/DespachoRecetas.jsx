@@ -122,10 +122,29 @@ export default function DespachoRecetas() {
                        <span>{receta.especialidad}</span>
                      </div>
 
-                     <p className="text-sm font-medium text-emerald-800 bg-emerald-50 inline-block px-3 py-1.5 rounded-md border border-emerald-200 shadow-sm">
-                       <IconoArchiveBox className="w-4 h-4 inline mr-1" />
-                       {receta.medicamentos}
-                     </p>
+                       <div className="space-y-2">
+                         {receta.detalles && receta.detalles.length > 0 ? (
+                            receta.detalles.map((det, idx) => (
+                              <div key={idx} className="text-sm font-medium text-emerald-800 bg-emerald-50 inline-block px-3 py-2 rounded-md border border-emerald-200 shadow-sm mr-2 mb-1">
+                                <div className="flex items-center gap-2">
+                                  <IconoArchiveBox className="w-4 h-4 shrink-0" />
+                                  <span className="font-bold">{det.cantidad}x {det.nombre}</span>
+                                </div>
+                                <div className="mt-1 ml-6 text-xs text-slate-600">
+                                  <span className="font-semibold">Cantidad:</span> {det.cantidad} &nbsp;•&nbsp;
+                                  <span className="font-semibold">Dosis:</span> {det.dosis} &nbsp;•&nbsp;
+                                  <span className="font-semibold">Frecuencia:</span> {det.frecuencia} &nbsp;•&nbsp;
+                                  <span className="font-semibold">Duración:</span> {det.duracion}
+                                </div>
+                              </div>
+                            ))
+                         ) : (
+                           <p className="text-sm font-medium text-emerald-800 bg-emerald-50 inline-block px-3 py-1.5 rounded-md border border-emerald-200 shadow-sm">
+                             <IconoArchiveBox className="w-4 h-4 inline mr-1" />
+                             {receta.medicamentos}
+                           </p>
+                         )}
+                       </div>
                   </div>
 
                   <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0 gap-3">
@@ -186,9 +205,25 @@ export default function DespachoRecetas() {
                 
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Medicamentos a entregar</span>
-                  <div className="bg-white border border-emerald-100 rounded p-2 text-sm text-emerald-800 font-medium">
-                    {recetaAConfirmar.medicamentos}
-                  </div>
+                   <div className="bg-white border border-emerald-100 rounded p-2 text-sm text-emerald-800 font-medium space-y-1">
+                     {recetaAConfirmar.detalles && recetaAConfirmar.detalles.length > 0 ? (
+                       recetaAConfirmar.detalles.map((det, idx) => (
+                         <div key={idx} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                           <span className="font-bold">{det.cantidad}x {det.nombre}</span>
+                           <span className="text-slate-500">—</span>
+                           <span className="font-semibold">Cantidad:</span> {det.cantidad}
+                           <span className="text-slate-500">•</span>
+                           <span className="font-semibold">Dosis:</span> {det.dosis}
+                           <span className="text-slate-500">•</span>
+                           <span className="font-semibold">Frecuencia:</span> {det.frecuencia}
+                           <span className="text-slate-500">•</span>
+                           <span className="font-semibold">Duración:</span> {det.duracion}
+                         </div>
+                       ))
+                     ) : (
+                       <span>{recetaAConfirmar.medicamentos || 'Sin detalles'}</span>
+                     )}
+                   </div>
                 </div>
                 
                 {recetaAConfirmar.observaciones && (
