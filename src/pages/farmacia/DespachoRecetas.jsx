@@ -155,6 +155,18 @@ export default function DespachoRecetas() {
                   <span className="font-medium text-slate-700 text-right">Dr(a). {recetaAConfirmar.medico}</span>
                 </div>
 
+                <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 flex justify-between items-center">
+                  <span className="text-sm font-bold text-slate-600">Fecha de Emisión:</span>
+                  <span className="text-sm font-bold text-blue-700">
+                    {new Date(recetaAConfirmar.fecha).toLocaleDateString('es-BO', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
+                
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Medicamentos a entregar</span>
                   <div className="bg-white border border-emerald-100 rounded p-2 text-sm text-emerald-800 font-medium">
