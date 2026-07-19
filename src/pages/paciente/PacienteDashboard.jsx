@@ -214,22 +214,28 @@ export default function PacienteDashboard({ usuario }) {
         </div>
       </div>
 
+      
       {/* Accesos rapidos */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/paciente/cita" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
           <div className="text-3xl mb-2">📅</div>
           <h3 className="font-semibold text-slate-800 group-hover:text-primary">Solicitar cita</h3>
-          <p className="text-sm text-slate-500 mt-1">Agenda una nueva consulta medica.</p>
+          <p className="text-sm text-slate-500 mt-1">Agenda una nueva consulta médica.</p>
         </Link>
         <Link to="/paciente/citas" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
           <div className="text-3xl mb-2">🗂️</div>
           <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mis citas</h3>
           <p className="text-sm text-slate-500 mt-1">Revisa el estado de tus citas y atenciones.</p>
         </Link>
+        <Link to="/paciente/historial" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
+          <div className="text-3xl mb-2">🏥</div>
+          <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mi Historial</h3>
+          <p className="text-sm text-slate-500 mt-1">Revisa tus diagnósticos y tratamientos médicos.</p>
+        </Link>
         <Link to="/paciente/perfil" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
           <div className="text-3xl mb-2">⚙️</div>
           <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mi perfil</h3>
-          <p className="text-sm text-slate-500 mt-1">Edita tu correo, contrasena y datos de contacto.</p>
+          <p className="text-sm text-slate-500 mt-1">Edita tu correo, contraseña y datos.</p>
         </Link>
       </div>
     </div>

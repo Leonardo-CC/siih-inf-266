@@ -6,6 +6,7 @@ const rolesPermitidos = {
   '/paciente/cita': ['paciente', 'administrativo'],
   '/paciente/citas': ['paciente'],
   '/paciente/perfil': ['paciente'],
+  '/paciente/historial': ['paciente', 'medico'],
   '/enfermeria/admisiones': ['enfermero', 'administrativo', 'medico'],
   '/enfermeria/signos-vitales': ['enfermero', 'administrativo'],
   '/enfermeria/pacientes': ['enfermero', 'administrativo'],
