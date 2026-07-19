@@ -184,11 +184,11 @@ function App() {
               <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
             }
           />
-          <Route 
-            path="farmacia/despachos" 
+          <Route
+            path="/farmacia/despachos"
             element={
-              <DespachoRecetas ruta="/farmacia/despachos" element={<DespachoRecetas />} />
-            } 
+              <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
+            }
           />
         </Route>
 

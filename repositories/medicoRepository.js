@@ -69,10 +69,27 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } 
   const rows = data || [];
   const pacientes = await mapaPacientes(rows.map((r) => r.id_paciente));
 
+  const recetasPorConsulta = new Map();
+  if (rows.length) {
+    const idsConsulta = rows.map((r) => r.id_consulta);
+    const { data: historiales } = await supabaseAdmin
+      .from('historial_clinico')
+      .select('id_consulta, id_historial, receta ( id_receta )')
+      .in('id_consulta', idsConsulta);
+
+    (historiales || []).forEach((h) => {
+      const receta = Array.isArray(h.receta) ? h.receta[0] : h.receta;
+      if (receta?.id_receta) {
+        recetasPorConsulta.set(h.id_consulta, receta.id_receta);
+      }
+    });
+  }
+
   return rows.map((c) => {
     const adm = leerMetaAdmision(c.observaciones);
     const med = leerMetaMedico(c.observaciones);
     const pac = pacientes.get(c.id_paciente) || { nombre: '', apellido: '' };
+    const idReceta = recetasPorConsulta.get(c.id_consulta) || null;
     return {
       id_consulta: c.id_consulta,
       id_cita: c.id_cita,
@@ -90,6 +107,8 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } 
       observaciones: textoLibre(c.observaciones) || null,
       paciente_nombre: pac.nombre || `Paciente #${c.id_paciente}`,
       paciente_apellido: pac.apellido,
+      tiene_receta: Boolean(idReceta),
+      id_receta: idReceta,
     };
   });
 }
@@ -208,4 +227,224 @@ export async function obtenerPerfilMedico(id_medico) {
     especialidad: data.especialidad?.nombre || data.especialidad_antigua || 'General',
     nombre_completo: data.persona ? `${data.persona.nombre} ${data.persona.apellido}` : `Médico #${data.id_medico}`,
   };
+}
+
+// -------- Prescripción de medicamentos (HU-08) --------
+export async function obtenerMedicamentosCatalogo() {
+  let { data, error } = await supabaseAdmin
+    .from('medicamento')
+    .select('id_medicamento, nombre, descripcion, stock_actual, stock_minimo')
+    .order('nombre');
+
+  if (error && /estado/.test(error.message)) {
+    ({ data, error } = await supabaseAdmin
+      .from('medicamento')
+      .select('id_medicamento, nombre, descripcion, stock_actual, stock_minimo')
+      .order('nombre'));
+  }
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function obtenerHistorialClinicoPorConsulta(id_consulta) {
+  const { data, error } = await supabaseAdmin
+    .from('historial_clinico')
+    .select('id_historial, diagnostico, observaciones, alergias')
+    .eq('id_consulta', id_consulta)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data || null;
+}
+
+export async function crearHistorialClinico(id_consulta, { diagnostico, observaciones, alergias }) {
+  const { data, error } = await supabaseAdmin
+    .from('historial_clinico')
+    .insert({
+      id_consulta,
+      diagnostico: diagnostico?.trim() || null,
+      observaciones: observaciones?.trim() || null,
+      alergias: alergias?.trim() || null,
+    })
+    .select('id_historial')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function actualizarHistorialClinico(id_historial, { diagnostico, observaciones, alergias }) {
+  const updates = {};
+  if (diagnostico !== undefined) updates.diagnostico = diagnostico?.trim() || null;
+  if (observaciones !== undefined) updates.observaciones = observaciones?.trim() || null;
+  if (alergias !== undefined) updates.alergias = alergias?.trim() || null;
+
+  const { data, error } = await supabaseAdmin
+    .from('historial_clinico')
+    .update(updates)
+    .eq('id_historial', id_historial)
+    .select('id_historial')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function crearReceta(id_historial, observaciones) {
+  const { data, error } = await supabaseAdmin
+    .from('receta')
+    .insert({
+      id_historial,
+      observaciones: observaciones?.trim() || null,
+    })
+    .select('id_receta')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function crearDetallesReceta(id_receta, items) {
+  const detalles = items.map((item) => ({
+    id_receta,
+    id_medicamento: item.id_medicamento,
+    cantidad: item.cantidad,
+    dosis: item.dosis.trim(),
+    frecuencia: item.frecuencia.trim(),
+    duracion: item.duracion.trim(),
+  }));
+
+  const { data, error } = await supabaseAdmin
+    .from('detalle_receta')
+    .insert(detalles)
+    .select('id_detalle, id_medicamento, cantidad, dosis, frecuencia, duracion');
+
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function obtenerRecetasMedico(id_medico) {
+  const { data, error } = await supabaseAdmin
+    .from('receta')
+    .select(`
+      id_receta,
+      fecha_emision,
+      estado,
+      observaciones,
+      id_historial,
+      historial_clinico (
+        id_consulta,
+        diagnostico,
+        consulta (
+          id_paciente,
+          motivo_consulta,
+          fecha_consulta,
+          paciente (
+            persona ( nombre, apellido )
+          )
+        )
+      )
+    `)
+    .order('fecha_emision', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  const recetas = (data || []).filter((r) => r.historial_clinico?.consulta?.id_paciente != null);
+
+  if (!recetas.length) return [];
+
+  const idsReceta = recetas.map((r) => r.id_receta);
+  const { data: detalles, error: errDetalles } = await supabaseAdmin
+    .from('detalle_receta')
+    .select('id_receta, cantidad, dosis, frecuencia, duracion, medicamento ( nombre )')
+    .in('id_receta', idsReceta);
+
+  if (errDetalles) throw new Error(errDetalles.message);
+
+  const detallesPorReceta = new Map();
+  (detalles || []).forEach((d) => {
+    if (!detallesPorReceta.has(d.id_receta)) detallesPorReceta.set(d.id_receta, []);
+    detallesPorReceta.get(d.id_receta).push(d);
+  });
+
+  return recetas.map((r) => ({
+    ...r,
+    detalle_receta: detallesPorReceta.get(r.id_receta) || [],
+  }));
+}
+
+export async function obtenerRecetaPorConsulta(id_consulta) {
+  const { data: historial, error: errHist } = await supabaseAdmin
+    .from('historial_clinico')
+    .select('id_historial, diagnostico, observaciones, receta ( id_receta, fecha_emision, estado, observaciones )')
+    .eq('id_consulta', id_consulta)
+    .maybeSingle();
+
+  if (errHist) throw new Error(errHist.message);
+  if (!historial?.receta || !Array.isArray(historial.receta) || !historial.receta.length) return null;
+
+  const recetaBase = historial.receta[0];
+  const id_receta = recetaBase.id_receta;
+  const { data: detalles, error: errDet } = await supabaseAdmin
+    .from('detalle_receta')
+    .select('id_detalle, id_medicamento, cantidad, dosis, frecuencia, duracion, medicamento ( nombre )')
+    .eq('id_receta', id_receta);
+
+  if (errDet) throw new Error(errDet.message);
+
+  return {
+    id_receta,
+    id_historial: historial.id_historial,
+    diagnostico: historial.diagnostico,
+    observaciones: historial.observaciones,
+    fecha_emision: recetaBase.fecha_emision,
+    estado: recetaBase.estado,
+    observaciones_receta: recetaBase.observaciones,
+    detalles: detalles || [],
+  };
+}
+
+export async function actualizarRecetaCompleta(id_receta, id_historial, { diagnostico, observaciones, items }) {
+  await actualizarHistorialClinico(id_historial, { diagnostico, observaciones });
+
+  const idsDetalles = (items || []).filter((it) => it.id_detalle).map((it) => it.id_detalle);
+  if (idsDetalles.length) {
+    await supabaseAdmin.from('detalle_receta').delete().eq('id_receta', id_receta).not('id_detalle', 'in', `(${idsDetalles.join(',')})`);
+  } else {
+    await supabaseAdmin.from('detalle_receta').delete().eq('id_receta', id_receta);
+  }
+
+  for (const item of items || []) {
+    if (item.id_detalle) {
+      await supabaseAdmin
+        .from('detalle_receta')
+        .update({
+          id_medicamento: item.id_medicamento,
+          cantidad: item.cantidad,
+          dosis: item.dosis.trim(),
+          frecuencia: item.frecuencia.trim(),
+          duracion: item.duracion.trim(),
+        })
+        .eq('id_detalle', item.id_detalle);
+    } else {
+      await supabaseAdmin.from('detalle_receta').insert({
+        id_receta,
+        id_medicamento: item.id_medicamento,
+        cantidad: item.cantidad,
+        dosis: item.dosis.trim(),
+        frecuencia: item.frecuencia.trim(),
+        duracion: item.duracion.trim(),
+      });
+    }
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('receta')
+    .update({ estado: 'pendiente' })
+    .eq('id_receta', id_receta)
+    .select('id_receta')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }

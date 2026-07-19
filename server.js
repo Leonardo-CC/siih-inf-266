@@ -284,6 +284,36 @@ async function setupRoutes() {
       return medicoSignosHandler(req, res);
     });
 
+    const { default: medicoMedicamentosHandler } = await import('./api/medico/medicamentos.js');
+    app.get('/api/medico/medicamentos', async (req, res) => {
+      req.method = 'GET';
+      return medicoMedicamentosHandler(req, res);
+    });
+
+    const { default: medicoPrescripcionHandler } = await import('./api/medico/prescripcion.js');
+    app.post('/api/medico/prescripcion', async (req, res) => {
+      req.method = 'POST';
+      return medicoPrescripcionHandler(req, res);
+    });
+
+    const { default: medicoRecetasHandler } = await import('./api/medico/recetas.js');
+    app.get('/api/medico/recetas', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetasHandler(req, res);
+    });
+
+    const { default: medicoRecetaVerHandler } = await import('./api/medico/receta-ver.js');
+    app.get('/api/medico/receta-ver', async (req, res) => {
+      req.method = 'GET';
+      return medicoRecetaVerHandler(req, res);
+    });
+
+    const { default: medicoRecetaEditarHandler } = await import('./api/medico/receta-editar.js');
+    app.put('/api/medico/receta-editar', async (req, res) => {
+      req.method = 'PUT';
+      return medicoRecetaEditarHandler(req, res);
+    });
+
     const { default: laboratorioDashboardHandler } = await import('./api/tecnico-laboratorio/dashboard.js');
     app.get('/api/tecnico-laboratorio/dashboard', async (req, res) => {
       req.method = 'GET';
