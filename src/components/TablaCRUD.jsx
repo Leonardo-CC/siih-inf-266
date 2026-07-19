@@ -4,6 +4,7 @@ export default function TablaCRUD({
   cargando,
   onEditar,
   onEliminar,
+  renderAcciones,
   emptyMessage = 'Sin registros',
 }) {
   if (cargando) {
@@ -22,6 +23,8 @@ export default function TablaCRUD({
     );
   }
 
+  const tieneAcciones = Boolean(onEditar || onEliminar || renderAcciones);
+
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200">
       <table className="min-w-full text-sm">
@@ -35,7 +38,7 @@ export default function TablaCRUD({
                 {col.titulo}
               </th>
             ))}
-            {(onEditar || onEliminar) && (
+            {tieneAcciones && (
               <th className="text-right px-4 py-3 font-semibold text-slate-600 border-b border-slate-200">
                 Acciones
               </th>
@@ -50,7 +53,7 @@ export default function TablaCRUD({
                   {col.render ? col.render(fila[col.clave], fila) : fila[col.clave] ?? '-'}
                 </td>
               ))}
-              {(onEditar || onEliminar) && (
+              {tieneAcciones && (
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   {onEditar && (
                     <button
@@ -60,6 +63,7 @@ export default function TablaCRUD({
                       Editar
                     </button>
                   )}
+                  {renderAcciones && renderAcciones(fila)}
                   {onEliminar && (
                     <button
                       onClick={() => onEliminar(fila)}

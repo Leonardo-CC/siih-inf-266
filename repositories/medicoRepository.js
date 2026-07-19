@@ -193,6 +193,36 @@ export async function obtenerCitasMedico(id_medico) {
   });
 }
 
+// -------- Consulta individual para el reporte PDF (HU-09) --------
+export async function obtenerConsultaParaReporte(id_consulta, id_medico) {
+  const { data: c, error } = await supabaseAdmin
+    .from('consulta')
+    .select('id_consulta, id_cita, id_paciente, id_medico, fecha_consulta, motivo_consulta, observaciones')
+    .eq('id_consulta', id_consulta)
+    .maybeSingle();
+
+  if (error) throw new Error(`Error al obtener la consulta: ${error.message}`);
+  if (!c) return null;
+  if (id_medico && c.id_medico !== id_medico) return 'forbidden';
+
+  const med = leerMetaMedico(c.observaciones);
+  const libre = textoLibre(c.observaciones);
+
+  return {
+    id_consulta: c.id_consulta,
+    id_paciente: c.id_paciente,
+    id_medico: c.id_medico,
+    fecha_consulta: c.fecha_consulta,
+    motivo_consulta: c.motivo_consulta,
+    estado_atencion: med.estado_atencion,
+    diagnostico: med.diagnostico,
+    tratamiento: med.tratamiento,
+    receta: med.receta,
+    proxima_cita: med.proxima_cita,
+    observaciones_libres: libre || null,
+  };
+}
+
 // -------- Perfil del medico (para encabezado/dashboard) --------
 export async function obtenerPerfilMedico(id_medico) {
   const { data } = await supabaseAdmin

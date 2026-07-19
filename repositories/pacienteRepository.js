@@ -128,6 +128,50 @@ export async function listarPacientes() {
   });
 }
 
+export async function obtenerDetallePaciente(id_paciente) {
+  const { data: p, error } = await supabaseAdmin
+    .from('paciente')
+    .select(`
+      id_paciente,
+      persona_id,
+      id_tipo_seguro,
+      numero_seguro,
+      persona:persona_id (
+        nombre,
+        apellido,
+        telefono,
+        sexo,
+        fecha_nac
+      )
+    `)
+    .eq('id_paciente', id_paciente)
+    .maybeSingle();
+
+  if (error) throw new Error(`Error al obtener el paciente: ${error.message}`);
+  if (!p) return null;
+
+  const { data: usuario, error: errorUsuario } = await supabaseAdmin
+    .from('usuario')
+    .select('ci, correo')
+    .eq('persona_id', p.persona_id)
+    .maybeSingle();
+
+  if (errorUsuario) throw new Error(`Error al obtener el usuario del paciente: ${errorUsuario.message}`);
+
+  return {
+    id_paciente: p.id_paciente,
+    nombre: p.persona?.nombre || '',
+    apellido: p.persona?.apellido || '',
+    nombre_completo: p.persona ? `${p.persona.nombre} ${p.persona.apellido}` : `Paciente #${p.id_paciente}`,
+    ci: usuario?.ci || '',
+    fecha_nac: p.persona?.fecha_nac || '',
+    telefono: p.persona?.telefono || '',
+    sexo: p.persona?.sexo || '',
+    id_tipo_seguro: p.id_tipo_seguro || '',
+    numero_seguro: p.numero_seguro || '',
+  };
+}
+
 export async function eliminarPaciente(id_paciente) {
   const { data: paciente } = await supabaseAdmin
     .from('paciente')

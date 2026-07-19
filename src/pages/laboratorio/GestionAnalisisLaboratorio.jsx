@@ -21,6 +21,22 @@ const ESTADOS_ANALISIS = [
   { value: 'cancelado', label: 'Cancelado' },
 ];
 
+const TIPOS_ANALISIS = [
+  'Hemograma completo',
+  'Glucosa',
+  'Perfil lipidico',
+  'Perfil hepatico',
+  'Perfil renal',
+  'Orina',
+  'Heces',
+  'PCR',
+  'Coagulacion',
+  'Grupo sanguineo',
+  'Serologia',
+  'Microbiologia',
+  'Otro',
+];
+
 const ESTADO_COLORES = {
   pendiente: 'bg-slate-100 text-slate-700 border-slate-200',
   en_proceso: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -45,6 +61,7 @@ export default function GestionAnalisisLaboratorio() {
   const usuario = obtenerUsuario();
   const [analisis, setAnalisis] = useState([]);
   const [pacientes, setPacientes] = useState([]);
+  const [consultasPaciente, setConsultasPaciente] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -53,6 +70,7 @@ export default function GestionAnalisisLaboratorio() {
   const [form, setForm] = useState({
     id_analisis: null,
     id_paciente: '',
+    id_consulta: '',
     tipo_analisis: '',
     fecha_solicitud: '',
     fecha_resultado: '',
@@ -96,6 +114,21 @@ export default function GestionAnalisisLaboratorio() {
     }
   }
 
+  // HU-15: carga las consultas del paciente para vincular la solicitud a su consulta de origen.
+  async function cargarConsultasPaciente(id_paciente) {
+    if (!id_paciente) {
+      setConsultasPaciente([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tecnico-laboratorio/consultas-paciente?id_paciente=${id_paciente}`);
+      const data = await res.json();
+      setConsultasPaciente(data.ok ? (data.consultas || []) : []);
+    } catch {
+      setConsultasPaciente([]);
+    }
+  }
+
   useEffect(() => {
     cargarAnalisis();
     cargarPacientes();
@@ -106,6 +139,7 @@ export default function GestionAnalisisLaboratorio() {
     setForm({
       id_analisis: null,
       id_paciente: '',
+      id_consulta: '',
       tipo_analisis: '',
       fecha_solicitud: new Date().toISOString().slice(0, 16),
       fecha_resultado: '',
@@ -113,6 +147,7 @@ export default function GestionAnalisisLaboratorio() {
       resultado: '',
       observaciones: '',
     });
+    setConsultasPaciente([]);
     setErrores({});
     setMensaje(null);
     setErrorGeneral(null);
@@ -124,6 +159,7 @@ export default function GestionAnalisisLaboratorio() {
     setForm({
       id_analisis: a.id_analisis,
       id_paciente: String(a.id_paciente),
+      id_consulta: a.id_consulta ? String(a.id_consulta) : '',
       tipo_analisis: a.tipo_analisis,
       fecha_solicitud: a.fecha_solicitud ? new Date(a.fecha_solicitud).toISOString().slice(0, 16) : '',
       fecha_resultado: a.fecha_resultado ? new Date(a.fecha_resultado).toISOString().slice(0, 16) : '',
@@ -135,12 +171,17 @@ export default function GestionAnalisisLaboratorio() {
     setMensaje(null);
     setErrorGeneral(null);
     setModalAbierto(true);
+    cargarConsultasPaciente(a.id_paciente);
   }
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrores((prev) => ({ ...prev, [name]: '' }));
+    if (name === 'id_paciente' && !modoEdicion) {
+      setForm((prev) => ({ ...prev, id_consulta: '' }));
+      cargarConsultasPaciente(value);
+    }
   }
 
   async function handleSubmit(e) {
@@ -166,6 +207,7 @@ export default function GestionAnalisisLaboratorio() {
         ...form,
         id_paciente: Number(form.id_paciente),
         id_tecnico_laboratorio: usuario.id_tecnico_laboratorio,
+        id_consulta: form.id_consulta ? Number(form.id_consulta) : null,
       };
 
       const url = modoEdicion ? '/api/tecnico-laboratorio/analisis/actualizar' : '/api/tecnico-laboratorio/analisis/registrar';
@@ -279,6 +321,21 @@ export default function GestionAnalisisLaboratorio() {
                 { clave: 'paciente_nombre', titulo: 'Paciente' },
                 { clave: 'tipo_analisis', titulo: 'Tipo de análisis' },
                 {
+                  clave: 'consulta_origen',
+                  titulo: 'Consulta origen',
+                  render: (v) =>
+                    v ? (
+                      <span
+                        className="inline-flex items-center text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full"
+                        title={v.motivo_consulta ? `Consulta #${v.id_consulta} — ${v.motivo_consulta}` : `Consulta #${v.id_consulta}`}
+                      >
+                        #{v.id_consulta}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-xs">Sin vincular</span>
+                    ),
+                },
+                {
                   clave: 'estado',
                   titulo: 'Estado',
                   render: (v) => <EstadoBadge estado={v} />,
@@ -341,16 +398,43 @@ export default function GestionAnalisisLaboratorio() {
               {errores.id_paciente && <p className="text-red-500 text-xs mt-1">{errores.id_paciente}</p>}
             </div>
             <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Consulta de origen
+                <span className="font-normal text-slate-400 ml-1">(opcional)</span>
+              </label>
+              <select
+                name="id_consulta"
+                value={form.id_consulta}
+                onChange={handleChange}
+                disabled={modoEdicion || !form.id_paciente}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.id_consulta ? 'border-red-400' : 'border-slate-300'} ${(modoEdicion || !form.id_paciente) ? 'bg-slate-100 cursor-not-allowed' : ''}`}
+              >
+                <option value="">Sin consulta asociada</option>
+                {consultasPaciente.map((c) => (
+                  <option key={c.id_consulta} value={c.id_consulta}>
+                    #{c.id_consulta} — {c.motivo_consulta || 'Consulta'} ({new Date(c.fecha_consulta).toLocaleDateString('es-BO')})
+                  </option>
+                ))}
+              </select>
+              {!form.id_paciente && (
+                <p className="text-slate-400 text-xs mt-1">Selecciona primero un paciente.</p>
+              )}
+              {errores.id_consulta && <p className="text-red-500 text-xs mt-1">{errores.id_consulta}</p>}
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de análisis *</label>
-              <input
-                type="text"
+              <select
                 name="tipo_analisis"
                 value={form.tipo_analisis}
                 onChange={handleChange}
-                placeholder="Escribe el tipo de análisis (ej: Hemograma completo)"
                 className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.tipo_analisis ? 'border-red-400' : 'border-slate-300'}`}
                 required
-              />
+              >
+                <option value="">Selecciona un tipo de análisis</option>
+                {TIPOS_ANALISIS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
               {errores.tipo_analisis && <p className="text-red-500 text-xs mt-1">{errores.tipo_analisis}</p>}
             </div>
           </div>
