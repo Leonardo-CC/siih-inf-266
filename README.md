@@ -42,7 +42,7 @@ correo y contraseña de pruebas
 medico@hospital.com
 123456
 
-## Issue Nro 08: 
+## Issue Nro 12: 
 Como farmaceutico puedo verificar el dashboard, verificar el inventario y ver que lotes estan proximos a 
 vencer y tambien aplico FEFO para el despacho de medicamentos, los medicamentos se verifican mediante la
 receta y el medico que la asigno, se pueden agregar nuevos lotes de medicamentos.
