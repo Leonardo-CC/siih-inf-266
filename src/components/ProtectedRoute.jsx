@@ -11,6 +11,7 @@ const rolesPermitidos = {
   '/enfermeria/pacientes': ['enfermero', 'administrativo'],
   '/medico/consultas': ['medico'],
   '/medico/signos': ['medico'],
+  '/farmacia/inventario': ['farmaceutico'],
 };
 
 export default function ProtectedRoute({ element, ruta }) {

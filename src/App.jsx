@@ -14,6 +14,8 @@ import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
 import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
 import MiPerfil from './pages/paciente/MiPerfil.jsx';
 import MisCitas from './pages/paciente/MisCitas.jsx';
+import InventarioFarmacia from './pages/farmacia/InventarioFarmacia.jsx';
+import DespachoRecetas from './pages/farmacia/DespachoRecetas.jsx';
 
 function App() {
   return (
@@ -82,6 +84,19 @@ function App() {
             element={
               <ProtectedRoute ruta="/medico/signos" element={<SignosVitalesMedico />} />
             }
+          />
+
+          <Route
+            path="/farmacia/inventario"
+            element={
+              <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
+            }
+          />
+          <Route 
+            path="farmacia/despachos" 
+            element={
+              <DespachoRecetas ruta="/farmacia/despachos" element={<DespachoRecetas />} />
+            } 
           />
         </Route>
 

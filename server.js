@@ -278,6 +278,44 @@ async function setupRoutes() {
       return medicoSignosHandler(req, res);
     });
 
+    // 1. Dashboard de Farmacia
+    const { default: farmaciaDashboardHandler } = await import('./api/farmacia/dashboard.js');
+    app.get('/api/farmacia/dashboard', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaDashboardHandler(req, res);
+    });
+
+    // 2. Ingreso de Lotes (Inventario)
+    const { default: farmaciaIngresoLoteHandler } = await import('./api/farmacia/ingreso-lote.js');
+    app.post('/api/farmacia/ingreso-lote', async (req, res) => {
+      req.method = 'POST';
+      return farmaciaIngresoLoteHandler(req, res);
+    });
+    // 3. Obtener Catálogo de Inventario
+    const { default: farmaciaInventarioDatosHandler } = await import('./api/farmacia/inventario-datos.js');
+    app.get('/api/farmacia/inventario-datos', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaInventarioDatosHandler(req, res);
+    });
+    // 4. Despachar Receta
+    const { default: farmaciaDespachoHandler } = await import('./api/farmacia/despachar-receta.js');
+    app.post('/api/farmacia/despachar-receta', async (req, res) => {
+      req.method = 'POST';
+      return farmaciaDespachoHandler(req, res);
+    });
+    // 5. Ver Recetas Pendientes
+    const { default: farmaciaRecetasPendientesHandler } = await import('./api/farmacia/recetas-pendientes.js');
+    app.get('/api/farmacia/recetas-pendientes', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaRecetasPendientesHandler(req, res);
+    });
+    // 6. Estadísticas del Dashboard de Farmacia
+    const { default: farmaciaStatsHandler } = await import('./api/farmacia/dashboard-stats.js');
+    app.get('/api/farmacia/dashboard-stats', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaStatsHandler(req, res);
+    });
+
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
     console.error('X Error al cargar los endpoints:', error.message);

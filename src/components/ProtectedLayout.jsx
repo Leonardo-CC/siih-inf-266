@@ -22,6 +22,8 @@ const navPorRol = {
   ],
   farmaceutico: [
     { to: '/dashboard', label: 'Dashboard', icono: '📊' },
+    { to: '/farmacia/despachos', label: 'Despachos', icono: '📋' },
+    { to: '/farmacia/inventario', label: 'Inventario', icono: '🗄️' },
   ],
   administrativo: [
     { to: '/dashboard', label: 'Dashboard', icono: '📊' },

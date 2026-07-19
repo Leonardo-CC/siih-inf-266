@@ -7,6 +7,7 @@ import TablaCRUD from '../components/TablaCRUD.jsx';
 import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
 import PacienteDashboard from './paciente/PacienteDashboard.jsx';
+import FarmaciaDashboard from './farmacia/FarmaciaDashboard.jsx';
 
 const accionesPorRol = {
   paciente: [
@@ -40,9 +41,10 @@ export default function Dashboard() {
   const esEnfermero = usuario?.rol === 'enfermero';
   const esMedico = usuario?.rol === 'medico';
   const esPaciente = usuario?.rol === 'paciente';
+  const esFarmaceutico = usuario?.rol === 'farmaceutico';
 
   useEffect(() => {
-    if (esEnfermero || esMedico) {
+    if (esEnfermero || esMedico || esFarmaceutico) {
       setCargando(false);
       return;
     }
@@ -62,7 +64,7 @@ export default function Dashboard() {
       }
     }
     cargarStats();
-  }, [usuario, esEnfermero, esMedico]);
+  }, [usuario, esEnfermero, esMedico, esFarmaceutico]);
 
   async function abrirCRUD() {
     setShowPacientesModal(true);
@@ -90,6 +92,10 @@ export default function Dashboard() {
 
   if (esPaciente) {
     return <PacienteDashboard usuario={usuario} />;
+  }
+  
+  if (esFarmaceutico) {
+    return <FarmaciaDashboard usuario={usuario} />;
   }
 
   return (
