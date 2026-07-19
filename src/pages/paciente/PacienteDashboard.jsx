@@ -10,6 +10,7 @@ import {
   IconoUser,
   IconoCog,
   IconoClipboardDocument,
+  IconoDocumentText,
 } from '../../components/Iconos.jsx';
 
 const ESTADO_CITA_COLORES = {
@@ -224,15 +225,16 @@ export default function PacienteDashboard({ usuario }) {
         </div>
       </div>
 
+      
       {/* Accesos rapidos */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link to="/paciente/cita" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
           <div className="shrink-0 bg-sky-50 text-sky-600 rounded-xl p-3 group-hover:bg-sky-100 transition-colors">
             <IconoCalendar className="w-6 h-6" />
           </div>
           <div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary">Solicitar cita</h3>
-            <p className="text-sm text-slate-500 mt-1">Agenda una nueva consulta medica.</p>
+            <p className="text-sm text-slate-500 mt-1">Agenda una nueva consulta médica.</p>
           </div>
         </Link>
         <Link to="/paciente/citas" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
@@ -244,13 +246,22 @@ export default function PacienteDashboard({ usuario }) {
             <p className="text-sm text-slate-500 mt-1">Revisa el estado de tus citas y atenciones.</p>
           </div>
         </Link>
+        <Link to="/paciente/historial" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
+          <div className="shrink-0 bg-emerald-50 text-emerald-600 rounded-xl p-3 group-hover:bg-emerald-100 transition-colors">
+            <IconoDocumentText className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mi Historial</h3>
+            <p className="text-sm text-slate-500 mt-1">Revisa tus diagnósticos y tratamientos médicos.</p>
+          </div>
+        </Link>
         <Link to="/paciente/perfil" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group flex items-start gap-4">
           <div className="shrink-0 bg-slate-100 text-slate-600 rounded-xl p-3 group-hover:bg-slate-200 transition-colors">
             <IconoUser className="w-6 h-6" />
           </div>
           <div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary">Mi perfil</h3>
-            <p className="text-sm text-slate-500 mt-1">Edita tu correo, contrasena y datos de contacto.</p>
+            <p className="text-sm text-slate-500 mt-1">Edita tu correo, contraseña y datos de contacto.</p>
           </div>
         </Link>
       </div>

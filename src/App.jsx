@@ -14,6 +14,7 @@ import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
 import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
 import MiPerfil from './pages/paciente/MiPerfil.jsx';
 import MisCitas from './pages/paciente/MisCitas.jsx';
+import HistorialClinico from './pages/paciente/HistorialClinico';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminUsuarios from './pages/admin/AdminUsuarios.jsx';
 import AdminPacientes from './pages/admin/AdminPacientes.jsx';
@@ -67,6 +68,13 @@ function App() {
             element={
               <ProtectedRoute ruta="/paciente/perfil" element={<MiPerfil />} />
             }
+          />
+
+          <Route 
+            path="/paciente/historial" 
+            element={
+              <ProtectedRoute ruta="/paciente/historial" element={<HistorialClinico />} />
+            } 
           />
           <Route
             path="/enfermeria/admisiones"

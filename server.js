@@ -212,6 +212,12 @@ async function setupRoutes() {
       return pacienteCitasHandler(req, res);
     });
 
+    const { default: historialPacienteHandler } = await import('./api/paciente/historial.js');
+    app.get('/api/paciente/historial', async (req, res) => {
+      req.method = 'GET';
+      return historialPacienteHandler(req, res);
+    });
+
     const { default: cancelarCitaHandler } = await import('./api/paciente/citas/cancelar.js');
     app.post('/api/paciente/citas/cancelar', async (req, res) => {
       req.method = 'POST';
