@@ -37,6 +37,11 @@ export default function Home() {
             </Link>
           </div>
         </div>
+        <div style={{ marginTop: '12px' }}>
+          <Link to="/medico/agenda">
+            <button className="siih-button" style={{ backgroundColor: '#3b82f6' }}>Ver agenda del médico</button>
+          </Link>
+        </div>
       </div>
     </div>
   );

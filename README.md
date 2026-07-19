@@ -30,9 +30,9 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 SUPABASE_SERVICE_ROLE_KEY=pega_aqui_la_clave_secreta_que_copiaste_del_panel
 
 
-## Issue Nro XX: 
+## Issue Nro 07: 
 Descripcion
-Para quien es: para medico puede hacer, registrar.
+Para quien es: Como medico puedes verificar las consultas dependiendo la fecha puedes seleccionar estados para filtrar entre Pendiente, En atencion, Atendida y Derivada, dependiendo de la especialidad y el medico cambia ya que esta asignado a su id medico.
 
 
 

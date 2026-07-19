@@ -21,8 +21,8 @@ export async function obtenerEspecialidades() {
   return (data || []).map((e) => e.nombre);
 }
 
-  // Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
-  // especialidad: nombre de especialidad (string), ej. "Cardiología"
+// Médicos de una especialidad, con nombre completo (join a persona vía persona_id y especialidad).
+// especialidad: nombre de especialidad (string), ej. "Cardiología"
 export async function obtenerMedicosPorEspecialidad(especialidad) {
   if (!especialidad) {
     return [];
@@ -109,6 +109,42 @@ export async function crearCita({ id_paciente, id_medico, fecha_hora, motivo }) 
   return data;
 }
 
+// Obtiene todas las citas de un médico para un día específico o un rango de fechas.
+// Incluye información del paciente y especialidad.
+export async function obtenerCitasPorMedico(id_medico, fechaInicio, fechaFin) {
+  const { data, error } = await supabaseAdmin
+    .from('cita')
+    .select(
+      `id_cita, 
+       fecha_hora, 
+       estado, 
+       motivo,
+       estado_pago,
+       id_paciente,
+       id_medico,
+       paciente:id_paciente (
+         id_paciente,
+         persona_id,
+         persona:persona_id (nombre, apellido, telefono, fecha_nac, sexo)
+       ),
+       medico:id_medico (
+         id_medico,
+         id_especialidad,
+         especialidad:id_especialidad (nombre, tarifa),
+         persona:persona_id (nombre, apellido)
+       )`
+    )
+    .eq('id_medico', id_medico)
+    .gte('fecha_hora', fechaInicio)
+    .lte('fecha_hora', fechaFin)
+    .neq('estado', 'cancelada')
+    .order('fecha_hora', { ascending: true });
+
+  if (error) throw new Error(`Error al obtener citas del médico: ${error.message}`);
+  return data || [];
+}
+
+// Lista todas las citas con información de paciente y médico.
 export async function listarTodasCitas() {
   const { data, error } = await supabaseAdmin
     .from('cita')
