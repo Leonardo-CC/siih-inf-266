@@ -2,6 +2,13 @@ import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
+import {
+  IconoPlus,
+  IconoEdit,
+  IconoTrash,
+  IconoUsers,
+  IconoCog,
+} from '../../components/Iconos.jsx';
 
 const ROLES = {
   paciente: 'Paciente',
@@ -181,9 +188,10 @@ export default function AdminUsuarios() {
           </div>
           <button
             onClick={abrirModalCrear}
-            className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
           >
-            + Nuevo usuario
+            <IconoPlus className="w-4 h-4" />
+            Nuevo usuario
           </button>
         </div>
 
@@ -199,35 +207,37 @@ export default function AdminUsuarios() {
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
-            <TablaCRUD
-              columnas={[
-                { clave: 'nombre_completo', titulo: 'Nombre completo' },
-                { clave: 'correo', titulo: 'Correo' },
-                { clave: 'ci', titulo: 'CI' },
-                { clave: 'telefono', titulo: 'Teléfono' },
-                {
-                  clave: 'rol',
-                  titulo: 'Rol',
-                  render: (v) => ROLES[v] || v,
-                },
-                {
-                  clave: 'estado',
-                  titulo: 'Estado',
-                  render: (v) => (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                      v === 'activo' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-700 border-red-200'
-                    }`}>
-                      {ESTADOS[v] || v}
-                    </span>
-                  ),
-                },
-              ]}
-              datos={usuarios}
-              cargando={cargando}
-              emptyMessage="No hay usuarios registrados"
-              onEditar={abrirModalEditar}
-              onEliminar={handleEliminar}
-            />
+          <TablaCRUD
+            columnas={[
+              { clave: 'nombre_completo', titulo: 'Nombre completo' },
+              { clave: 'correo', titulo: 'Correo' },
+              { clave: 'ci', titulo: 'CI' },
+              { clave: 'telefono', titulo: 'Teléfono' },
+              {
+                clave: 'rol',
+                titulo: 'Rol',
+                render: (v) => ROLES[v] || v,
+              },
+              {
+                clave: 'estado',
+                titulo: 'Estado',
+                render: (v) => (
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                    v === 'activo' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-700 border-red-200'
+                  }`}>
+                    {ESTADOS[v] || v}
+                  </span>
+                ),
+              },
+            ]}
+            datos={usuarios}
+            cargando={cargando}
+            emptyMessage="No hay usuarios registrados"
+            onEditar={abrirModalEditar}
+            onEliminar={handleEliminar}
+            iconoEditar={<IconoEdit className="w-4 h-4" />}
+            iconoEliminar={<IconoTrash className="w-4 h-4" />}
+          />
           )}
         </div>
       </div>

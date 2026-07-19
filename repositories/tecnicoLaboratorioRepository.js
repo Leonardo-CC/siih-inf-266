@@ -262,7 +262,8 @@ export async function listarPacientesLaboratorio() {
     .select(`
       id_paciente,
       persona_id,
-      tipo_seguro,
+      id_tipo_seguro,
+      tipo_seguro:id_tipo_seguro (nombre),
       numero_seguro,
       persona:persona_id (
         nombre,
@@ -286,7 +287,8 @@ export async function listarPacientesLaboratorio() {
     telefono: p.persona?.telefono || '',
     sexo: p.persona?.sexo || '',
     fecha_nac: p.persona?.fecha_nac || '',
-    tipo_seguro: p.tipo_seguro || '',
+    id_tipo_seguro: p.id_tipo_seguro || null,
+    tipo_seguro: p.tipo_seguro?.nombre || '',
     numero_seguro: p.numero_seguro || '',
   }));
 

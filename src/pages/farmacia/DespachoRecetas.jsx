@@ -1,5 +1,12 @@
 // src/pages/farmacia/DespachoRecetas.jsx
 import { useEffect, useState } from 'react';
+import {
+  IconoClipboardDocument,
+  IconoRefresh,
+  IconoStethoscope,
+  IconoArchiveBox,
+  IconoCheck,
+} from '../../components/Iconos.jsx';
 
 export default function DespachoRecetas() {
   const [recetas, setRecetas] = useState([]);
@@ -56,14 +63,20 @@ export default function DespachoRecetas() {
     <div className="max-w-5xl mx-auto space-y-6 relative">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">📋 Despacho de Recetas</h1>
-          <p className="text-slate-500 mt-1">Verifica la identidad del paciente y las indicaciones médicas antes de entregar.</p>
+          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+            <span className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <IconoClipboardDocument className="w-5 h-5" />
+            </span>
+            Despacho de Recetas
+          </h1>
+          <p className="text-slate-500 mt-2">Verifica la identidad del paciente y las indicaciones médicas antes de entregar.</p>
         </div>
         <button 
           onClick={cargarRecetas}
-          className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 transition"
+          className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 transition flex items-center gap-2"
         >
-          ↻ Actualizar Lista
+          <IconoRefresh className="w-4 h-4" />
+          Actualizar Lista
         </button>
       </div>
 
@@ -82,7 +95,9 @@ export default function DespachoRecetas() {
             </div>
           ) : recetas.length === 0 ? (
             <div className="text-center py-24 text-slate-500">
-              <span className="text-6xl block mb-4">✨</span>
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+                <IconoCheck className="w-8 h-8" />
+              </div>
               <p className="font-bold text-slate-700 text-2xl">Todo al día</p>
               <p className="text-slate-500 mt-2 text-lg">No hay pacientes esperando medicamentos en este momento.</p>
             </div>
@@ -100,15 +115,17 @@ export default function DespachoRecetas() {
                       </span>
                     </div>
                     
-                    <div className="text-sm text-slate-500 mb-3 flex items-center gap-2">
-                      <span title="Médico Prescriptor">🩺 Dr. {receta.medico}</span>
-                      <span className="text-slate-300">•</span>
-                      <span>{receta.especialidad}</span>
-                    </div>
+                     <div className="text-sm text-slate-500 mb-3 flex items-center gap-2">
+                       <span title="Medico Prescriptor" className="text-blue-600"><IconoStethoscope className="w-4 h-4 inline" /></span>
+                       <span>Dr. {receta.medico}</span>
+                       <span className="text-slate-300">•</span>
+                       <span>{receta.especialidad}</span>
+                     </div>
 
-                    <p className="text-sm font-medium text-emerald-800 bg-emerald-50 inline-block px-3 py-1.5 rounded-md border border-emerald-200 shadow-sm">
-                      📦 {receta.medicamentos}
-                    </p>
+                     <p className="text-sm font-medium text-emerald-800 bg-emerald-50 inline-block px-3 py-1.5 rounded-md border border-emerald-200 shadow-sm">
+                       <IconoArchiveBox className="w-4 h-4 inline mr-1" />
+                       {receta.medicamentos}
+                     </p>
                   </div>
 
                   <div className="flex flex-col items-end w-full sm:w-auto mt-4 sm:mt-0 gap-3">
@@ -134,13 +151,13 @@ export default function DespachoRecetas() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
             
-            {/* Cabecera del Modal */}
-            <div className="bg-emerald-600 p-4 text-center text-white">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl mx-auto mb-2">
-                📋
-              </div>
-              <h3 className="text-lg font-bold">Autorización de Despacho</h3>
-            </div>
+             {/* Cabecera del Modal */}
+             <div className="bg-emerald-600 p-4 text-center text-white">
+               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                 <IconoClipboardDocument className="w-6 h-6 text-white" />
+               </div>
+               <h3 className="text-lg font-bold">Autorización de Despacho</h3>
+             </div>
 
             <div className="p-6">
               {/* Ticket Resumen */}

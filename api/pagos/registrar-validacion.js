@@ -2,7 +2,7 @@
 // ============================================================
 // Endpoint: POST /api/pagos/registrar-validacion
 // Registra la validación de seguro para una cita
-// Body: { id_cita, id_paciente, tipo_seguro, numero_seguro, vigencia, estado_validacion }
+// Body: { id_cita, id_paciente, id_tipo_seguro, numero_seguro, vigencia, estado_validacion }
 
 import { registrarValidacionSeguro } from '../../services/pagoService.js';
 
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const { 
       id_cita, 
       id_paciente, 
-      tipo_seguro, 
+      id_tipo_seguro, 
       numero_seguro, 
       vigencia, 
       estado_validacion 
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       id_cita,
       id_paciente,
       {
-        tipo_seguro,
+        id_tipo_seguro,
         numero_seguro,
         vigencia,
         estado_validacion,

@@ -34,6 +34,12 @@ SUPABASE_SERVICE_ROLE_KEY=pega_aqui_la_clave_secreta_que_copiaste_del_panel
 Descripcion
 Para quien es: Como ... puedo ... 
 
+## Issue Nro 2: 
+Como usuario puedo ver mi historial clinico y solo yo y personal autorizado pueden verlo, puedo ver mi diagnostico y mi tratamiento recomendado asi tambien en forma cronologica la fecha del historial.
+correo y contraseña de pruebas
+lion@gmail.com
+123456
+
 ## Issue Nro 07: 
 Como medico puedes verificar las consultas dependiendo la fecha puedes seleccionar estados para filtrar
 entre Pendiente, En atencion, Atendida y Derivada, dependiendo de la especialidad y el medico cambia ya
@@ -46,10 +52,12 @@ medico@hospital.com
 Como farmaceutico puedo verificar el dashboard, verificar el inventario y ver que lotes estan proximos a 
 vencer y tambien aplico FEFO para el despacho de medicamentos, los medicamentos se verifican mediante la
 receta y el medico que la asigno, se pueden agregar nuevos lotes de medicamentos.
+
 ## Issue Nro 13: 
 Como farmaceutico puedo dispensar medicamentos ver la cantidad, el medico que la receto, el 
 paciente que la necesita, la fecha de emision y todo se comprueba antes de la dispensacion aplicando 
 FEFO
+correo y contraseña de pruebas
 farmacia@prueba.com
 123456
 

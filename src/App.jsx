@@ -14,6 +14,7 @@ import SignosVitalesMedico from './pages/medico/SignosVitalesMedico.jsx';
 import PacienteDashboard from './pages/paciente/PacienteDashboard.jsx';
 import MiPerfil from './pages/paciente/MiPerfil.jsx';
 import MisCitas from './pages/paciente/MisCitas.jsx';
+import HistorialClinico from './pages/paciente/HistorialClinico';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminUsuarios from './pages/admin/AdminUsuarios.jsx';
 import AdminPacientes from './pages/admin/AdminPacientes.jsx';
@@ -21,6 +22,8 @@ import AdminCitas from './pages/admin/AdminCitas.jsx';
 import AdminAdmisiones from './pages/admin/AdminAdmisiones.jsx';
 import AdminSignosVitales from './pages/admin/AdminSignosVitales.jsx';
 import AdminConfiguracion from './pages/admin/AdminConfiguracion.jsx';
+import AdminCatalogo from './pages/admin/AdminCatalogo.jsx';
+import AdminStock from './pages/admin/AdminStock.jsx';
 import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioDashboard.jsx';
 import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
 import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
@@ -65,6 +68,13 @@ function App() {
             element={
               <ProtectedRoute ruta="/paciente/perfil" element={<MiPerfil />} />
             }
+          />
+
+          <Route 
+            path="/paciente/historial" 
+            element={
+              <ProtectedRoute ruta="/paciente/historial" element={<HistorialClinico />} />
+            } 
           />
           <Route
             path="/enfermeria/admisiones"
@@ -154,6 +164,18 @@ function App() {
             path="/admin/configuracion"
             element={
               <ProtectedRoute ruta="/admin/configuracion" element={<AdminConfiguracion />} />
+            }
+          />
+          <Route
+            path="/admin/catalogo"
+            element={
+              <ProtectedRoute ruta="/admin/catalogo" element={<AdminCatalogo />} />
+            }
+          />
+          <Route
+            path="/admin/stock"
+            element={
+              <ProtectedRoute ruta="/admin/stock" element={<AdminStock />} />
             }
           />
           <Route

@@ -3,6 +3,7 @@ import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
 import '../../styles/reporteConsulta.css';
+import { IconoEdit } from '../../components/Iconos.jsx';
 
 const ESTADOS = {
   pendiente: 'Pendiente',
@@ -257,6 +258,7 @@ export default function GestionConsultasMedico() {
                   : `No hay consultas registradas para la fecha seleccionada.`
               }
               onEditar={abrirModalAtender}
+              iconoEditar={<IconoEdit className="w-4 h-4" />}
             />
           )}
         </div>
