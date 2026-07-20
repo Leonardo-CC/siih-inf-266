@@ -35,6 +35,8 @@ import InventarioFarmacia from './pages/farmacia/InventarioFarmacia.jsx';
 import MedicamentosFarmacia from './pages/farmacia/MedicamentosFarmacia.jsx';
 import DespachoRecetas from './pages/farmacia/DespachoRecetas.jsx';
 import MiPerfilFarmacia from './pages/farmacia/MiPerfilFarmacia.jsx';
+import AdminInscripciones from './pages/admin/AdminInscripciones.jsx';
+import AdminFacultades from './pages/admin/AdminFacultades.jsx';
 
 function App() {
   return (
@@ -225,7 +227,9 @@ function App() {
                <ProtectedRoute ruta="/farmacia/perfil" element={<MiPerfilFarmacia />} />
              }
            />
-         </Route>
+          </Route>
+          <Route path="/admin/inscripciones" element={<AdminInscripciones />} />
+          <Route path="/admin/facultades" element={<AdminFacultades />} />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

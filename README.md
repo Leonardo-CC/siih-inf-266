@@ -110,3 +110,6 @@ ejecutar en terminal: vercel dev
   vía `repositories/consultaMeta.js`.
 - Dependencia nueva: `pdf-lib` (`npm install pdf-lib`).
 - Requiere `vercel dev` para probarse en local (Vite solo no ejecuta `/api`).
+
+
+## Issue Nro 20: 

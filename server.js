@@ -130,8 +130,6 @@ async function setupRoutes() {
       return listarAdmisionHandler(req, res);
     });
 
-    
-
     const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
     app.get('/api/admisiones/buscar', async (req, res) => {
       req.method = 'GET';
@@ -281,7 +279,7 @@ async function setupRoutes() {
     });
 
     const { default: medicoSignosHandler } = await import('./api/medico/signos.js');
-    app.get('/api/medico/signos', (req, res) => {
+    app.get('/api/medico/signos', async (req, res) => {
       req.method = 'GET';
       return medicoSignosHandler(req, res);
     });
@@ -464,7 +462,33 @@ async function setupRoutes() {
     app.get('/api/citas/opciones', async (req, res) => {
       req.method = 'GET';
       return opcionesCitaHandler(req, res);
-    })
+    });
+
+    // Facultades
+    const { default: listarFacultadesHandler } = await import('./api/facultades/listar.js');
+    app.get('/api/facultades/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarFacultadesHandler(req, res);
+    });
+
+    const { default: registrarFacultadHandler } = await import('./api/facultades/registro.js');
+    app.post('/api/facultades/registro', async (req, res) => {
+      req.method = 'POST';
+      return registrarFacultadHandler(req, res);
+    });
+
+    const { default: actualizarFacultadHandler } = await import('./api/facultades/actualizar.js');
+    app.put('/api/facultades/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return actualizarFacultadHandler(req, res);
+    });
+
+    const { default: eliminarFacultadHandler } = await import('./api/facultades/eliminar.js');
+    app.post('/api/facultades/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return eliminarFacultadHandler(req, res);
+    });
+
     // 1. Dashboard de Farmacia
     const { default: farmaciaDashboardHandler } = await import('./api/farmacia/dashboard.js');
     app.get('/api/farmacia/dashboard', async (req, res) => {
@@ -502,14 +526,6 @@ async function setupRoutes() {
       req.method = 'GET';
       return farmaciaStatsHandler(req, res);
     });
-
-    // Reporte de consulta en PDF
-    const { default: reporteConsultaHandler } = await import('./api/medico/reporte-consulta.js');
-    app.get('/api/medico/reporte-consulta', async (req, res) => {
-      req.method = 'GET';
-      return reporteConsultaHandler(req, res);
-    });
-
 
     // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
     const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
@@ -583,6 +599,7 @@ async function setupRoutes() {
 
     const { default: movimientoHistorialHandler } = await import('./api/movimientos/historial.js');
     app.get('/api/movimientos/historial', async (req, res) => {
+      req.method = 'GET';
       return movimientoHistorialHandler(req, res);
     });
 
@@ -605,6 +622,26 @@ async function setupRoutes() {
       return catalogoHandler(req, res);
     });
 
+    // Inscripciones
+    const { default: listarInscripcionesHandler } = await import('./api/inscripciones/listar.js');
+    app.get('/api/inscripciones/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarInscripcionesHandler(req, res);
+    });
+
+    const { default: registrarInscripcionHandler } = await import('./api/inscripciones/registro.js');
+    app.post('/api/inscripciones/registro', async (req, res) => {
+      req.method = 'POST';
+      return registrarInscripcionHandler(req, res);
+    });
+
+    const { default: comprobanteInscripcionHandler } = await import('./api/inscripciones/comprobante.js');
+    app.get('/api/inscripciones/comprobante', async (req, res) => {
+      req.method = 'GET';
+      return comprobanteInscripcionHandler(req, res);
+    });
+
+
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
     console.error('X Error al cargar los endpoints:', error.message);
@@ -619,5 +656,3 @@ app.listen(PORT, () => {
   console.log(`-> Frontend conecta a http://localhost:5173`);
   console.log(`-> Endpoints disponibles en http://localhost:${PORT}/api/`);
 });
-
-
