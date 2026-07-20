@@ -8,6 +8,8 @@ import {
   IconoClipboardDocument,
   IconoHeart,
   IconoCog,
+  IconoArchiveBox,
+  IconoRefresh,
 } from '../../components/Iconos.jsx';
 
 export default function AdminDashboard() {
@@ -96,9 +98,9 @@ export default function AdminDashboard() {
             <Link
               key={idx}
               to={stat.to}
-              className={`bg-gradient-to-br ${stat.color} rounded-xl p-5 text-white shadow-md hover:shadow-lg transition group`}
+              className={`bg-gradient-to-br ${stat.color} rounded-xl p-5 text-white shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group`}
             >
-              <div className="mb-2">{React.createElement(iconMap[stat.icono], { className: 'w-8 h-8' })}</div>
+              <div className="mb-2 group-hover:scale-110 transition-transform duration-300">{React.createElement(iconMap[stat.icono], { className: 'w-8 h-8' })}</div>
               <p className="text-sm font-medium text-white/80">{stat.titulo}</p>
               <p className="text-2xl font-bold">{stat.valor}</p>
             </Link>
@@ -110,34 +112,39 @@ export default function AdminDashboard() {
         <h2 className="text-lg font-semibold text-slate-700 mb-4">Acciones rápidas</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Link to="/admin/usuarios" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">👥</div>
+            <div className="mb-3"><IconoUsers className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Gestionar usuarios</h3>
             <p className="text-sm text-slate-500 mt-1">Crear, editar y eliminar usuarios del sistema.</p>
           </Link>
           <Link to="/admin/pacientes" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">🏥</div>
+            <div className="mb-3"><IconoBuildingHospital className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Gestionar pacientes</h3>
             <p className="text-sm text-slate-500 mt-1">Administra los pacientes registrados.</p>
           </Link>
           <Link to="/admin/citas" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">📅</div>
+            <div className="mb-3"><IconoCalendar className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Gestionar citas</h3>
             <p className="text-sm text-slate-500 mt-1">Ver, editar y eliminar citas médicas.</p>
           </Link>
           <Link to="/admin/admisiones" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">📋</div>
+            <div className="mb-3"><IconoClipboardDocument className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Gestionar admisiones</h3>
             <p className="text-sm text-slate-500 mt-1">Administra las admisiones y consultas.</p>
           </Link>
           <Link to="/admin/signos-vitales" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">❤️</div>
+            <div className="mb-3"><IconoHeart className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Signos vitales</h3>
             <p className="text-sm text-slate-500 mt-1">Registra y administra signos vitales.</p>
           </Link>
           <Link to="/admin/configuracion" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
-            <div className="text-3xl mb-3">⚙️</div>
+            <div className="mb-3"><IconoCog className="w-8 h-8" /></div>
             <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Mi configuración</h3>
             <p className="text-sm text-slate-500 mt-1">Cambia tu correo y contraseña.</p>
+          </Link>
+          <Link to="/admin/movimientos" className="bg-white rounded-xl border border-slate-200 p-5 hover:border-primary hover:shadow-md transition group">
+            <div className="mb-3"><IconoArchiveBox className="w-8 h-8" /></div>
+            <h3 className="font-semibold text-slate-800 group-hover:text-primary transition">Movimientos de insumos</h3>
+            <p className="text-sm text-slate-500 mt-1">Registra entradas y salidas de inventario.</p>
           </Link>
         </div>
       </div>

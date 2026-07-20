@@ -39,9 +39,9 @@ async function statsPaciente(usuario) {
 
   return {
     tarjetas: [
-      { titulo: 'Proxima cita', valor: proximaCita ? new Date(proximaCita.fecha_hora).toLocaleDateString('es-BO') : 'Sin citas', icono: '📅', link: '/paciente/cita' },
-      { titulo: 'Citas pendientes', valor: citasPendientes ?? 0, icono: '📋', link: '/paciente/cita' },
-      { titulo: 'Total citas', valor: totalCitas ?? 0, icono: '📊', link: '/paciente/cita' },
+      { titulo: 'Proxima cita', valor: proximaCita ? new Date(proximaCita.fecha_hora).toLocaleDateString('es-BO') : 'Sin citas', icono: 'calendar', link: '/paciente/cita' },
+      { titulo: 'Citas pendientes', valor: citasPendientes ?? 0, icono: 'clipboard', link: '/paciente/cita' },
+      { titulo: 'Total citas', valor: totalCitas ?? 0, icono: 'chart', link: '/paciente/cita' },
     ],
     actividadReciente: [],
   };
@@ -65,9 +65,9 @@ async function statsEnfermero() {
 
   return {
     tarjetas: [
-      { titulo: 'Admisiones pendientes', valor: admisionesPendientes ?? 0, icono: '📋', link: '/enfermeria/admisiones' },
-      { titulo: 'Signos hoy', valor: signosHoy ?? 0, icono: '❤️', link: '/enfermeria/signos-vitales' },
-      { titulo: 'Total registros', valor: totalSignos ?? 0, icono: '📊', link: '/enfermeria/signos-vitales' },
+      { titulo: 'Admisiones pendientes', valor: admisionesPendientes ?? 0, icono: 'clipboard', link: '/enfermeria/admisiones' },
+      { titulo: 'Signos hoy', valor: signosHoy ?? 0, icono: 'heart', link: '/enfermeria/signos-vitales' },
+      { titulo: 'Total registros', valor: totalSignos ?? 0, icono: 'chart', link: '/enfermeria/signos-vitales' },
     ],
     actividadReciente: [],
   };
@@ -86,8 +86,8 @@ async function statsMedico() {
 
   return {
     tarjetas: [
-      { titulo: 'Consultas activas', valor: consultasActivas ?? 0, icono: '🩺', link: '/enfermeria/admisiones' },
-      { titulo: 'Signos registrados hoy', valor: signosSinRevisar ?? 0, icono: '❤️', link: '/enfermeria/signos-vitales' },
+      { titulo: 'Consultas activas', valor: consultasActivas ?? 0, icono: 'stethoscope', link: '/enfermeria/admisiones' },
+      { titulo: 'Signos registrados hoy', valor: signosSinRevisar ?? 0, icono: 'heart', link: '/enfermeria/signos-vitales' },
     ],
     actividadReciente: [],
   };
@@ -160,11 +160,11 @@ async function statsAdmin() {
 
   return {
     tarjetas: [
-      { titulo: 'Pacientes', valor: totalPacientes ?? 0, icono: '👥', color: 'bg-sky-500', link: '/admin/pacientes' },
-      { titulo: 'Usuarios', valor: totalUsuarios ?? 0, icono: '🧑‍💼', color: 'bg-violet-500', link: '/admin/usuarios' },
-      { titulo: 'Citas', valor: totalCitas ?? 0, icono: '📅', color: 'bg-emerald-500', link: '/admin/citas' },
-      { titulo: 'Citas pendientes', valor: citasPendientes ?? 0, icono: '⏳', color: 'bg-amber-500', link: '/admin/citas' },
-      { titulo: 'Admisiones hoy', valor: admisionesHoy ?? 0, icono: '📋', color: 'bg-rose-500', link: '/admin/admisiones' },
+      { titulo: 'Pacientes', valor: totalPacientes ?? 0, icono: 'userGroup', color: 'bg-sky-500', link: '/admin/pacientes' },
+      { titulo: 'Usuarios', valor: totalUsuarios ?? 0, icono: 'users', color: 'bg-violet-500', link: '/admin/usuarios' },
+      { titulo: 'Citas', valor: totalCitas ?? 0, icono: 'calendar', color: 'bg-emerald-500', link: '/admin/citas' },
+      { titulo: 'Citas pendientes', valor: citasPendientes ?? 0, icono: 'clock', color: 'bg-amber-500', link: '/admin/citas' },
+      { titulo: 'Admisiones hoy', valor: admisionesHoy ?? 0, icono: 'clipboard', color: 'bg-rose-500', link: '/admin/admisiones' },
     ],
     distribucionCitas,
     usuariosPorRol,
@@ -181,8 +181,8 @@ async function statsAdmin() {
 async function statsFarmaceutico() {
   return {
     tarjetas: [
-      { titulo: 'Inventario', valor: '0', icono: '💊', link: '/dashboard' },
-      { titulo: 'Recetas pendientes', valor: '0', icono: '📝', link: '/dashboard' },
+      { titulo: 'Inventario', valor: '0', icono: 'pill', link: '/dashboard' },
+      { titulo: 'Recetas pendientes', valor: '0', icono: 'documentText', link: '/dashboard' },
     ],
     actividadReciente: [],
   };

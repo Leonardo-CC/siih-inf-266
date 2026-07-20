@@ -70,7 +70,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ ok: true, recetas: recetasFormateadas });
   } catch (error) {
-    console.error("🔥 ERROR DE SUPABASE:", error);
+    console.error("ERROR DE SUPABASE:", error);
     return res.status(500).json({ ok: false, mensaje: 'Error al obtener recetas' });
   }
 }

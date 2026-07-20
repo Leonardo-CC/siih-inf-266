@@ -522,6 +522,24 @@ async function setupRoutes() {
       return farmaciaStockHandler(req, res);
     });
 
+    const { default: farmaciaMedicamentosHandler } = await import('./api/farmacia/medicamentos.js');
+    app.get('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.post('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'POST';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.put('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'PUT';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.delete('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'DELETE';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+
     const { default: farmaceuticoMiIdHandler } = await import('./api/farmaceutico/mi-id.js');
     app.post('/api/farmaceutico/mi-id', async (req, res) => {
       req.method = 'POST';
@@ -544,7 +562,31 @@ async function setupRoutes() {
       return farmaceuticoRecuperarHandler(req, res);
     });
 
-    // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
+    // 8. Movimientos de insumos (HU-19) - entrada/salida/transferencia
+    const { default: movimientoEntradaHandler } = await import('./api/movimientos/entrada.js');
+    app.post('/api/movimientos/entrada', async (req, res) => {
+      req.method = 'POST';
+      return movimientoEntradaHandler(req, res);
+    });
+
+    const { default: movimientoSalidaHandler } = await import('./api/movimientos/salida.js');
+    app.post('/api/movimientos/salida', async (req, res) => {
+      req.method = 'POST';
+      return movimientoSalidaHandler(req, res);
+    });
+
+    const { default: movimientoTransferenciaHandler } = await import('./api/movimientos/transferencia.js');
+    app.post('/api/movimientos/transferencia', async (req, res) => {
+      req.method = 'POST';
+      return movimientoTransferenciaHandler(req, res);
+    });
+
+    const { default: movimientoHistorialHandler } = await import('./api/movimientos/historial.js');
+    app.get('/api/movimientos/historial', async (req, res) => {
+      return movimientoHistorialHandler(req, res);
+    });
+
+    // 9. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
     const { default: catalogoHandler } = await import('./api/catalogo/index.js');
     app.get('/api/catalogo', async (req, res) => {
       req.method = 'GET';

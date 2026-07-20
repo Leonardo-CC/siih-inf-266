@@ -16,6 +16,7 @@ import {
   IconoPill,
   IconoDocumentText,
   IconoBuildingHospital,
+  IconoArrowDown,
 } from './Iconos.jsx';
 
 const navPorRol = {
@@ -48,6 +49,7 @@ const navPorRol = {
     { to: '/dashboard', label: 'Dashboard', icono: IconoHome },
     { to: '/farmacia/despachos', label: 'Despachos', icono: IconoDocumentText },
     { to: '/farmacia/inventario', label: 'Inventario', icono: IconoArchiveBox },
+    { to: '/farmacia/medicamentos', label: 'Medicamentos', icono: IconoPill },
     { to: '/farmacia/perfil', label: 'Mi perfil', icono: IconoUser },
   ],
   administrativo: [
@@ -59,6 +61,8 @@ const navPorRol = {
     { to: '/admin/signos-vitales', label: 'Signos vitales', icono: IconoHeart },
     { to: '/admin/catalogo', label: 'Catálogo', icono: IconoCog },
     { to: '/admin/stock', label: 'Stock', icono: IconoArchiveBox },
+    { to: '/admin/medicamentos', label: 'Medicamentos', icono: IconoPill },
+    { to: '/admin/movimientos', label: 'Movimientos', icono: IconoArrowDown },
     { to: '/admin/configuracion', label: 'Configuracion', icono: IconoCog },
   ],
 };

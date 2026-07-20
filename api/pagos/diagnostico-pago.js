@@ -48,7 +48,7 @@ export default async function handler(req, res) {
         if (error) {
           resultados[metodo] = `NO VÁLIDO: ${error.message}`;
         } else {
-          resultados[metodo] = 'VÁLIDO ✓';
+          resultados[metodo] = 'VALIDO';
           // Eliminar el registro de prueba
           await supabaseAdmin
             .from('pago')
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       diagnostico: 'Valores probados para metodo_pago',
       resultados: resultados,
-      instrucciones: 'Busca las entradas con "VÁLIDO ✓" para saber qué valores funcionan',
+          instrucciones: 'Busca las entradas con "VALIDO" para saber qué valores funcionan',
     });
   } catch (error) {
     console.error('[/api/pagos/diagnostico-pago] Error:', error.message);

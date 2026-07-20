@@ -45,6 +45,16 @@ const HANDLERS = {
     update: svc.editarTipoSeguroCatalogo,
     remove: svc.borrarTipoSeguroCatalogo,
   },
+  medicamento: {
+    list: svc.obtenerMedicamentosStock,
+  },
+  proveedor: {
+    list: async () => {
+      const { listarProveedores } = await import('../../repositories/movimientosRepository.js');
+      const datos = await listarProveedores();
+      return { ok: true, datos };
+    },
+  },
 };
 
 function idNumeric(req) {

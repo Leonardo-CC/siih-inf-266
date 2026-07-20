@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IconoExclamation, IconoCheck, IconoX, IconoBanknotes, IconoBuildingBank, IconoCreditCard, IconoClock } from '../../components/Iconos.jsx';
 
 export default function PagoCita({ idPaciente, idCita, idMedico }) {
   const [etapa, setEtapa] = useState('validacion');
@@ -32,7 +33,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
         const data = await res.json();
         setSeguroValidacion(data);
         if (!data.vigente) {
-          setErrorSeguro(`⚠ Seguro no vigente: ${data.razon}`);
+          setErrorSeguro(<><IconoExclamation className="w-4 h-4 inline mr-1" /> Seguro no vigente: {data.razon}</>);
         }
         setEtapa('validacion');
       } catch (error) {
@@ -136,14 +137,14 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
             metodo_pago: metodoPago,
           }));
           if (['efectivo', 'transferencia'].includes(metodoPago) && data.estado_pago === 'pendiente_validacion') {
-            setMensajeValidacion('✓ Pago registrado. Un administrador validara la transaccion');
+            setMensajeValidacion(<><IconoCheck className="w-4 h-4 inline mr-1" /> Pago registrado. Un administrador validara la transaccion</>);
             clearInterval(interval);
             setPollingActivo(false);
             setEtapa('comprobante');
             return;
           }
           if (data.estado_pago === 'aprobado' || data.estado_pago === 'pagado') {
-            setMensajeValidacion('✓ Pago validado exitosamente');
+            setMensajeValidacion(<><IconoCheck className="w-4 h-4 inline mr-1" /> Pago validado exitosamente</>);
             clearInterval(interval);
             setPollingActivo(false);
             if (seguroValidacion?.vigente) {
@@ -237,7 +238,7 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                     <p className="text-sm">
                       <strong>Estado:</strong>
                       <span className={`ml-2 inline-block px-2 py-0.5 rounded text-xs font-bold ${seguroValidacion.vigente ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {seguroValidacion.vigente ? '✓ VIGENTE' : '✗ VENCIDO'}
+                         {seguroValidacion.vigente ? <><IconoCheck className="w-3.5 h-3.5 inline mr-1" /> VIGENTE</> : <><IconoX className="w-3.5 h-3.5 inline mr-1" /> VENCIDO</>}
                       </span>
                     </p>
                   </div>
@@ -258,11 +259,11 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700">Metodo de Pago *</label>
                   <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: 'efectivo', label: '💵 Efectivo' },
-                      { value: 'transferencia', label: '🏦 Transferencia' },
-                      { value: 'tarjeta', label: '💳 Tarjeta' },
-                    ].map((metodo) => (
+                       {[
+                         { value: 'efectivo', label: <><IconoBanknotes className="w-4 h-4 inline mr-1" /> Efectivo</> },
+                         { value: 'transferencia', label: <><IconoBuildingBank className="w-4 h-4 inline mr-1" /> Transferencia</> },
+                         { value: 'tarjeta', label: <><IconoCreditCard className="w-4 h-4 inline mr-1" /> Tarjeta</> },
+                       ].map((metodo) => (
                       <button
                         key={metodo.value}
                         type="button"
@@ -297,16 +298,16 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
 
           {etapa === 'comprobante' && resultadoPago && (
             <>
-              {pollingActivo && mensajeValidacion && (
-                <div className="p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm">
-                  ⏳ {mensajeValidacion}
-                </div>
-              )}
+                {pollingActivo && mensajeValidacion && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm">
+                    <IconoClock className="w-4 h-4 inline mr-1" /> {mensajeValidacion}
+                  </div>
+                )}
               {!pollingActivo && (resultadoPago.estado === 'pagado' || resultadoPago.estado === 'aprobado' || ['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)) && (
                 <div className={`p-4 rounded-lg text-sm ${['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago) ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' : 'bg-green-50 border border-green-200 text-green-700'}`}>
                   {['efectivo', 'transferencia'].includes(resultadoPago.metodo_pago)
-                    ? '✓ Pago registrado - esperando validacion manual'
-                    : '✓ Pago validado exitosamente'}
+                    ? <><IconoCheck className="w-4 h-4 inline mr-1" /> Pago registrado - esperando validacion manual</>
+                    : <><IconoCheck className="w-4 h-4 inline mr-1" /> Pago validado exitosamente</>}
                 </div>
               )}
 

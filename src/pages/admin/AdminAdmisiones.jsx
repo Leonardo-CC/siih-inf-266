@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
+import { IconoCheck } from '../../components/Iconos.jsx';
 
 const TIPOS = {
   consulta_externa: 'Consulta externa',
@@ -314,7 +315,7 @@ export default function AdminAdmisiones() {
                   clave: 'datos_verificados',
                   titulo: 'Verif.',
                   render: (v) => v
-                    ? <span className="text-green-600 font-semibold">✓</span>
+                    ? <span className="text-green-600 font-semibold"><IconoCheck className="w-4 h-4 inline" /></span>
                     : <span className="text-slate-300">—</span>,
                 },
                 { clave: 'sala_asignada', titulo: 'Sala', render: (v) => v || '-' },

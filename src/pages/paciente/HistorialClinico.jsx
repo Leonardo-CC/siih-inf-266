@@ -1,6 +1,7 @@
 /// src/pages/paciente/HistorialClinico.jsx.
 import React, { useState, useEffect } from 'react';
 import { obtenerUsuario } from '../../lib/authSession';
+import { IconoBuildingHospital, IconoArchiveBox, IconoPill } from '../../components/Iconos.jsx';
 
 export default function HistorialClinico() {
   const [historial, setHistorial] = useState([]);
@@ -75,7 +76,7 @@ export default function HistorialClinico() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">🏥 Mi Historial Médico</h1>
+         <h1 className="text-2xl font-bold text-slate-800"><IconoBuildingHospital className="w-6 h-6 inline mr-2" />Mi Historial Médico</h1>
         <p className="text-slate-500 text-sm mt-1">
           Registro cronológico de tus consultas, diagnósticos y tratamientos. Confidencial y seguro.
         </p>
@@ -83,7 +84,7 @@ export default function HistorialClinico() {
 
       {historial.length === 0 ? (
         <div className="bg-white p-8 rounded-xl border border-slate-200 text-center shadow-sm">
-          <div className="text-4xl mb-3">📂</div>
+          <div className="text-4xl mb-3"><IconoArchiveBox className="w-10 h-10 text-slate-400" /></div>
           <h3 className="text-lg font-bold text-slate-700">Tu historial está limpio</h3>
           <p className="text-slate-500">Aún no tienes consultas médicas finalizadas en el sistema.</p>
         </div>
@@ -138,7 +139,7 @@ export default function HistorialClinico() {
                     {detallesReceta.length > 0 && (
                       <div className="pt-2">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                          <span>💊</span> Tratamiento Recetado
+                          <span><IconoPill className="w-4 h-4 inline mr-1" /> Tratamiento Recetado</span>
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {detallesReceta.map((med, i) => (

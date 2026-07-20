@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerUsuario } from '../lib/authSession.js';
 import StatCard from '../components/StatCard.jsx';
@@ -17,6 +17,9 @@ import {
   IconoDocumentText,
   IconoStethoscope,
   IconoArchiveBox,
+  IconoUserGroup,
+  IconoClock,
+  IconoPill,
 } from '../components/Iconos.jsx';
 import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
@@ -64,6 +67,20 @@ const ROL_ETIQUETA = {
   administrativo: 'Administracion',
   farmaceutico: 'Farmacia',
   tecnico_laboratorio: 'Laboratorio',
+};
+
+const iconMap = {
+  calendar: IconoCalendar,
+  clipboard: IconoClipboardDocument,
+  chart: IconoChart,
+  heart: IconoHeart,
+  stethoscope: IconoStethoscope,
+  users: IconoUsers,
+  userGroup: IconoUserGroup,
+  clock: IconoClock,
+  pill: IconoPill,
+  documentText: IconoDocumentText,
+  archiveBox: IconoArchiveBox,
 };
 
 const ESTADO_COLOR = {
@@ -188,7 +205,7 @@ export default function Dashboard() {
                 key={idx}
                 titulo={stat.titulo}
                 valor={stat.valor}
-                icono={stat.icono}
+                icono={React.createElement(iconMap[stat.icono] || IconoChart, { className: 'w-6 h-6' })}
                 color={stat.color || 'bg-primary'}
                 link={stat.link}
                 retraso={idx * 80}

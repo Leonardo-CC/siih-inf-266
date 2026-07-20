@@ -42,10 +42,10 @@ function EstadoBadge({ estado }) {
 
 function KpiCard({ titulo, valor, icono, color, sub }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{titulo}</p>
-        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center`}>{icono}</div>
+        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>{icono}</div>
       </div>
       <p className="text-3xl font-bold text-slate-800 mt-2">{valor}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -186,12 +186,23 @@ export default function TecnicoLaboratorioDashboard({ usuario }) {
         </button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {kpiTarjetas.map((k) => (
-          <KpiCard key={k.titulo} titulo={k.titulo} valor={k.valor} icono={k.icono} color={k.color} sub={k.sub} />
-        ))}
-      </div>
+      {/* KPIs dinámicos */}
+      {(() => {
+        const tarjetas = [
+          { titulo: 'Análisis hoy', valor: kpis.analisisHoy, icono: <IconoClock className="w-5 h-5" />, color: 'bg-blue-500', sub: 'Registrados hoy' },
+          { titulo: 'Pendientes', valor: kpis.pendientes, icono: <IconoExclamation className="w-5 h-5" />, color: 'bg-amber-500', sub: 'Por procesar' },
+          { titulo: 'En proceso', valor: kpis.enProceso, icono: <IconoBeaker className="w-5 h-5" />, color: 'bg-indigo-500' },
+          { titulo: 'Completados', valor: kpis.completados, icono: <IconoCheck className="w-5 h-5" />, color: 'bg-emerald-500' },
+          { titulo: 'Total análisis', valor: kpis.total, icono: <IconoChart className="w-5 h-5" />, color: 'bg-slate-700' },
+        ];
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {tarjetas.map((k) => (
+              <KpiCard key={k.titulo} titulo={k.titulo} valor={k.valor} icono={k.icono} color={k.color} sub={k.sub} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Gráficos y listas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
