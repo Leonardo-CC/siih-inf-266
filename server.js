@@ -641,7 +641,12 @@ async function setupRoutes() {
       return comprobanteInscripcionHandler(req, res);
     });
 
-
+    const { default: listarEspecialidadesHandler } = await import('./api/especialidades/listar.js');
+    app.get('/api/especialidades/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarEspecialidadesHandler(req, res);
+    });
+    
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
     console.error('X Error al cargar los endpoints:', error.message);

@@ -1,13 +1,10 @@
-// services/usuarioService.js
-// ============================================================
-// CAPA DE LOGICA - Gestion de usuarios.
-// ============================================================
 import bcrypt from 'bcryptjs';
 import {
   listarUsuarios,
   crearPersonaYUsuario,
   actualizarUsuario,
   eliminarUsuario,
+  listarEspecialidadesActivas,
 } from '../repositories/usuarioRepository.js';
 import { traducirError } from '../lib/errorMessages.js';
 
@@ -19,8 +16,13 @@ export async function obtenerUsuarios() {
   return { ok: true, status: 200, usuarios };
 }
 
+export async function obtenerEspecialidades() {
+  const especialidades = await listarEspecialidadesActivas();
+  return { ok: true, status: 200, especialidades };
+}
+
 export async function registrarUsuario(payload) {
-  const { nombre, apellido, fecha_nac, sexo, telefono, ci, correo, contrasena, rol, estado = 'activo' } = payload || {};
+  const { nombre, apellido, fecha_nac, sexo, telefono, ci, correo, contrasena, rol, estado = 'activo', nro_licencia, id_especialidad } = payload || {};
 
   const errores = {};
   if (!nombre || nombre.trim().length < 2) errores.nombre = 'El nombre es obligatorio.';
@@ -30,6 +32,11 @@ export async function registrarUsuario(payload) {
   if (!contrasena || contrasena.length < 6) errores.contrasena = 'La contraseña debe tener al menos 6 caracteres.';
   if (!rol) errores.rol = 'El rol es obligatorio.';
 
+  if (rol === 'medico') {
+    if (!nro_licencia || !String(nro_licencia).trim()) errores.nro_licencia = 'El número de licencia es obligatorio.';
+    if (!id_especialidad) errores.id_especialidad = 'La especialidad es obligatoria.';
+  }
+
   if (Object.keys(errores).length > 0) {
     return { ok: false, status: 400, errores };
   }
@@ -38,33 +45,41 @@ export async function registrarUsuario(payload) {
 
   try {
     await crearPersonaYUsuario({
-      nombre, apellido, fecha_nac, sexo, telefono, ci, correo, contrasenaHash, rol, estado,
+      nombre, apellido, fecha_nac, sexo, telefono, ci, correo, contrasenaHash, rol, estado, nro_licencia, id_especialidad,
     });
     return { ok: true, status: 201, mensaje: 'Usuario registrado correctamente.' };
   } catch (err) {
+    if (err.message === 'DUPLICADO_NRO_LICENCIA') {
+      return { ok: false, status: 400, errores: { nro_licencia: 'Ya existe un médico registrado con ese número de licencia.' } };
+    }
     return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }
 
 export async function editarUsuario(id_usuario, payload) {
-  const { nombre, apellido, telefono, fecha_nac, sexo, ci, correo, rol, estado, contrasena } = payload || {};
+  const { nombre, apellido, telefono, fecha_nac, sexo, ci, correo, rol, estado, contrasena, nro_licencia, id_especialidad } = payload || {};
 
   if (!id_usuario) {
     return { ok: false, status: 400, errores: { general: 'ID de usuario requerido.' } };
   }
 
+  if (rol === 'medico') {
+    const errores = {};
+    if (!nro_licencia || !String(nro_licencia).trim()) errores.nro_licencia = 'El número de licencia es obligatorio.';
+    if (!id_especialidad) errores.id_especialidad = 'La especialidad es obligatoria.';
+    if (Object.keys(errores).length > 0) return { ok: false, status: 400, errores };
+  }
+
   try {
     const datos = { nombre, apellido, telefono, fecha_nac, sexo, correo, rol, estado };
+    if (nro_licencia !== undefined) datos.nro_licencia = nro_licencia;
+    if (id_especialidad !== undefined) datos.id_especialidad = id_especialidad;
 
     if (ci || correo) {
-      const { data: actual } = await listarUsuarios();
+      const actual = await listarUsuarios();
       const usuarioActual = (actual || []).find((u) => u.id_usuario === Number(id_usuario));
-      if (ci && (!usuarioActual || String(usuarioActual.ci || '') !== String(ci))) {
-        datos.ci = ci;
-      }
-      if (correo && (!usuarioActual || String(usuarioActual.correo || '').toLowerCase() !== String(correo).toLowerCase())) {
-        datos.correo = correo;
-      }
+      if (ci && (!usuarioActual || String(usuarioActual.ci || '') !== String(ci))) datos.ci = ci;
+      if (correo && (!usuarioActual || String(usuarioActual.correo || '').toLowerCase() !== String(correo).toLowerCase())) datos.correo = correo;
     }
 
     if (contrasena && contrasena.length >= 6) {
@@ -75,6 +90,9 @@ export async function editarUsuario(id_usuario, payload) {
     await actualizarUsuario(id_usuario, datos);
     return { ok: true, status: 200, mensaje: 'Usuario actualizado correctamente.' };
   } catch (err) {
+    if (err.message === 'DUPLICADO_NRO_LICENCIA') {
+      return { ok: false, status: 400, errores: { nro_licencia: 'Ya existe un médico registrado con ese número de licencia.' } };
+    }
     return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }
 }

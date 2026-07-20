@@ -4,14 +4,14 @@ export default function Modal({ abierto, alCerrar, titulo, children, ancho = 'ma
   const dialogRef = useRef(null);
 
   useEffect(() => {
-    if (abierto && dialogRef.current) {
-      dialogRef.current.showModal();
-    } else if (dialogRef.current) {
-      dialogRef.current.close();
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (abierto && !dialog.open) {
+      dialog.showModal();
+    } else if (!abierto && dialog.open) {
+      dialog.close();
     }
   }, [abierto]);
-
-  if (!abierto) return null;
 
   return (
     <dialog
