@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
-import { IconoPlus, IconoEdit, IconoTrash, IconoCheck } from '../../components/Iconos.jsx';
+import { IconoPlus, IconoEdit, IconoTrash, IconoCheck, IconoBuildingHospital } from '../../components/Iconos.jsx';
 
 const TIPOS = {
   consulta_externa: 'Consulta externa',
   emergencia: 'Emergencia',
-  hospitalizacion: 'Hospitalizacion',
 };
 
 const ESTADOS = {
@@ -48,6 +47,11 @@ const estadoInicial = {
   observaciones: '',
 };
 
+const hospitalizacionInicial = {
+  diagnostico_ingreso: '',
+  observaciones_clinicas: '',
+};
+
 export default function GestionAdmision() {
   const usuario = obtenerUsuario();
   const [admisiones, setAdmisiones] = useState([]);
@@ -65,6 +69,13 @@ export default function GestionAdmision() {
   const [filtroTexto, setFiltroTexto] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
+  const [modalHospitalizacion, setModalHospitalizacion] = useState(false);
+  const [admisionHospitalizacion, setAdmisionHospitalizacion] = useState(null);
+  const [formHospitalizacion, setFormHospitalizacion] = useState(hospitalizacionInicial);
+  const [erroresHospitalizacion, setErroresHospitalizacion] = useState({});
+  const [enviandoHospitalizacion, setEnviandoHospitalizacion] = useState(false);
+  const [mensajeHospitalizacion, setMensajeHospitalizacion] = useState(null);
+  const [errorHospitalizacion, setErrorHospitalizacion] = useState(null);
   const debounceRef = useState(null)[0];
 
   async function cargarAdmisiones() {
@@ -166,6 +177,62 @@ export default function GestionAdmision() {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     setErrores((prev) => ({ ...prev, [name]: '' }));
+  }
+
+  function abrirAutorizarHospitalizacion(admision) {
+    setAdmisionHospitalizacion(admision);
+    setFormHospitalizacion(hospitalizacionInicial);
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+    setModalHospitalizacion(true);
+  }
+
+  function handleChangeHospitalizacion(e) {
+    const { name, value } = e.target;
+    setFormHospitalizacion((prev) => ({ ...prev, [name]: value }));
+    setErroresHospitalizacion((prev) => ({ ...prev, [name]: '' }));
+  }
+
+  async function handleSubmitHospitalizacion(e) {
+    e.preventDefault();
+    setEnviandoHospitalizacion(true);
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+
+    try {
+      const payload = {
+        rol: usuario?.rol,
+        id_enfermero: usuario?.id_enfermero || admisionHospitalizacion?.id_enfermero,
+        id_profesional: usuario?.id_enfermero || admisionHospitalizacion?.id_enfermero,
+        id_consulta: admisionHospitalizacion?.id_admision,
+        id_paciente: admisionHospitalizacion?.id_paciente,
+        id_medico: admisionHospitalizacion?.id_medico,
+        diagnostico_ingreso: formHospitalizacion.diagnostico_ingreso,
+        observaciones_clinicas: formHospitalizacion.observaciones_clinicas,
+      };
+
+      const res = await fetch('/api/hospitalizaciones/autorizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        setErrorHospitalizacion(data.mensaje || data.errores?.general || 'No se pudo autorizar la hospitalizacion.');
+        if (data.errores) setErroresHospitalizacion(data.errores);
+        return;
+      }
+
+      setMensajeHospitalizacion(data.mensaje || 'Hospitalizacion autorizada correctamente.');
+      setTimeout(() => setModalHospitalizacion(false), 1200);
+    } catch {
+      setErrorHospitalizacion('No se pudo conectar con el servidor.');
+    } finally {
+      setEnviandoHospitalizacion(false);
+    }
   }
 
   async function buscarPacientes(texto) {
@@ -344,6 +411,14 @@ export default function GestionAdmision() {
               emptyMessage="No hay admisiones que coincidan con el filtro"
               onEditar={abrirModalEditar}
               onEliminar={handleEliminar}
+              acciones={[
+                {
+                  title: 'Autorizar Hospitalizacion',
+                  icono: <IconoBuildingHospital className="w-4 h-4" />,
+                  className: 'text-purple-600 hover:bg-purple-50',
+                  onClick: abrirAutorizarHospitalizacion,
+                },
+              ]}
               iconoEditar={<IconoEdit className="w-4 h-4" />}
               iconoEliminar={<IconoTrash className="w-4 h-4" />}
             />
@@ -525,6 +600,80 @@ export default function GestionAdmision() {
           >
             {enviando ? 'Guardando...' : modoEdicion ? 'Actualizar admisión' : 'Registrar admisión'}
           </button>
+        </form>
+      </Modal>
+
+      <Modal
+        abierto={modalHospitalizacion}
+        alCerrar={() => setModalHospitalizacion(false)}
+        titulo="Autorizar Hospitalizacion"
+        ancho="max-w-2xl"
+      >
+        {mensajeHospitalizacion && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+            {mensajeHospitalizacion}
+          </div>
+        )}
+        {errorHospitalizacion && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            {errorHospitalizacion}
+          </div>
+        )}
+
+        {admisionHospitalizacion && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 space-y-1">
+            <p><span className="font-semibold text-slate-700">Paciente:</span> {admisionHospitalizacion.paciente_nombre} {admisionHospitalizacion.paciente_apellido}</p>
+            <p><span className="font-semibold text-slate-700">Admision origen:</span> #{admisionHospitalizacion.id_admision} - {TIPOS[admisionHospitalizacion.tipo_admision] || admisionHospitalizacion.tipo_admision}</p>
+            <p><span className="font-semibold text-slate-700">Medico responsable:</span> {admisionHospitalizacion.medico_nombre ? `Dr(a). ${admisionHospitalizacion.medico_nombre}` : 'Debe estar asignado para autorizar'}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmitHospitalizacion} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Diagnostico de ingreso *</label>
+            <textarea
+              name="diagnostico_ingreso"
+              value={formHospitalizacion.diagnostico_ingreso}
+              onChange={handleChangeHospitalizacion}
+              rows="3"
+              placeholder="Justificacion clinica de la hospitalizacion"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.diagnostico_ingreso ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.diagnostico_ingreso && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.diagnostico_ingreso}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones clinicas *</label>
+            <textarea
+              name="observaciones_clinicas"
+              value={formHospitalizacion.observaciones_clinicas}
+              onChange={handleChangeHospitalizacion}
+              rows="4"
+              placeholder="Indicaciones, cuidados especiales y detalles de seguimiento"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.observaciones_clinicas ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.observaciones_clinicas && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.observaciones_clinicas}</p>}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalHospitalizacion(false)}
+              className="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={enviandoHospitalizacion}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              <IconoBuildingHospital className="w-4 h-4" />
+              {enviandoHospitalizacion ? 'Autorizando...' : 'Autorizar Hospitalizacion'}
+            </button>
+          </div>
         </form>
       </Modal>
     </div>

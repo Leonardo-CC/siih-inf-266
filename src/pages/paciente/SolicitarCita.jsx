@@ -15,6 +15,7 @@ export default function SolicitarCita({ idPaciente }) {
   const [horaSeleccionada, setHoraSeleccionada] = useState(null);
 
   const [motivo, setMotivo] = useState('');
+  const [tipoConsulta, setTipoConsulta] = useState('consulta_externa');
 
   const [cargandoMedicos, setCargandoMedicos] = useState(false);
   const [cargandoHorarios, setCargandoHorarios] = useState(false);
@@ -108,6 +109,7 @@ export default function SolicitarCita({ idPaciente }) {
           id_paciente: idPaciente,
           id_medico: idMedico,
           fecha_hora: horaSeleccionada.fecha_hora,
+          tipo_consulta: tipoConsulta,
           motivo,
         }),
       });
@@ -163,6 +165,19 @@ export default function SolicitarCita({ idPaciente }) {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de consulta *</label>
+                <select
+                  value={tipoConsulta}
+                  onChange={(e) => setTipoConsulta(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                  required
+                >
+                  <option value="consulta_externa">Consulta Externa</option>
+                  <option value="emergencia">Emergencia</option>
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Especialidad *</label>
                 <select

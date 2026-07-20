@@ -1,14 +1,34 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { guardarUsuario } from '../lib/authSession.js';
+import { IconoEdit, IconoRefresh } from '../components/Iconos.jsx';
 
 export default function Login() {
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [captcha, setCaptcha] = useState(null);
+  const [captchaRespuesta, setCaptchaRespuesta] = useState('');
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  async function cargarCaptcha() {
+    try {
+      const res = await fetch('/api/auth/captcha');
+      const data = await res.json();
+      if (data.ok) {
+        setCaptcha(data.captcha);
+        setCaptchaRespuesta('');
+      }
+    } catch {
+      setCaptcha(null);
+    }
+  }
+
+  useEffect(() => {
+    cargarCaptcha();
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -19,12 +39,13 @@ export default function Login() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ correo, contrasena }),
+        body: JSON.stringify({ correo, contrasena, captchaToken: captcha?.token, captchaRespuesta }),
       });
       const data = await res.json();
 
       if (!data.ok) {
         setError(data.errores?.general || 'No se pudo iniciar sesion.');
+        await cargarCaptcha();
         return;
       }
 
@@ -85,6 +106,42 @@ export default function Login() {
               />
             </div>
 
+            <div className="space-y-3">
+              <div className="flex items-center justify-center">
+                <div className="inline-flex items-stretch overflow-hidden rounded-md border border-slate-300 bg-white">
+                  <div className="h-11 w-36 bg-slate-100">
+                    {captcha?.imagen ? (
+                      <img src={captcha.imagen} alt="Codigo de seguridad" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full animate-pulse bg-slate-200" />
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cargarCaptcha}
+                    title="Actualizar codigo"
+                    className="grid h-11 w-12 place-items-center border-l border-slate-300 text-slate-700 hover:bg-slate-50"
+                  >
+                    <IconoRefresh className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
+                <input
+                  type="text"
+                  value={captchaRespuesta}
+                  onChange={(e) => setCaptchaRespuesta(e.target.value.toUpperCase())}
+                  placeholder="Ingresa el Codigo de Seguridad"
+                  className="min-w-0 flex-1 px-4 py-2.5 outline-none"
+                  autoComplete="off"
+                  required
+                />
+                <div className="grid w-12 place-items-center border-l border-slate-300 text-slate-700">
+                  <IconoEdit className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={cargando}
@@ -99,10 +156,6 @@ export default function Login() {
                 'Ingresar'
               )}
             </button>
-
-            <Link to="/paciente/registro" className="block text-center text-primary hover:text-primary-dark font-medium text-sm">
-              Registrar nuevo paciente
-            </Link>
           </form>
         </div>
       </div>

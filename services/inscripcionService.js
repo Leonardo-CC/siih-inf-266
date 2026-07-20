@@ -18,6 +18,8 @@ import {
 } from '../repositories/inscripcionRepository.js';
 import { buscarPacientePorCi } from '../repositories/pacienteRepository.js';
 import { generarPdfComprobanteInscripcion } from './comprobanteInscripcionPdf.js';
+import { calcularFactura, crearFacturaParaPago } from './facturaService.js';
+import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 
 const TIPOS_AREA_VALIDOS = ['Academica', 'Clinica', 'Administrativa'];
 
@@ -81,10 +83,14 @@ export async function obtenerInscripciones() {
   return { ok: true, status: 200, inscripciones };
 }
 
-export async function registrarInscripcion({ ci, id_area }) {
+export async function registrarInscripcion({ ci, id_area, matricula_numero, matricula_foto_url, monto, metodo_pago, razon_social, nit_ci }) {
   const errores = {};
   if (!ci || !ci.trim()) errores.ci = 'Ingresa el CI del paciente/estudiante.';
   if (!id_area) errores.id_area = 'Selecciona una facultad/área.';
+  if (!matricula_numero || !matricula_numero.trim()) errores.matricula_numero = 'Ingresa el número de matrícula.';
+  if (!matricula_foto_url || !matricula_foto_url.trim()) errores.matricula_foto_url = 'Ingresa la URL o referencia de la foto de matrícula.';
+  if (!monto || Number(monto) <= 0) errores.monto = 'Ingresa el monto de inscripción.';
+  if (!metodo_pago) errores.metodo_pago = 'Selecciona el método de pago.';
   if (Object.keys(errores).length > 0) return { ok: false, status: 400, errores };
 
   // Dependencia HU-01: el paciente debe existir ya; no se re-registra aquí.
@@ -115,12 +121,56 @@ export async function registrarInscripcion({ ci, id_area }) {
     fecha_inscripcion: hoyISO(),
   });
 
+  await supabaseAdmin
+    .from('paciente')
+    .update({
+      matricula_numero: matricula_numero.trim(),
+      matricula_foto_url: matricula_foto_url.trim(),
+    })
+    .eq('id_paciente', paciente.id_paciente);
+
+  const comprobante = `INSCRIPCION-${Date.now()}`;
+  const { data: pago, error: errorPago } = await supabaseAdmin
+    .from('pago')
+    .insert([{
+      id_inscripcion: inscripcion.id_inscripcion,
+      monto: Number(monto),
+      metodo_pago,
+      comprobante,
+    }])
+    .select('id_pago')
+    .single();
+
+  let factura = null;
+  let advertencia_factura = null;
+  if (errorPago) {
+    advertencia_factura = `La inscripción se registró, pero el pago no pudo guardarse: ${errorPago.message}`;
+  } else {
+    try {
+      factura = await crearFacturaParaPago({
+        id_pago: pago.id_pago,
+        id_paciente: paciente.id_paciente,
+        razon_social: razon_social || paciente.nombre_completo,
+        nit_ci: nit_ci || paciente.ci,
+        concepto: 'Inscripcion universitaria',
+      });
+    } catch (errFactura) {
+      advertencia_factura = errFactura.message;
+    }
+  }
+
   return {
     ok: true,
     status: 201,
     mensaje: `Inscripción registrada para ${paciente.nombre_completo}.`,
-    inscripcion,
+    inscripcion: {
+      ...inscripcion,
+      id_pago: pago?.id_pago || null,
+      factura,
+      desglose_iva: calcularFactura(Number(monto)),
+    },
     paciente: { nombre_completo: paciente.nombre_completo, ci: paciente.ci },
+    advertencia_factura,
   };
 }
 

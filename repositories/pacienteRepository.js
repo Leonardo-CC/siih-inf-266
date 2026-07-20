@@ -52,12 +52,33 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro, matricula_numero, matricula_foto_url, contacto_emergencia_nombre, contacto_emergencia_telefono }) {
+  const nuevoPaciente = {
+    persona_id,
+    id_tipo_seguro: id_tipo_seguro || null,
+    numero_seguro: numero_seguro || null,
+    matricula_numero: matricula_numero || null,
+    matricula_foto_url: matricula_foto_url || null,
+    contacto_emergencia_nombre: contacto_emergencia_nombre || null,
+    contacto_emergencia_telefono: contacto_emergencia_telefono || null,
+  };
+
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([nuevoPaciente])
     .select('id_paciente')
     .single();
+
+  if (error && error.code === 'PGRST204') {
+    const { data: dataCompat, error: errorCompat } = await supabaseAdmin
+      .from('paciente')
+      .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
+      .select('id_paciente')
+      .single();
+
+    if (errorCompat) throw new Error(`Error al crear paciente: ${errorCompat.message}`);
+    return dataCompat.id_paciente;
+  }
 
   if (error) throw new Error(`Error al crear paciente: ${error.message}`);
   return data.id_paciente;

@@ -19,7 +19,7 @@ import {
   componerObservaciones,
 } from './consultaMeta.js';
 
-const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia'];
 const ESTADOS_ADMISION_VALIDOS = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
 
 // ------------------------------------------------------------
@@ -223,19 +223,6 @@ export async function ejecutarRegistroAdmision(payload) {
         .from('emergencia')
         .insert([{ id_consulta: idConsulta }]);
       if (errorEmergencia) throw errorEmergencia;
-    } else if (payload.tipo_admision === 'hospitalizacion') {
-      const { error: errorHospitalizacion } = await supabaseAdmin
-        .from('hospitalizacion')
-        .insert([
-          {
-            id_consulta: idConsulta,
-            id_paciente: idPaciente,
-            id_medico: idMedico,
-            motivo_ingreso: payload.motivo_consulta,
-            estado: 'activa',
-          },
-        ]);
-      if (errorHospitalizacion) throw errorHospitalizacion;
     }
   } catch (subError) {
     await supabaseAdmin.from('consulta').delete().eq('id_consulta', idConsulta);

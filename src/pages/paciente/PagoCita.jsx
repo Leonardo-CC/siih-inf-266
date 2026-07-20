@@ -8,12 +8,26 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
   const [errorSeguro, setErrorSeguro] = useState(null);
   const [monto, setMonto] = useState(null);
   const [metodoPago, setMetodoPago] = useState('efectivo');
+  const [datosFactura, setDatosFactura] = useState({ razon_social: '', nit_ci: '' });
   const [cargandoMonto, setCargandoMonto] = useState(true);
   const [procesandoPago, setProcesandoPago] = useState(false);
   const [resultadoPago, setResultadoPago] = useState(null);
   const [errorPago, setErrorPago] = useState(null);
   const [pollingActivo, setPollingActivo] = useState(false);
   const [mensajeValidacion, setMensajeValidacion] = useState(null);
+
+  const subtotal = monto ? monto / 1.13 : 0;
+  const iva = monto ? monto - subtotal : 0;
+
+  function handleFacturaChange(e) {
+    const { name, value } = e.target;
+    setDatosFactura((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function descargarFactura(idPago) {
+    if (!idPago) return;
+    window.location.href = `/api/pagos/factura?id_pago=${idPago}`;
+  }
 
   useEffect(() => {
     async function validarSeguro() {
@@ -92,6 +106,8 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
           id_medico: parseInt(idMedico),
           monto,
           metodo_pago: metodoPago,
+          razon_social: datosFactura.razon_social,
+          nit_ci: datosFactura.nit_ci,
         }),
       });
       if (!res.ok) {
@@ -254,6 +270,10 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 <div className="bg-white border-l-4 border-primary p-4 rounded-r-lg mb-4">
                   <p className="text-sm"><strong>Monto a Pagar:</strong></p>
                   <p className="text-3xl font-bold text-green-600 mt-1">Bs. {monto?.toFixed(2)}</p>
+                  <div className="text-xs text-slate-500 mt-2 space-y-1">
+                    <p>Subtotal: Bs. {subtotal.toFixed(2)}</p>
+                    <p>IVA 13%: Bs. {iva.toFixed(2)}</p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -277,6 +297,29 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                         {metodo.label}
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Razon social</label>
+                    <input
+                      name="razon_social"
+                      value={datosFactura.razon_social}
+                      onChange={handleFacturaChange}
+                      placeholder="Consumidor Final"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">NIT / CI</label>
+                    <input
+                      name="nit_ci"
+                      value={datosFactura.nit_ci}
+                      onChange={handleFacturaChange}
+                      placeholder="0"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                    />
                   </div>
                 </div>
 
@@ -316,9 +359,23 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 <div className="bg-white border-l-4 border-primary p-4 rounded-r-lg space-y-2">
                   <p className="text-sm"><strong>Referencia:</strong> {resultadoPago.comprobante}</p>
                   <p className="text-sm"><strong>Monto:</strong> Bs. {resultadoPago.monto?.toFixed(2)}</p>
+                  {resultadoPago.desglose_iva && (
+                    <>
+                      <p className="text-sm"><strong>Subtotal:</strong> Bs. {resultadoPago.desglose_iva.subtotal?.toFixed(2)}</p>
+                      <p className="text-sm"><strong>IVA 13%:</strong> Bs. {resultadoPago.desglose_iva.iva?.toFixed(2)}</p>
+                    </>
+                  )}
+                  {resultadoPago.factura?.numero_factura && (
+                    <p className="text-sm"><strong>Factura:</strong> {resultadoPago.factura.numero_factura}</p>
+                  )}
                   <p className="text-sm"><strong>Metodo:</strong> {resultadoPago.metodo_pago === 'efectivo' ? 'Efectivo' : resultadoPago.metodo_pago === 'transferencia' ? 'Transferencia' : 'Tarjeta'}</p>
                   <p className="text-sm"><strong>Estado:</strong> {resultadoPago.estado}</p>
                 </div>
+                {resultadoPago.advertencia_factura && (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm mt-4">
+                    Facturacion pendiente: {resultadoPago.advertencia_factura}
+                  </div>
+                )}
 
                 {resultadoPago.metodo_pago === 'efectivo' && (
                   <div className="p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm mt-4">
@@ -338,6 +395,15 @@ export default function PagoCita({ idPaciente, idCita, idMedico }) {
                 >
                   Volver al dashboard
                 </button>
+                {resultadoPago.factura && (
+                  <button
+                    type="button"
+                    onClick={() => descargarFactura(resultadoPago.id_pago)}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-lg transition mt-3"
+                  >
+                    Descargar factura PDF
+                  </button>
+                )}
               </div>
             </>
           )}

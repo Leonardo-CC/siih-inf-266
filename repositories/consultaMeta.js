@@ -11,7 +11,7 @@
 const REGEX_ADM = /\[\[ADM\]\](.*?)\[\[\/ADM\]\]\s*/s;
 const REGEX_MED = /\[\[MED\]\](.*?)\[\[\/MED\]\]\s*/s;
 
-const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia'];
 const ESTADOS_ADMISION_VALIDOS = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
 const ESTADOS_ATENCION_VALIDOS = ['pendiente', 'en_atencion', 'atendida', 'derivada'];
 

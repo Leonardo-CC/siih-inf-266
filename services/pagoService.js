@@ -9,6 +9,7 @@
 // ============================================================
 
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
+import { calcularFactura, crearFacturaParaPago } from './facturaService.js';
 
 /**
  * Valida la vigencia del seguro del paciente.
@@ -130,7 +131,7 @@ export async function obtenerMontoCita(id_medico) {
  * @returns {Object} { exitoso: boolean, id_pago, estado, comprobante, razon }
  */
 export async function procesarPago(datosPago) {
-  let { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago } = datosPago;
+  let { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago, razon_social, nit_ci } = datosPago;
 
   try {
     // Validaciones
@@ -217,6 +218,21 @@ export async function procesarPago(datosPago) {
       throw new Error(`Error registrando pago: ${errorPago.message}`);
     }
 
+    let factura = null;
+    let advertencia_factura = null;
+    try {
+      factura = await crearFacturaParaPago({
+        id_pago: pagoDatos.id_pago,
+        id_paciente,
+        razon_social,
+        nit_ci,
+        concepto: 'Consulta medica',
+      });
+    } catch (errFactura) {
+      advertencia_factura = errFactura.message;
+      console.warn('[pagoService] No se pudo emitir factura:', errFactura.message);
+    }
+
     // Actualizar estado_pago en la tabla cita a 'pendiente_validacion'
     await actualizarEstadoCita(id_cita, 'pendiente_validacion');
 
@@ -231,6 +247,9 @@ export async function procesarPago(datosPago) {
       id_pago: pagoDatos.id_pago,
       estado: 'pendiente_validacion',
       comprobante: comprobante_ref,
+      factura,
+      desglose_iva: calcularFactura(monto),
+      advertencia_factura,
       metodo_pago: metodo_pago,
       monto: monto,
       razon: 'Pago registrado, pendiente de validación',
