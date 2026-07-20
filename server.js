@@ -544,6 +544,34 @@ async function setupRoutes() {
       return farmaceuticoRecuperarHandler(req, res);
     });
 
+        // Facultades
+    const { default: listarFacultadesHandler } = await import('./api/facultades/listar.js');
+    app.get('/api/facultades/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarFacultadesHandler(req, res);
+    });
+    
+
+    const { default: registrarFacultadHandler } = await import('./api/facultades/registro.js');
+    app.post('/api/facultades/registro', async (req, res) => {
+      req.method = 'POST';
+      return registrarFacultadHandler(req, res);
+    });
+
+    const { default: actualizarFacultadHandler } = await import('./api/facultades/actualizar.js');
+    app.put('/api/facultades/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return actualizarFacultadHandler(req, res);
+    });
+
+    const { default: eliminarFacultadHandler } = await import('./api/facultades/eliminar.js');
+    app.post('/api/facultades/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return eliminarFacultadHandler(req, res);
+    });
+
+    
+
     // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
     const { default: catalogoHandler } = await import('./api/catalogo/index.js');
     app.get('/api/catalogo', async (req, res) => {
@@ -562,6 +590,26 @@ async function setupRoutes() {
       req.method = 'DELETE';
       return catalogoHandler(req, res);
     });
+
+    // Inscripciones
+    const { default: listarInscripcionesHandler } = await import('./api/inscripciones/listar.js');
+    app.get('/api/inscripciones/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarInscripcionesHandler(req, res);
+    });
+
+    const { default: registrarInscripcionHandler } = await import('./api/inscripciones/registro.js');
+    app.post('/api/inscripciones/registro', async (req, res) => {
+      req.method = 'POST';
+      return registrarInscripcionHandler(req, res);
+    });
+
+    const { default: comprobanteInscripcionHandler } = await import('./api/inscripciones/comprobante.js');
+    app.get('/api/inscripciones/comprobante', async (req, res) => {
+      req.method = 'GET';
+      return comprobanteInscripcionHandler(req, res);
+    });
+
 
     console.log('OK Todos los endpoints cargados correctamente');
   } catch (error) {
