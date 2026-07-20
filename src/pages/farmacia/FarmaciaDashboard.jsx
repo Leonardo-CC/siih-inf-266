@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatCard from '../../components/StatCard.jsx';
+import Modal from '../../components/Modal.jsx'; // <-- AÑADIDO
 import { obtenerUsuario } from '../../lib/authSession.js';
 import {
   IconoExclamation,
@@ -93,16 +94,23 @@ export default function FarmaciaDashboard() {
   const [serieIngresos, setSerieIngresos] = useState([]);
   const [cargando, setCargando] = useState(true);
 
+  // Estados nuevos para las Alertas
+  const [alertasDetalle, setAlertasDetalle] = useState({ bajoStock: [], porVencer: [] });
+  const [mostrarModalAlertas, setMostrarModalAlertas] = useState(false);
+
   const cargarDatos = async () => {
     setCargando(true);
     try {
-      const [resRecetas, resStats] = await Promise.all([
+      // Agregamos la petición a inventario-datos para tener el detalle de los problemas
+      const [resRecetas, resStats, resInventario] = await Promise.all([
         fetch('/api/farmacia/recetas-pendientes'),
-        fetch(`/api/farmacia/dashboard-stats?correo=${usuario?.correo || ''}`)
+        fetch(`/api/farmacia/dashboard-stats?correo=${usuario?.correo || ''}`),
+        fetch('/api/farmacia/inventario-datos')
       ]);
       
       const dataRecetas = await resRecetas.json();
       const dataStats = await resStats.json();
+      const dataInventario = await resInventario.json();
 
       if (dataStats.ok) {
         setStats({
@@ -111,6 +119,38 @@ export default function FarmaciaDashboard() {
         });
         setPorEstado(dataStats.porEstado);
         setSerieIngresos(dataStats.serieIngresos);
+      }
+
+      // Procesar el detalle de alertas si el inventario cargó bien
+      if (dataInventario.ok) {
+        const nuevasAlertas = { bajoStock: [], porVencer: [] };
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        dataInventario.medicamentos.forEach(med => {
+          if (med.stock_actual <= med.stock_minimo) {
+            nuevasAlertas.bajoStock.push(med);
+          }
+          if (med.lote_medicamento) {
+            med.lote_medicamento.forEach(lote => {
+              if (lote.cantidad_actual > 0) {
+                const vencimiento = new Date(lote.fecha_vencimiento + 'T00:00:00');
+                const dias = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+                if (dias <= 30) {
+                  // Guardamos el lote junto con el nombre del medicamento para mostrarlo
+                  nuevasAlertas.porVencer.push({ ...lote, medicamento_nombre: med.nombre, diasRestantes: dias });
+                }
+              }
+            });
+          }
+        });
+
+        setAlertasDetalle(nuevasAlertas);
+        
+        // Disparar el modal automáticamente si hay problemas
+        if (nuevasAlertas.bajoStock.length > 0 || nuevasAlertas.porVencer.length > 0) {
+          setMostrarModalAlertas(true);
+        }
       }
 
     } catch (error) {
@@ -122,9 +162,11 @@ export default function FarmaciaDashboard() {
 
   useEffect(() => {
     cargarDatos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const nombreMostrar = usuario?.nombre_completo || usuario?.nombre || usuario?.correo || 'Farmacéutico';
+  const hayAlertas = alertasDetalle.bajoStock.length > 0 || alertasDetalle.porVencer.length > 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -151,6 +193,29 @@ export default function FarmaciaDashboard() {
         </button>
       </div>
 
+      {/* BANNER DE ALERTAS EN DASHBOARD */}
+      {!cargando && hayAlertas && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+              <IconoExclamation className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-bold text-red-800">Atención Crítica de Inventario</h3>
+              <p className="text-sm text-red-700">
+                El sistema detectó medicamentos agotados o próximos a vencer.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setMostrarModalAlertas(true)}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition"
+          >
+            Ver Detalles
+          </button>
+        </div>
+      )}
+
       {/* TARJETAS DE ESTADÍSTICAS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {cargando ? (
@@ -172,7 +237,7 @@ export default function FarmaciaDashboard() {
         )}
       </div>
 
-      {/* SECCIÓN DE GRÁFICOS REALES (Mismo formato estructural que el Médico) */}
+      {/* SECCIÓN DE GRÁFICOS REALES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Gráfico 1: Estado General del Catálogo */}
@@ -220,13 +285,74 @@ export default function FarmaciaDashboard() {
               <IconoArchiveBox className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">Almacen e Inventario</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Controlar fechas de lotes fisicos.</p>
+              <h3 className="font-bold text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">Almacén e Inventario</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Controlar fechas de lotes físicos.</p>
             </div>
           </Link>
         </div>
-
       </div>
+
+      {/* MODAL EMERGENTE DE ALERTAS DETALLADAS */}
+      <Modal abierto={mostrarModalAlertas} alCerrar={() => setMostrarModalAlertas(false)} titulo="⚠️ Alertas Críticas de Inventario">
+        <div className="space-y-6 max-h-[60vh] overflow-y-auto p-1">
+          
+          {/* Sección Baja/Sin Stock */}
+          {alertasDetalle.bajoStock.length > 0 && (
+            <div>
+              <h3 className="font-bold text-red-800 border-b border-red-200 pb-2 mb-3 flex items-center gap-2">
+                <IconoExclamation className="w-5 h-5 text-red-600" />
+                Medicamentos por debajo del mínimo ({alertasDetalle.bajoStock.length})
+              </h3>
+              <div className="space-y-2">
+                {alertasDetalle.bajoStock.map((med) => (
+                  <div key={med.id_medicamento} className="bg-red-50 p-3 rounded-lg border border-red-100 flex justify-between items-center">
+                    <span className="font-medium text-red-900">{med.nombre}</span>
+                    <span className="text-sm px-2 py-1 bg-white rounded font-bold text-red-600">
+                      Stock: {med.stock_actual} <span className="text-slate-400 font-normal">/ Mín: {med.stock_minimo}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sección Por Vencer */}
+          {alertasDetalle.porVencer.length > 0 && (
+            <div>
+              <h3 className="font-bold text-amber-800 border-b border-amber-200 pb-2 mb-3 flex items-center gap-2">
+                <IconoClock className="w-5 h-5 text-amber-600" />
+                Lotes próximos a vencer ({alertasDetalle.porVencer.length})
+              </h3>
+              <div className="space-y-2">
+                {alertasDetalle.porVencer.map((lote) => (
+                  <div key={lote.id_lote} className="bg-amber-50 p-3 rounded-lg border border-amber-100 flex justify-between items-center">
+                    <div>
+                      <span className="font-medium text-amber-900 block">{lote.medicamento_nombre}</span>
+                      <span className="text-xs text-amber-700 font-mono">Lote #{lote.numero_lote}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-sm font-bold text-amber-700">
+                        {lote.diasRestantes < 0 ? '¡Vencido!' : `Vence en ${lote.diasRestantes} días`}
+                      </span>
+                      <span className="text-xs text-amber-600">Disp: {lote.cantidad_actual}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+        <div className="mt-6 flex justify-end">
+          <Link 
+            to="/farmacia/inventario"
+            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium shadow-sm transition"
+          >
+            Ir al Inventario a Resolver
+          </Link>
+        </div>
+      </Modal>
+
     </div>
   );
 }

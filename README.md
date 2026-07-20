@@ -111,5 +111,42 @@ ejecutar en terminal: vercel dev
 - Dependencia nueva: `pdf-lib` (`npm install pdf-lib`).
 - Requiere `vercel dev` para probarse en local (Vite solo no ejecuta `/api`).
 
+## Issue Nro 14: 
+Instalar la dependencia: npm install node-telegram-bot-api
+ejecutar en terminal: npm install --global yarn
+no olvidar ejecutar npm run server primero
+ejecutar en terminal: vercel dev
+
+**Como** farmacéutico, **quiero** recibir alertas automáticas en Telegram de bajo stock y lotes próximos a caducar
+**para** gestionar el reabastecimiento a tiempo y evitar la entrega de medicamentos vencidos.
+
+- **Issue:** [#14](https://github.com/Ayca19/SIIH-INF-266/issues/14)
+- **Depende de:** Gestión de Inventario y Despacho de Recetas
+- **Criterio de aceptación:** Envía un mensaje a Telegram automáticamente cuando el stock global de un medicamento cae por debajo del mínimo tras un despacho, y genera un reporte de caducidad bajo demanda.
+
+### Flujo
+
+1. El farmacéutico confirma el despacho de una receta o presiona el botón **Revisar Vencimientos** desde **Gestión de Inventario**.
+2. Para el despacho, el backend procesa la salida de medicamentos y verifica el `stock_actual`.
+3. Si `stock_actual <= stock_minimo`, se invoca inmediatamente el servicio de Telegram enviando la alerta de stock crítico.
+4. Para la revisión de caducidad, el frontend pide `GET /api/farmacia/revisar-vencimientos`.
+5. El backend busca en `lote_medicamento` los lotes activos (`cantidad_actual > 0`) cuya `fecha_vencimiento` sea menor o igual a 30 días.
+6. Se consolida la información obtenida y se envía un reporte de los lotes críticos al grupo de Telegram configurado.
+
+### Arquitectura (3 capas)
+
+| Capa | Archivo |
+|---|---|
+| Presentación | `src/pages/farmacia/GestionInventario.jsx` (botón de revisión) |
+| Lógica y Seguridad | `api/farmacia/revisar-vencimientos.js` (endpoint), `api/farmacia/despachar-receta.js` (disparador), `services/telegramService.js` (comunicación con API Telegram) |
+| Datos | `repositories/inventarioRepository.js` → `obtenerLotesPorVencer()`, `verificarStockCritico()` |
+
+### Notas técnicas
+
+- La actualización matemática del inventario se delega a los triggers de PostgreSQL en Supabase (`trg_sincronizar_stock`, `trg_descontar_stock`); el backend solo lee el estado final para decidir si dispara la alerta, evitando condiciones de carrera.
+- Dependencia nueva: `node-telegram-bot-api` (`npm install node-telegram-bot-api`).
+- La revisión de caducidad funciona bajo demanda mediante un endpoint para facilitar pruebas locales sin requerir CRON Jobs por el momento.
+- Requiere `vercel dev` para probarse en local (Vite solo no ejecuta `/api`).
+
 
 ## Issue Nro 20: 
