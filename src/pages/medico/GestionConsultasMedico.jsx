@@ -1302,14 +1302,14 @@ export default function GestionConsultasMedico() {
           title={!form.diagnostico ? 'Registra y guarda un diagnóstico antes de exportar el PDF' : ''}
           className="w-full mt-3 border border-primary text-primary hover:bg-primary hover:text-white font-semibold py-3 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-primary"
         >
-          {descargando ? (
-            <>
-              <span className="btn-pdf-spinner" />
-              Generando PDF...
-            </>
-          ) : (
-            '📄 Descargar reporte PDF'
-          )}
+            {descargando ? (
+              <>
+                <span className="btn-pdf-spinner" />
+                Generando PDF...
+              </>
+            ) : (
+              <><IconoDocumentText className="w-4 h-4 inline mr-1" /> Descargar reporte PDF</>
+            )}
         </button>
       </Modal>
     </div>

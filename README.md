@@ -61,6 +61,11 @@ correo y contraseña de pruebas
 farmacia@prueba.com
 123456
 
+##Issue Nro 19
+Como administrativo, quiero que los movimientos de insumos se reflejen automáticamente en el inventario.
+correo y contraseña de pruebas
+xasdasd@gmail.com
+123456789
 
 ## Issue Nro 09: 
 Instalar la dependencia: npm install pdf-lib

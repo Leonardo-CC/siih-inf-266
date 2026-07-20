@@ -25,7 +25,10 @@ const rolesPermitidos = {
   '/admin/configuracion': ['administrativo'],
   '/admin/catalogo': ['administrativo'],
   '/admin/stock': ['administrativo'],
+  '/admin/medicamentos': ['administrativo'],
+  '/admin/movimientos': ['administrativo'],
   '/farmacia/inventario': ['farmaceutico'],
+  '/farmacia/medicamentos': ['farmaceutico'],
   '/farmacia/despachos': ['farmaceutico'],
   '/farmacia/perfil': ['farmaceutico'],
 };

@@ -257,7 +257,7 @@ export default function MiPerfilTecnico() {
                     disabled
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed"
                   />
-                  <p className="text-xs text-slate-400 mt-1">🔒 No modificable</p>
+                  <p className="text-xs text-slate-400 mt-1"><IconoLock className="w-3 h-3 inline mr-1" /> No modificable</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Carnet de Identidad (CI)</label>
@@ -266,7 +266,7 @@ export default function MiPerfilTecnico() {
                     disabled
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed"
                   />
-                  <p className="text-xs text-slate-400 mt-1">🔒 Dato de identidad único</p>
+                  <p className="text-xs text-slate-400 mt-1"><IconoLock className="w-3 h-3 inline mr-1" /> Dato de identidad único</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Rol</label>
@@ -275,16 +275,16 @@ export default function MiPerfilTecnico() {
                     disabled
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed capitalize"
                   />
-                  <p className="text-xs text-slate-400 mt-1">🔒 Asignado por el hospital</p>
+                  <p className="text-xs text-slate-400 mt-1"><IconoLock className="w-3 h-3 inline mr-1" /> Asignado por el hospital</p>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Licencia / Especialidad</label>
                   <input
-                    value={`${formatearValor(bloqueados.numero_licencia)} · ${formatearValor(bloqueados.especialidad_laboratorio)}`.trim()}
+                     value={`${formatearValor(bloqueados.numero_licencia)} · ${formatearValor(bloqueados.especialidad_laboratorio)}`.trim()}
                     disabled
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed"
                   />
-                  <p className="text-xs text-slate-400 mt-1">🔒 Asignado por el hospital</p>
+                  <p className="text-xs text-slate-400 mt-1"><IconoLock className="w-3 h-3 inline mr-1" /> Asignado por el hospital</p>
                 </div>
               </div>
             </div>

@@ -262,3 +262,51 @@ export function IconoUserGroup({ className }) {
     </Svg>
   );
 }
+
+export function IconoArrowDown({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+    </Svg>
+  );
+}
+
+export function IconoArrowUp({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+    </Svg>
+  );
+}
+
+export function IconoArrowRight({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5 10.5 20.25l6.75-6.75M21 12H3" />
+    </Svg>
+  );
+}
+
+export function IconoBanknotes({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v4.5a2.25 2.25 0 0 0 2.25 2.25h15.75a2.25 2.25 0 0 0 2.25-2.25V4.5m-19.5 0h19.5" />
+    </Svg>
+  );
+}
+
+export function IconoBuildingBank({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m-1.5 3h1.5M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+    </Svg>
+  );
+}
+
+export function IconoCreditCard({ className }) {
+  return (
+    <Svg className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3 2.25h2.25m10.5-9.75h6.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-6.375m0-9.75L16.5 12m0 0l2.25 2.25M16.5 12l-2.25 2.25" />
+    </Svg>
+  );
+}

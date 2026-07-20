@@ -235,7 +235,7 @@ export async function procesarPago(datosPago) {
       monto: monto,
       razon: 'Pago registrado, pendiente de validación',
       mensaje: ['efectivo', 'transferencia'].includes(metodo_pago)
-        ? '✓ Pago registrado. Un administrador validará la transacción.' 
+        ? 'Pago registrado. Un administrador validara la transaccion.' 
         : 'Tu pago está siendo procesado. En breve recibirás confirmación.',
     };
   } catch (error) {

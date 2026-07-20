@@ -11,6 +11,7 @@ import {
   IconoCog,
   IconoClipboardDocument,
   IconoDocumentText,
+  IconoRefresh,
 } from '../../components/Iconos.jsx';
 
 const ESTADO_CITA_COLORES = {
@@ -34,10 +35,10 @@ function formatearFecha(fecha) {
 
 function KpiCard({ titulo, valor, icono, color, sub }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{titulo}</p>
-        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center`}>{icono}</div>
+        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>{icono}</div>
       </div>
       <p className="text-3xl font-bold text-slate-800 mt-2">{valor}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -133,20 +134,29 @@ export default function PacienteDashboard({ usuario }) {
             onClick={cargar}
             className="bg-white/15 hover:bg-white/25 text-white font-medium px-4 py-2 rounded-lg transition backdrop-blur"
           >
-            ↻ Actualizar
+            <IconoRefresh className="w-4 h-4" /> Actualizar
           </button>
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KpiCard titulo="Citas pendientes" valor={kpis.citasPendientes} icono={<IconoCalendar className="w-5 h-5" />} color="bg-amber-500" />
-        <KpiCard titulo="Proximas citas" valor={kpis.citasProximas} icono={<IconoClock className="w-5 h-5" />} color="bg-blue-500" sub="Pendiente/confirmada" />
-        <KpiCard titulo="Citas hoy" valor={kpis.citasHoy} icono={<IconoCalendar className="w-5 h-5" />} color="bg-indigo-500" />
-        <KpiCard titulo="Total citas" valor={kpis.totalCitas} icono={<IconoChart className="w-5 h-5" />} color="bg-slate-700" />
-        <KpiCard titulo="Atenciones" valor={kpis.totalConsultas} icono={<IconoStethoscope className="w-5 h-5" />} color="bg-emerald-500" sub={`${kpis.consultasAtendidas} atendidas`} />
-        <KpiCard titulo="Signos registrados" valor={kpis.totalSignos} icono={<IconoHeart className="w-5 h-5" />} color="bg-rose-500" />
-      </div>
+      {(() => {
+        const tarjetas = [
+          { titulo: 'Citas pendientes', valor: kpis.citasPendientes, icono: <IconoCalendar className="w-5 h-5" />, color: 'bg-amber-500' },
+          { titulo: 'Proximas citas', valor: kpis.citasProximas, icono: <IconoClock className="w-5 h-5" />, color: 'bg-blue-500', sub: 'Pendiente/confirmada' },
+          { titulo: 'Citas hoy', valor: kpis.citasHoy, icono: <IconoCalendar className="w-5 h-5" />, color: 'bg-indigo-500' },
+          { titulo: 'Total citas', valor: kpis.totalCitas, icono: <IconoChart className="w-5 h-5" />, color: 'bg-slate-700' },
+          { titulo: 'Atenciones', valor: kpis.totalConsultas, icono: <IconoStethoscope className="w-5 h-5" />, color: 'bg-emerald-500', sub: `${kpis.consultasAtendidas} atendidas` },
+          { titulo: 'Signos registrados', valor: kpis.totalSignos, icono: <IconoHeart className="w-5 h-5" />, color: 'bg-rose-500' },
+        ];
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {tarjetas.map((k, i) => (
+              <KpiCard key={k.titulo} titulo={k.titulo} valor={k.valor} icono={k.icono} color={k.color} sub={k.sub} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Grafico + proximas citas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

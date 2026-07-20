@@ -10,6 +10,7 @@ import {
   IconoClipboardDocument,
   IconoArchiveBox,
   IconoPill,
+  IconoRefresh,
 } from '../../components/Iconos.jsx';
 
 // --- SUB-COMPONENTE: DONA DE ESTADO DE STOCK REAL ---
@@ -146,17 +147,29 @@ export default function FarmaciaDashboard() {
           disabled={cargando}
           className="z-10 bg-white/15 hover:bg-white/25 text-white font-medium px-4 py-2 rounded-lg transition backdrop-blur flex items-center gap-2 disabled:opacity-50"
         >
-          <span className={cargando ? "animate-spin inline-block" : ""}>↻</span> 
-          {cargando ? 'Actualizando...' : 'Actualizar'}
+          <IconoRefresh className="w-4 h-4" /> {cargando ? 'Actualizando...' : 'Actualizar'}
         </button>
       </div>
 
       {/* TARJETAS DE ESTADÍSTICAS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard titulo="En Catálogo" valor={stats.enCatalogo} icono={<IconoPill className="w-6 h-6" />} color="text-emerald-600" />
-        <StatCard titulo="Bajo Stock" valor={stats.stockCritico + stats.sinStock} icono={<IconoExclamation className="w-6 h-6" />} color="text-amber-500" />
-        <StatCard titulo="Lotes x Vencer" valor={stats.porVencer} icono={<IconoClock className="w-6 h-6" />} color="text-orange-500" />
-        <StatCard titulo="Recetas en Espera" valor={stats.recetasPendientes} icono={<IconoDocumentText className="w-6 h-6" />} color="text-blue-600" />
+        {cargando ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200/70 p-5 animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-1/2 mb-3" />
+              <div className="h-8 bg-slate-200 rounded w-1/3" />
+            </div>
+          ))
+        ) : (
+          [
+            { titulo: 'En Catálogo', valor: stats.enCatalogo, icono: <IconoPill className="w-6 h-6" />, color: 'bg-emerald-500' },
+            { titulo: 'Bajo Stock', valor: stats.stockCritico + stats.sinStock, icono: <IconoExclamation className="w-6 h-6" />, color: 'bg-amber-500' },
+            { titulo: 'Lotes x Vencer', valor: stats.porVencer, icono: <IconoClock className="w-6 h-6" />, color: 'bg-orange-500' },
+            { titulo: 'Recetas en Espera', valor: stats.recetasPendientes, icono: <IconoDocumentText className="w-6 h-6" />, color: 'bg-blue-600' },
+          ].map((stat, idx) => (
+            <StatCard key={stat.titulo} titulo={stat.titulo} valor={stat.valor} icono={stat.icono} color={stat.color} retraso={idx * 80} />
+          ))
+        )}
       </div>
 
       {/* SECCIÓN DE GRÁFICOS REALES (Mismo formato estructural que el Médico) */}

@@ -6,7 +6,7 @@ export default function StatCard({ titulo, valor, icono, color = 'bg-primary', l
       style={{ animationDelay: `${retraso}ms` }}
       className="stat-card group bg-white rounded-2xl border border-slate-200/70 p-5 flex items-center gap-4 hover:shadow-xl hover:-translate-y-1 hover:border-primary/40 transition-all duration-300"
     >
-      <div className={`${color} text-white rounded-2xl p-3.5 text-2xl shadow-md shadow-primary/20 group-hover:scale-110 transition-transform duration-300`}>
+      <div className={`${color} text-white rounded-2xl p-3.5 shadow-md shadow-primary/20 group-hover:scale-110 transition-transform duration-300`}>
         {icono}
       </div>
       <div className="min-w-0">

@@ -25,11 +25,14 @@ import AdminSignosVitales from './pages/admin/AdminSignosVitales.jsx';
 import AdminConfiguracion from './pages/admin/AdminConfiguracion.jsx';
 import AdminCatalogo from './pages/admin/AdminCatalogo.jsx';
 import AdminStock from './pages/admin/AdminStock.jsx';
+import AdminMovimientos from './pages/admin/AdminMovimientos.jsx';
+import AdminMedicamentos from './pages/admin/AdminMedicamentos.jsx';
 import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioDashboard.jsx';
 import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
 import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
 import MiPerfilTecnico from './pages/laboratorio/MiPerfilTecnico.jsx';
 import InventarioFarmacia from './pages/farmacia/InventarioFarmacia.jsx';
+import MedicamentosFarmacia from './pages/farmacia/MedicamentosFarmacia.jsx';
 import DespachoRecetas from './pages/farmacia/DespachoRecetas.jsx';
 import MiPerfilFarmacia from './pages/farmacia/MiPerfilFarmacia.jsx';
 import AdminInscripciones from './pages/admin/AdminInscripciones.jsx';
@@ -189,13 +192,31 @@ function App() {
             }
           />
           <Route
-            path="/farmacia/inventario"
+            path="/admin/medicamentos"
             element={
-              <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
+              <ProtectedRoute ruta="/admin/medicamentos" element={<AdminMedicamentos />} />
             }
-           />
-           <Route
-             path="/farmacia/despachos"
+          />
+          <Route
+            path="/admin/movimientos"
+            element={
+              <ProtectedRoute ruta="/admin/movimientos" element={<AdminMovimientos />} />
+            }
+          />
+            <Route
+              path="/farmacia/inventario"
+              element={
+                <ProtectedRoute ruta="/farmacia/inventario" element={<InventarioFarmacia />} />
+              }
+            />
+            <Route
+              path="/farmacia/medicamentos"
+              element={
+                <ProtectedRoute ruta="/farmacia/medicamentos" element={<MedicamentosFarmacia />} />
+              }
+            />
+            <Route
+              path="/farmacia/despachos"
              element={
                <ProtectedRoute ruta="/farmacia/despachos" element={<DespachoRecetas />} />
              }

@@ -130,8 +130,6 @@ async function setupRoutes() {
       return listarAdmisionHandler(req, res);
     });
 
-    
-
     const { default: buscarAdmisionHandler } = await import('./api/admisiones/buscar.js');
     app.get('/api/admisiones/buscar', async (req, res) => {
       req.method = 'GET';
@@ -281,7 +279,7 @@ async function setupRoutes() {
     });
 
     const { default: medicoSignosHandler } = await import('./api/medico/signos.js');
-    app.get('/api/medico/signos', (req, res) => {
+    app.get('/api/medico/signos', async (req, res) => {
       req.method = 'GET';
       return medicoSignosHandler(req, res);
     });
@@ -464,7 +462,33 @@ async function setupRoutes() {
     app.get('/api/citas/opciones', async (req, res) => {
       req.method = 'GET';
       return opcionesCitaHandler(req, res);
-    })
+    });
+
+    // Facultades
+    const { default: listarFacultadesHandler } = await import('./api/facultades/listar.js');
+    app.get('/api/facultades/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarFacultadesHandler(req, res);
+    });
+
+    const { default: registrarFacultadHandler } = await import('./api/facultades/registro.js');
+    app.post('/api/facultades/registro', async (req, res) => {
+      req.method = 'POST';
+      return registrarFacultadHandler(req, res);
+    });
+
+    const { default: actualizarFacultadHandler } = await import('./api/facultades/actualizar.js');
+    app.put('/api/facultades/actualizar', async (req, res) => {
+      req.method = 'PUT';
+      return actualizarFacultadHandler(req, res);
+    });
+
+    const { default: eliminarFacultadHandler } = await import('./api/facultades/eliminar.js');
+    app.post('/api/facultades/eliminar', async (req, res) => {
+      req.method = 'POST';
+      return eliminarFacultadHandler(req, res);
+    });
+
     // 1. Dashboard de Farmacia
     const { default: farmaciaDashboardHandler } = await import('./api/farmacia/dashboard.js');
     app.get('/api/farmacia/dashboard', async (req, res) => {
@@ -503,14 +527,6 @@ async function setupRoutes() {
       return farmaciaStatsHandler(req, res);
     });
 
-    // Reporte de consulta en PDF
-    const { default: reporteConsultaHandler } = await import('./api/medico/reporte-consulta.js');
-    app.get('/api/medico/reporte-consulta', async (req, res) => {
-      req.method = 'GET';
-      return reporteConsultaHandler(req, res);
-    });
-
-
     // 7. Stock mínimo/máximo de medicamentos (roles: farmacia y admin)
     const { default: farmaciaStockHandler } = await import('./api/farmacia/stock.js');
     app.get('/api/farmacia/stock', async (req, res) => {
@@ -520,6 +536,24 @@ async function setupRoutes() {
     app.put('/api/farmacia/stock', async (req, res) => {
       req.method = 'PUT';
       return farmaciaStockHandler(req, res);
+    });
+
+    const { default: farmaciaMedicamentosHandler } = await import('./api/farmacia/medicamentos.js');
+    app.get('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'GET';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.post('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'POST';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.put('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'PUT';
+      return farmaciaMedicamentosHandler(req, res);
+    });
+    app.delete('/api/farmacia/medicamentos', async (req, res) => {
+      req.method = 'DELETE';
+      return farmaciaMedicamentosHandler(req, res);
     });
 
     const { default: farmaceuticoMiIdHandler } = await import('./api/farmaceutico/mi-id.js');
@@ -544,35 +578,32 @@ async function setupRoutes() {
       return farmaceuticoRecuperarHandler(req, res);
     });
 
-        // Facultades
-    const { default: listarFacultadesHandler } = await import('./api/facultades/listar.js');
-    app.get('/api/facultades/listar', async (req, res) => {
+    // 8. Movimientos de insumos (HU-19) - entrada/salida/transferencia
+    const { default: movimientoEntradaHandler } = await import('./api/movimientos/entrada.js');
+    app.post('/api/movimientos/entrada', async (req, res) => {
+      req.method = 'POST';
+      return movimientoEntradaHandler(req, res);
+    });
+
+    const { default: movimientoSalidaHandler } = await import('./api/movimientos/salida.js');
+    app.post('/api/movimientos/salida', async (req, res) => {
+      req.method = 'POST';
+      return movimientoSalidaHandler(req, res);
+    });
+
+    const { default: movimientoTransferenciaHandler } = await import('./api/movimientos/transferencia.js');
+    app.post('/api/movimientos/transferencia', async (req, res) => {
+      req.method = 'POST';
+      return movimientoTransferenciaHandler(req, res);
+    });
+
+    const { default: movimientoHistorialHandler } = await import('./api/movimientos/historial.js');
+    app.get('/api/movimientos/historial', async (req, res) => {
       req.method = 'GET';
-      return listarFacultadesHandler(req, res);
-    });
-    
-
-    const { default: registrarFacultadHandler } = await import('./api/facultades/registro.js');
-    app.post('/api/facultades/registro', async (req, res) => {
-      req.method = 'POST';
-      return registrarFacultadHandler(req, res);
+      return movimientoHistorialHandler(req, res);
     });
 
-    const { default: actualizarFacultadHandler } = await import('./api/facultades/actualizar.js');
-    app.put('/api/facultades/actualizar', async (req, res) => {
-      req.method = 'PUT';
-      return actualizarFacultadHandler(req, res);
-    });
-
-    const { default: eliminarFacultadHandler } = await import('./api/facultades/eliminar.js');
-    app.post('/api/facultades/eliminar', async (req, res) => {
-      req.method = 'POST';
-      return eliminarFacultadHandler(req, res);
-    });
-
-    
-
-    // 8. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
+    // 9. Catálogo administrable (especialidad, medico, enfermero, farmaceutico, tecnico, tipo_seguro)
     const { default: catalogoHandler } = await import('./api/catalogo/index.js');
     app.get('/api/catalogo', async (req, res) => {
       req.method = 'GET';
@@ -625,5 +656,3 @@ app.listen(PORT, () => {
   console.log(`-> Frontend conecta a http://localhost:5173`);
   console.log(`-> Endpoints disponibles en http://localhost:${PORT}/api/`);
 });
-
-

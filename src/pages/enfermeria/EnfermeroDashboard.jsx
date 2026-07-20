@@ -8,6 +8,7 @@ import {
   IconoChart,
   IconoUsers,
   IconoCog,
+  IconoRefresh,
 } from '../../components/Iconos.jsx';
 
 const ESTADO_COLORES = {
@@ -53,10 +54,10 @@ function EstadoBadge({ estado }) {
 
 function KpiCard({ titulo, valor, icono, color, sub }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-slate-500">{titulo}</p>
-        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center`}>{icono}</div>
+        <div className={`${color} text-white rounded-lg w-9 h-9 flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>{icono}</div>
       </div>
       <p className="text-3xl font-bold text-slate-800 mt-2">{valor}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -201,18 +202,27 @@ export default function EnfermeroDashboard({ usuario }) {
           onClick={cargar}
           className="bg-white/15 hover:bg-white/25 text-white font-medium px-4 py-2 rounded-lg transition backdrop-blur"
         >
-          ↻ Actualizar
+          <IconoRefresh className="w-4 h-4" /> Actualizar
         </button>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <KpiCard titulo="Admisiones hoy" valor={kpis.admisionesHoy} icono={<IconoClipboardDocument className="w-5 h-5" />} color="bg-blue-500" />
-        <KpiCard titulo="Pendientes" valor={kpis.admisionesPendientes} icono={<IconoClock className="w-5 h-5" />} color="bg-amber-500" sub="Registradas / en triage" />
-        <KpiCard titulo="Sin verificar" valor={kpis.admisionesSinVerificar} icono={<IconoExclamation className="w-5 h-5" />} color="bg-orange-500" />
-        <KpiCard titulo="Signos hoy" valor={kpis.signosHoy} icono={<IconoHeart className="w-5 h-5" />} color="bg-rose-500" />
-        <KpiCard titulo="Total admisiones" valor={kpis.totalAdmisiones} icono={<IconoChart className="w-5 h-5" />} color="bg-slate-700" />
-      </div>
+      {(() => {
+        const tarjetas = [
+          { titulo: 'Admisiones hoy', valor: kpis.admisionesHoy, icono: <IconoClipboardDocument className="w-5 h-5" />, color: 'bg-blue-500' },
+          { titulo: 'Pendientes', valor: kpis.admisionesPendientes, icono: <IconoClock className="w-5 h-5" />, color: 'bg-amber-500', sub: 'Registradas / en triage' },
+          { titulo: 'Sin verificar', valor: kpis.admisionesSinVerificar, icono: <IconoExclamation className="w-5 h-5" />, color: 'bg-orange-500' },
+          { titulo: 'Signos hoy', valor: kpis.signosHoy, icono: <IconoHeart className="w-5 h-5" />, color: 'bg-rose-500' },
+          { titulo: 'Total admisiones', valor: kpis.totalAdmisiones, icono: <IconoChart className="w-5 h-5" />, color: 'bg-slate-700' },
+        ];
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {tarjetas.map((k) => (
+              <KpiCard key={k.titulo} titulo={k.titulo} valor={k.valor} icono={k.icono} color={k.color} sub={k.sub} />
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Graficos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
