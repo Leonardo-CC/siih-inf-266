@@ -1,30 +1,34 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
+import {
+  IconoPlus,
+  IconoEdit,
+  IconoTrash,
+} from '../../components/Iconos.jsx';
 
-const TIPOS = {
+const ESTADOS = {
   Academica: 'Académica',
   Clinica: 'Clínica',
   Administrativa: 'Administrativa',
 };
 
-const estadoInicialForm = {
-  id_area: null,
-  nombre_area: '',
-  tipo_area: 'Academica',
-  descripcion: '',
-};
-
 export default function AdminFacultades() {
   const [facultades, setFacultades] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [errorGeneral, setErrorGeneral] = useState(null);
+
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [form, setForm] = useState(estadoInicialForm);
+  const [form, setForm] = useState({
+    id_area: null,
+    nombre_area: '',
+    tipo_area: 'Academica',
+    descripcion: '',
+  });
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
-  const [errorGeneral, setErrorGeneral] = useState(null);
 
   async function cargarFacultades() {
     setCargando(true);
@@ -45,16 +49,16 @@ export default function AdminFacultades() {
     cargarFacultades();
   }, []);
 
-  function abrirModalCrear() {
+  function abrirCrear() {
     setModoEdicion(false);
-    setForm(estadoInicialForm);
+    setForm({ id_area: null, nombre_area: '', tipo_area: 'Academica', descripcion: '' });
     setErrores({});
     setMensaje(null);
     setErrorGeneral(null);
     setModalAbierto(true);
   }
 
-  function abrirModalEditar(facultad) {
+  function abrirEditar(facultad) {
     setModoEdicion(true);
     setForm({
       id_area: facultad.id_area,
@@ -70,8 +74,8 @@ export default function AdminFacultades() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setErrores((prev) => ({ ...prev, [name]: '' }));
+    setForm((p) => ({ ...p, [name]: value }));
+    setErrores((p) => ({ ...p, [name]: '' }));
   }
 
   async function handleSubmit(e) {
@@ -103,7 +107,7 @@ export default function AdminFacultades() {
       setTimeout(() => {
         setModalAbierto(false);
         setMensaje(null);
-      }, 1000);
+      }, 1200);
     } catch {
       setErrorGeneral('No se pudo conectar con el servidor.');
     } finally {
@@ -140,7 +144,7 @@ export default function AdminFacultades() {
             <p className="text-blue-100 mt-1 text-sm">Administra el catálogo usado para inscribir pacientes/estudiantes.</p>
           </div>
           <button
-            onClick={abrirModalCrear}
+            onClick={abrirCrear}
             className="bg-white text-primary hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg transition"
           >
             + Nueva facultad/área
@@ -158,44 +162,19 @@ export default function AdminFacultades() {
             </div>
           ) : (
             <TablaCRUD
-  columnas={[
-    { clave: 'nombre_area', titulo: 'Nombre' },
-    {
-      clave: 'tipo_area',
-      titulo: 'Tipo',
-      render: (v) => TIPOS[v] || v || '-'
-    },
-    {
-      clave: 'descripcion',
-      titulo: 'Descripción',
-      render: (v) => v || '-'
-    },
-    {
-      clave: 'acciones',
-      titulo: 'Acciones',
-      render: (v, fila) => (
-        <div className="flex gap-2">
-          <button
-            onClick={() => abrirModalEditar(fila)}
-            className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-blue-500 rounded hover:bg-blue-600 transition"
-          >
-            Editar
-          </button>
-
-          <button
-            onClick={() => handleEliminar(fila)}
-            className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-red-500 rounded hover:bg-red-600 transition"
-          >
-            Eliminar
-          </button>
-        </div>
-      ),
-    },
-  ]}
-  datos={facultades}
-  cargando={cargando}
-  emptyMessage="No hay facultades/áreas registradas"
-/>
+              cargando={cargando}
+              emptyMessage="No hay facultades/áreas registradas"
+              columnas={[
+                { clave: 'nombre_area', titulo: 'Nombre' },
+                { clave: 'tipo_area', titulo: 'Tipo', render: (v) => ESTADOS[v] || v || '—' },
+                { clave: 'descripcion', titulo: 'Descripción', render: (v) => v || '—' },
+              ]}
+              datos={facultades}
+              onEditar={abrirEditar}
+              onEliminar={handleEliminar}
+              iconoEditar={<IconoEdit className="w-4 h-4" />}
+              iconoEliminar={<IconoTrash className="w-4 h-4" />}
+            />
           )}
         </div>
       </div>
@@ -204,7 +183,7 @@ export default function AdminFacultades() {
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
         titulo={modoEdicion ? 'Editar facultad/área' : 'Nueva facultad/área'}
-        ancho="max-w-lg"
+        ancho="max-w-2xl"
       >
         {mensaje && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">{mensaje}</div>
@@ -235,7 +214,7 @@ export default function AdminFacultades() {
               onChange={handleChange}
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
             >
-              {Object.entries(TIPOS).map(([v, l]) => (
+              {Object.entries(ESTADOS).map(([v, l]) => (
                 <option key={v} value={v}>{l}</option>
               ))}
             </select>

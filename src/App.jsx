@@ -227,11 +227,20 @@ function App() {
                <ProtectedRoute ruta="/farmacia/perfil" element={<MiPerfilFarmacia />} />
              }
            />
-          </Route>
-          <Route path="/admin/inscripciones" element={<AdminInscripciones />} />
-          <Route path="/admin/facultades" element={<AdminFacultades />} />
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+           <Route
+             path="/admin/inscripciones"
+             element={
+               <ProtectedRoute ruta="/admin/inscripciones" element={<AdminInscripciones />} />
+             }
+           />
+           <Route
+             path="/admin/facultades"
+             element={
+               <ProtectedRoute ruta="/admin/facultades" element={<AdminFacultades />} />
+             }
+           />
+         </Route>
+         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

@@ -63,6 +63,7 @@ const navPorRol = {
     { to: '/admin/stock', label: 'Stock', icono: IconoArchiveBox },
     { to: '/admin/medicamentos', label: 'Medicamentos', icono: IconoPill },
     { to: '/admin/movimientos', label: 'Movimientos', icono: IconoArrowDown },
+    { to: '/admin/facultades', label: 'Facultades / Áreas', icono: IconoBuildingHospital },
     { to: '/admin/configuracion', label: 'Configuracion', icono: IconoCog },
   ],
 };
