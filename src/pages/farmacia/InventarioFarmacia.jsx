@@ -1,4 +1,5 @@
 // src/pages/farmacia/InventarioFarmacia.jsx
+// src/pages/farmacia/InventarioFarmacia.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { IconoArchiveBox, IconoRefresh, IconoPlus, IconoCheck, IconoExclamation, IconoClock, IconoEdit } from '../../components/Iconos.jsx';
@@ -28,7 +29,7 @@ export default function InventarioFarmacia() {
   });
 
   const cargarInventario = async () => {
-    setCargando(true); // <--- ESTA ES LA LÍNEA QUE FALTABA
+    setCargando(true);
     try {
       const res = await fetch('/api/farmacia/inventario-datos');
       const data = await res.json();
@@ -157,6 +158,32 @@ export default function InventarioFarmacia() {
     return null;
   };
 
+  // ==========================================
+  // LÓGICA NUEVA: CÁLCULO DEL RESUMEN DE ALERTAS
+  // ==========================================
+  const alertas = { bajoStock: [], porVencer: [] };
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  medicamentos.forEach(med => {
+    // Buscar problemas de Stock
+    if (med.stock_actual <= med.stock_minimo) {
+      alertas.bajoStock.push(med);
+    }
+    // Buscar problemas de Vencimiento
+    if (med.lote_medicamento) {
+      med.lote_medicamento.forEach(lote => {
+        if (lote.cantidad_actual > 0) {
+          const vencimiento = new Date(lote.fecha_vencimiento + 'T00:00:00');
+          const dias = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+          if (dias <= 30) {
+            alertas.porVencer.push(lote);
+          }
+        }
+      });
+    }
+  });
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 relative">
       
@@ -190,6 +217,45 @@ export default function InventarioFarmacia() {
         </div>
       </div>
 
+      {/* ========================================== */}
+      {/* NUEVO BANNER DE ALERTAS (Solo aparece si hay problemas) */}
+      {/* ========================================== */}
+      {(alertas.bajoStock.length > 0 || alertas.porVencer.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Alerta de Stock (Roja) */}
+          {alertas.bajoStock.length > 0 && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl shadow-sm flex items-start gap-3">
+              <div className="text-red-500 p-1 bg-red-100 rounded-lg">
+                <IconoExclamation className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-red-800">Atención: Bajo Stock</h3>
+                <p className="text-sm text-red-700 mt-1">
+                  Tienes <span className="font-bold">{alertas.bajoStock.length}</span> medicamento(s) por debajo del mínimo requerido o agotados.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Alerta de Vencimiento (Naranja) */}
+          {alertas.porVencer.length > 0 && (
+            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-start gap-3">
+              <div className="text-amber-500 p-1 bg-amber-100 rounded-lg">
+                <IconoClock className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-800">Lotes Críticos</h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Hay <span className="font-bold">{alertas.porVencer.length}</span> lote(s) que están vencidos o vencerán en los próximos 30 días.
+                </p>
+              </div>
+            </div>
+          )}
+
+        </div>
+      )}
+
       {/* TABLA PRINCIPAL */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {cargando ? (
@@ -211,7 +277,7 @@ export default function InventarioFarmacia() {
             </thead>
             <tbody className="divide-y divide-slate-100">
                {medicamentos.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No hay medicamentos registrados.</td></tr>
+                <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-500">No hay medicamentos registrados.</td></tr>
               ) : (
                 medicamentos.map(med => {
                   const enAlertaStock = med.stock_actual <= med.stock_minimo;
@@ -275,7 +341,7 @@ export default function InventarioFarmacia() {
                       {/* SUB-FILA DESPLEGABLE CON LOS LOTES */}
                       {expandido && (
                         <tr>
-                           <td colSpan="6" className="p-0 border-b-0">
+                           <td colSpan="7" className="p-0 border-b-0">
                             <div className="bg-slate-50 p-6 border-y border-slate-200 shadow-inner">
                                <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                                  <IconoArchiveBox className="w-4 h-4 text-slate-500" />
@@ -348,10 +414,9 @@ export default function InventarioFarmacia() {
         )}
       </div>
 
-      {/* MODAL DE INGRESO (Se mantiene intacto) */}
+      {/* MODAL DE INGRESO */}
       {mostrarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          {/* ... contenido del modal ... */}
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden">
             <div className="px-6 py-4 border-b bg-emerald-600 text-white flex justify-between items-center">
               <h2 className="text-lg font-bold">Registrar Ingreso de Lote</h2>
