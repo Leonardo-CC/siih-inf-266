@@ -52,16 +52,17 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro }) {
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, tipo_seguro: tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
     .select('id_paciente')
     .single();
 
   if (error) throw new Error(`Error al crear paciente: ${error.message}`);
   return data.id_paciente;
 }
+
 
 // Rollback manual: Supabase (vía API REST/JS) no soporta transacciones
 // multi-tabla nativas, así que si falla un paso posterior a "persona",
