@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago } = req.body;
+    const { id_cita, id_consulta, id_paciente, id_medico, monto, metodo_pago, razon_social, nit_ci } = req.body;
 
     // Validaciones básicas
     if (!id_cita || !monto || !metodo_pago) {
@@ -30,6 +30,8 @@ export default async function handler(req, res) {
       id_medico,
       monto,
       metodo_pago,
+      razon_social,
+      nit_ci,
     });
 
     return res.status(200).json(resultado);

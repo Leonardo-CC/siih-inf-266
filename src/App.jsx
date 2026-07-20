@@ -27,6 +27,7 @@ import AdminCatalogo from './pages/admin/AdminCatalogo.jsx';
 import AdminStock from './pages/admin/AdminStock.jsx';
 import AdminMovimientos from './pages/admin/AdminMovimientos.jsx';
 import AdminMedicamentos from './pages/admin/AdminMedicamentos.jsx';
+import AdminFinanzas from './pages/admin/AdminFinanzas.jsx';
 import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioDashboard.jsx';
 import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
 import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
@@ -201,6 +202,12 @@ function App() {
             path="/admin/movimientos"
             element={
               <ProtectedRoute ruta="/admin/movimientos" element={<AdminMovimientos />} />
+            }
+          />
+          <Route
+            path="/admin/finanzas"
+            element={
+              <ProtectedRoute ruta="/admin/finanzas" element={<AdminFinanzas />} />
             }
           />
             <Route

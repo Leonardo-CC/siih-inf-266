@@ -7,7 +7,6 @@ import { IconoCheck } from '../../components/Iconos.jsx';
 const TIPOS = {
   consulta_externa: 'Consulta externa',
   emergencia: 'Emergencia',
-  hospitalizacion: 'Hospitalizacion',
 };
 
 const ESTADOS = {

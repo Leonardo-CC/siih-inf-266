@@ -28,7 +28,7 @@ export default async function handler(req, res) {
           dosis,
           frecuencia,
           duracion,
-          medicamento ( nombre )
+          medicamento ( nombre, precio )
         )
       `)
       .eq('estado', 'pendiente')
@@ -46,10 +46,14 @@ export default async function handler(req, res) {
       const detalles = (r.detalle_receta || []).map(d => ({
         cantidad: d.cantidad,
         nombre: d.medicamento?.nombre || 'Medicamento',
+        precio: Number(d.medicamento?.precio || 0),
+        subtotal: Number(d.cantidad || 0) * Number(d.medicamento?.precio || 0),
         dosis: d.dosis,
         frecuencia: d.frecuencia,
         duracion: d.duracion,
       }));
+
+      const total = detalles.reduce((sum, d) => sum + d.subtotal, 0);
 
       const resumenMedicamentos = detalles
         .map(d => `${d.cantidad}x ${d.nombre} (${d.dosis})`)
@@ -65,6 +69,7 @@ export default async function handler(req, res) {
         especialidad: medicoFull?.especialidad || 'Medicina General',
         medicamentos: resumenMedicamentos || 'Sin detalles',
         detalles,
+        total,
       };
     });
 

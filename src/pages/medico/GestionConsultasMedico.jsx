@@ -3,7 +3,7 @@ import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
 import '../../styles/reporteConsulta.css';
-import { IconoEdit, IconoBeaker, IconoEye, IconoPlus, IconoTrash, IconoDocumentText } from '../../components/Iconos.jsx';
+import { IconoEdit, IconoBeaker, IconoEye, IconoPlus, IconoTrash, IconoDocumentText, IconoBuildingHospital } from '../../components/Iconos.jsx';
 
 const ESTADOS = {
   pendiente: 'Pendiente',
@@ -74,6 +74,11 @@ const itemPrescripcionVacio = {
   duracion: '',
 };
 
+const hospitalizacionInicial = {
+  diagnostico_ingreso: '',
+  observaciones_clinicas: '',
+};
+
 export default function GestionConsultasMedico() {
   const usuario = obtenerUsuario();
   const [consultas, setConsultas] = useState([]);
@@ -112,6 +117,13 @@ export default function GestionConsultasMedico() {
   const [solicitudesVista, setSolicitudesVista] = useState([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(false);
   const [errorSolicitudes, setErrorSolicitudes] = useState(null);
+  const [modalHospitalizacion, setModalHospitalizacion] = useState(false);
+  const [consultaHospitalizacion, setConsultaHospitalizacion] = useState(null);
+  const [formHospitalizacion, setFormHospitalizacion] = useState(hospitalizacionInicial);
+  const [erroresHospitalizacion, setErroresHospitalizacion] = useState({});
+  const [enviandoHospitalizacion, setEnviandoHospitalizacion] = useState(false);
+  const [mensajeHospitalizacion, setMensajeHospitalizacion] = useState(null);
+  const [errorHospitalizacion, setErrorHospitalizacion] = useState(null);
 
   // HU-15: abre la solicitud de analisis precargada con la consulta de origen y su paciente.
   function abrirModalSolicitarAnalisis(consulta) {
@@ -232,6 +244,63 @@ export default function GestionConsultasMedico() {
     }
   }
 
+  function abrirAutorizarHospitalizacion(consulta) {
+    setConsultaHospitalizacion(consulta);
+    setFormHospitalizacion({
+      diagnostico_ingreso: consulta.diagnostico || '',
+      observaciones_clinicas: consulta.tratamiento || consulta.observaciones || '',
+    });
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+    setModalHospitalizacion(true);
+  }
+
+  function handleChangeHospitalizacion(e) {
+    const { name, value } = e.target;
+    setFormHospitalizacion((prev) => ({ ...prev, [name]: value }));
+    setErroresHospitalizacion((prev) => ({ ...prev, [name]: '' }));
+  }
+
+  async function handleSubmitHospitalizacion(e) {
+    e.preventDefault();
+    setEnviandoHospitalizacion(true);
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+
+    try {
+      const res = await fetch('/api/hospitalizaciones/autorizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rol: usuario?.rol,
+          id_profesional: usuario?.id_medico,
+          id_medico: usuario?.id_medico,
+          id_consulta: consultaHospitalizacion?.id_consulta,
+          id_cita: consultaHospitalizacion?.id_cita,
+          id_paciente: consultaHospitalizacion?.id_paciente,
+          diagnostico_ingreso: formHospitalizacion.diagnostico_ingreso,
+          observaciones_clinicas: formHospitalizacion.observaciones_clinicas,
+        }),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        setErrorHospitalizacion(data.mensaje || data.errores?.general || 'No se pudo autorizar la hospitalizacion.');
+        if (data.errores) setErroresHospitalizacion(data.errores);
+        return;
+      }
+
+      setMensajeHospitalizacion(data.mensaje || 'Hospitalizacion autorizada correctamente.');
+      setTimeout(() => setModalHospitalizacion(false), 1200);
+    } catch {
+      setErrorHospitalizacion('No se pudo conectar con el servidor.');
+    } finally {
+      setEnviandoHospitalizacion(false);
+    }
+  }
+
   // HU-15: marca las consultas que ya tienen solicitud de analisis del paciente.
   // La BD vincula el analisis al paciente; se usa id_paciente (y id_consulta
   // como filtro adicional cuando la columna existe).
@@ -286,6 +355,30 @@ export default function GestionConsultasMedico() {
       setErrorGeneral('No se pudo conectar con el servidor.');
     } finally {
       setCargando(false);
+    }
+  }
+
+  async function eliminarConsulta(consulta) {
+    const paciente = `${consulta.paciente_nombre || ''} ${consulta.paciente_apellido || ''}`.trim();
+    if (!confirm(`Eliminar consulta #${consulta.id_consulta}${paciente ? ` de ${paciente}` : ''}?`)) return;
+
+    setErrorGeneral(null);
+    setMensaje(null);
+    try {
+      const res = await fetch('/api/admisiones/eliminar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_consulta: consulta.id_consulta }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setErrorGeneral(data.mensaje || data.errores?.general || 'No se pudo eliminar la consulta.');
+        return;
+      }
+      setMensaje(data.mensaje || 'Consulta eliminada correctamente.');
+      await cargar();
+    } catch {
+      setErrorGeneral('No se pudo conectar con el servidor.');
     }
   }
 
@@ -673,19 +766,31 @@ export default function GestionConsultasMedico() {
                   ? "No tienes consultas agendadas para el día de hoy."
                   : `No hay consultas registradas para la fecha seleccionada.`
               }
-              onEditar={abrirModalAtender}
               renderAcciones={(consulta) => {
                 const yaSolicitado = Boolean(solicitudesPorConsulta[consulta.id_consulta]);
                 return (
-                  <div className="flex items-center gap-1 justify-end">
+                  <div className="flex flex-wrap items-center gap-1.5 justify-end min-w-[220px]">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); abrirModalAtender(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                      title="Editar consulta"
+                    >
+                      <IconoEdit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); eliminarConsulta(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                      title="Eliminar consulta"
+                    >
+                      <IconoTrash className="w-4 h-4" />
+                    </button>
                     {yaSolicitado ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); abrirVerSolicitud(consulta); }}
-                        className="inline-flex items-center gap-1 px-2.5 h-8 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-medium text-xs transition-colors"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors"
                         title="Ver solicitud de análisis"
                       >
                         <IconoEye className="w-4 h-4" />
-                        Ver solicitud
                       </button>
                     ) : (
                       <button
@@ -714,6 +819,13 @@ export default function GestionConsultasMedico() {
                         </button>
                       </>
                     ) : null}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); abrirAutorizarHospitalizacion(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors"
+                      title="Autorizar Hospitalizacion"
+                    >
+                      <IconoBuildingHospital className="w-4 h-4" />
+                    </button>
                   </div>
                 );
               }}
@@ -1311,6 +1423,76 @@ export default function GestionConsultasMedico() {
               <><IconoDocumentText className="w-4 h-4 inline mr-1" /> Descargar reporte PDF</>
             )}
         </button>
+      </Modal>
+
+      <Modal
+        abierto={modalHospitalizacion}
+        alCerrar={() => setModalHospitalizacion(false)}
+        titulo="Autorizar Hospitalizacion"
+        ancho="max-w-2xl"
+      >
+        {mensajeHospitalizacion && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">{mensajeHospitalizacion}</div>
+        )}
+        {errorHospitalizacion && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorHospitalizacion}</div>
+        )}
+
+        {consultaHospitalizacion && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 space-y-1">
+            <p><span className="font-semibold text-slate-700">Paciente:</span> {consultaHospitalizacion.paciente_nombre} {consultaHospitalizacion.paciente_apellido}</p>
+            <p><span className="font-semibold text-slate-700">Consulta origen:</span> #{consultaHospitalizacion.id_consulta} - {consultaHospitalizacion.motivo_consulta || 'Consulta'}</p>
+            <p><span className="font-semibold text-slate-700">Medico autorizante:</span> #{usuario?.id_medico}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmitHospitalizacion} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Diagnostico de ingreso *</label>
+            <textarea
+              name="diagnostico_ingreso"
+              value={formHospitalizacion.diagnostico_ingreso}
+              onChange={handleChangeHospitalizacion}
+              rows="3"
+              placeholder="Justificacion clinica de la hospitalizacion"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.diagnostico_ingreso ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.diagnostico_ingreso && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.diagnostico_ingreso}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones clinicas *</label>
+            <textarea
+              name="observaciones_clinicas"
+              value={formHospitalizacion.observaciones_clinicas}
+              onChange={handleChangeHospitalizacion}
+              rows="4"
+              placeholder="Indicaciones, cuidados especiales y detalles de seguimiento"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.observaciones_clinicas ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.observaciones_clinicas && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.observaciones_clinicas}</p>}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalHospitalizacion(false)}
+              className="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={enviandoHospitalizacion}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              <IconoBuildingHospital className="w-4 h-4" />
+              {enviandoHospitalizacion ? 'Autorizando...' : 'Autorizar Hospitalizacion'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

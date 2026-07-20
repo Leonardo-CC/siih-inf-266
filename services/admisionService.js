@@ -21,7 +21,7 @@ import {
 } from '../repositories/admisionRepository.js';
 import { traducirError } from '../lib/errorMessages.js';
 
-const TIPOS_ADMISION = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const TIPOS_ADMISION = ['consulta_externa', 'emergencia'];
 const ESTADOS_ADMISION = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
 
 function toIntOrNull(value) {

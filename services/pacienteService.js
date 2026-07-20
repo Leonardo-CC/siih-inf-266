@@ -63,6 +63,10 @@ export async function registrarPaciente(payload) {
     contrasena,
     id_tipo_seguro,
     numero_seguro,
+    matricula_numero,
+    matricula_foto_url,
+    contacto_emergencia_nombre,
+    contacto_emergencia_telefono,
   } = payload || {};
 
   const contrasenaFinal = contrasena || ci;
@@ -133,6 +137,10 @@ export async function registrarPaciente(payload) {
       persona_id: personaId,
       id_tipo_seguro,
       numero_seguro,
+      matricula_numero,
+      matricula_foto_url,
+      contacto_emergencia_nombre,
+      contacto_emergencia_telefono,
     });
 
     // Crear notificación
