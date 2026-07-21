@@ -93,6 +93,7 @@ export async function registrarAnalisis(payload) {
     estado,
     resultado,
     observaciones,
+    archivo_resultado, // 🔥 1. EXTRAEMOS EL ARCHIVO DEL PAYLOAD
   } = payload || {};
 
   const errores = {};
@@ -106,18 +107,7 @@ export async function registrarAnalisis(payload) {
   }
 
   try {
-    // HU-15: la tabla analisis_laboratorio requiere id_tecnico_laboratorio (NOT NULL).
-    // Cuando la solicitud la origina un medico (no un tecnico), se asigna un
-    // tecnico por defecto para cumplir la restriccion de la BD.
     let idTecnico = id_tecnico_laboratorio ? Number(id_tecnico_laboratorio) : null;
-    if (!idTecnico) {
-      const tecnicos = await listarTecnicosLaboratorio();
-      if (!tecnicos.length) {
-        return { ok: false, status: 400, errores: { id_tecnico_laboratorio: 'No hay técnicos de laboratorio registrados para asignar la solicitud.' } };
-      }
-      idTecnico = tecnicos[0].id_tecnico_laboratorio;
-    }
-
     // HU-15: si la solicitud se origina en una consulta (dependencia HU-06),
     // validar que dicha consulta pertenezca al paciente vinculado.
     if (id_consulta) {
@@ -141,6 +131,7 @@ export async function registrarAnalisis(payload) {
       estado: estado || 'pendiente',
       resultado: resultado || null,
       observaciones: observaciones || null,
+      archivo_resultado: archivo_resultado || null, // 🔥 2. LO GUARDAMOS EN LA BASE DE DATOS
     });
 
     return {

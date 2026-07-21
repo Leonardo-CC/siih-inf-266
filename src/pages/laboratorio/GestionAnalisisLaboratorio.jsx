@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { obtenerUsuario } from '../../lib/authSession.js';
+import { supabaseClient as supabase } from '../../lib/supabaseClient.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
 import {
@@ -67,6 +68,11 @@ export default function GestionAnalisisLaboratorio() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('');
+  
+  // Estados para el archivo adjunto
+  const [archivoFisico, setArchivoFisico] = useState(null);
+  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+
   const [form, setForm] = useState({
     id_analisis: null,
     id_paciente: '',
@@ -77,7 +83,9 @@ export default function GestionAnalisisLaboratorio() {
     estado: 'pendiente',
     resultado: '',
     observaciones: '',
+    archivo_resultado: '', // <-- Nuevo campo
   });
+  
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
@@ -114,7 +122,6 @@ export default function GestionAnalisisLaboratorio() {
     }
   }
 
-  // HU-15: carga las consultas del paciente para vincular la solicitud a su consulta de origen.
   async function cargarConsultasPaciente(id_paciente) {
     if (!id_paciente) {
       setConsultasPaciente([]);
@@ -146,7 +153,9 @@ export default function GestionAnalisisLaboratorio() {
       estado: 'pendiente',
       resultado: '',
       observaciones: '',
+      archivo_resultado: '',
     });
+    setArchivoFisico(null); // Limpiar input
     setConsultasPaciente([]);
     setErrores({});
     setMensaje(null);
@@ -166,7 +175,9 @@ export default function GestionAnalisisLaboratorio() {
       estado: a.estado,
       resultado: a.resultado || '',
       observaciones: a.observaciones || '',
+      archivo_resultado: a.archivo_resultado || '', // Cargar URL actual
     });
+    setArchivoFisico(null); // Limpiar input
     setErrores({});
     setMensaje(null);
     setErrorGeneral(null);
@@ -187,6 +198,7 @@ export default function GestionAnalisisLaboratorio() {
   async function handleSubmit(e) {
     e.preventDefault();
     setEnviando(true);
+    setSubiendoArchivo(true);
     setErrores({});
     setErrorGeneral(null);
     setMensaje(null);
@@ -199,15 +211,40 @@ export default function GestionAnalisisLaboratorio() {
     if (Object.keys(errs).length > 0) {
       setErrores(errs);
       setEnviando(false);
+      setSubiendoArchivo(false);
       return;
     }
 
     try {
+      let urlArchivoFinal = form.archivo_resultado;
+
+      // 1. Subir archivo a Supabase Storage (si el usuario seleccionó uno)
+      if (archivoFisico) {
+        const fileExt = archivoFisico.name.split('.').pop();
+        const fileName = `paciente_${form.id_paciente}_${Date.now()}.${fileExt}`;
+
+        const { data, error } = await supabase.storage
+          .from('laboratorio')
+          .upload(fileName, archivoFisico);
+
+        if (error) {
+          throw new Error('Error al subir el archivo: ' + error.message);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('laboratorio')
+          .getPublicUrl(fileName);
+
+        urlArchivoFinal = publicUrlData.publicUrl;
+      }
+
+      // 2. Armar el payload
       const body = {
         ...form,
         id_paciente: Number(form.id_paciente),
         id_tecnico_laboratorio: usuario.id_tecnico_laboratorio,
         id_consulta: form.id_consulta ? Number(form.id_consulta) : null,
+        archivo_resultado: urlArchivoFinal, // Se manda al backend
       };
 
       const url = modoEdicion ? '/api/tecnico-laboratorio/analisis/actualizar' : '/api/tecnico-laboratorio/analisis/registrar';
@@ -229,24 +266,35 @@ export default function GestionAnalisisLaboratorio() {
       setMensaje(data.mensaje || 'Guardado correctamente.');
       await cargarAnalisis();
       setTimeout(() => setModalAbierto(false), 1200);
-    } catch {
-      setErrorGeneral('No se pudo conectar con el servidor.');
+    } catch (error) {
+      setErrorGeneral(error.message || 'No se pudo conectar con el servidor.');
     } finally {
       setEnviando(false);
+      setSubiendoArchivo(false);
     }
   }
 
-  async function handleEliminar(a) {
-    if (!confirm(`¿Eliminar el análisis de "${a.paciente_nombre}"? Esta acción no se puede deshacer.`)) return;
+  async function handleAnular(a) {
+    if (a.estado === 'completado' || a.estado === 'cancelado') {
+      alert('No se puede anular un análisis que ya está completado o cancelado.');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de anular el análisis de "${a.paciente_nombre}"? Pasará a estado Cancelado.`)) return;
+    
     try {
-      const res = await fetch('/api/tecnico-laboratorio/analisis/eliminar', {
-        method: 'POST',
+      const res = await fetch('/api/tecnico-laboratorio/analisis/actualizar', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_analisis: a.id_analisis }),
+        body: JSON.stringify({ 
+          id_analisis: a.id_analisis,
+          estado: 'cancelado' 
+        }),
       });
       const data = await res.json();
+      
       if (!data.ok) {
-        alert(data.mensaje || 'No se pudo eliminar.');
+        alert(data.mensaje || 'No se pudo anular.');
         return;
       }
       await cargarAnalisis();
@@ -343,7 +391,21 @@ export default function GestionAnalisisLaboratorio() {
                 {
                   clave: 'resultado',
                   titulo: 'Resultado',
-                  render: (v) => v || <span className="text-slate-400">—</span>,
+                  render: (v, fila) => (
+                    <div className="flex flex-col gap-1">
+                      <span>{v || <span className="text-slate-400">—</span>}</span>
+                      {fila.archivo_resultado && (
+                        <a 
+                          href={fila.archivo_resultado} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          📄 Ver adjunto
+                        </a>
+                      )}
+                    </div>
+                  ),
                 },
                 {
                   clave: 'fecha_solicitud',
@@ -355,12 +417,35 @@ export default function GestionAnalisisLaboratorio() {
                   titulo: 'Fecha resultado',
                   render: (v) => formatearFecha(v),
                 },
+                {
+                  clave: 'acciones',
+                  titulo: 'Acciones',
+                  render: (_, fila) => (
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => abrirModalEditar(fila)}
+                        className="text-blue-600 hover:text-blue-900 transition-colors p-1"
+                        title="Editar Análisis"
+                      >
+                        <IconoEdit className="w-5 h-5" />
+                      </button>
+
+                      {fila.estado !== 'completado' && fila.estado !== 'cancelado' && (
+                        <button
+                          onClick={() => handleAnular(fila)}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          title="Anular Análisis"
+                        >
+                          <IconoTrash className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  ),
+                }
               ]}
               datos={analisisFiltrados}
               cargando={cargando}
               emptyMessage="No hay análisis que coincidan con la búsqueda"
-              onEditar={abrirModalEditar}
-              onEliminar={handleEliminar}
             />
           )}
         </div>
@@ -499,7 +584,33 @@ export default function GestionAnalisisLaboratorio() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          {/* SECCIÓN DE ARCHIVO ADJUNTO */}
+          <div className="mt-4 pt-4 border-t border-slate-100 w-full">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Adjuntar resultados (PDF, JPG, PNG)
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="file"
+                accept=".pdf, image/*"
+                onChange={(e) => setArchivoFisico(e.target.files[0])}
+                className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition"
+              />
+              
+              {form.archivo_resultado && (
+                <a 
+                  href={form.archivo_resultado} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="whitespace-nowrap text-sm text-primary font-medium hover:underline flex items-center gap-1"
+                >
+                  📄 Ver adjunto actual
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={() => setModalAbierto(false)}
@@ -509,11 +620,11 @@ export default function GestionAnalisisLaboratorio() {
             </button>
             <button
               type="submit"
-              disabled={enviando}
+              disabled={enviando || subiendoArchivo}
               className="bg-primary hover:bg-primary-dark text-white font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {enviando ? <IconoClock className="w-4 h-4 animate-spin" /> : <IconoCheck className="w-4 h-4" />}
-              {enviando ? 'Guardando...' : modoEdicion ? 'Actualizar análisis' : 'Registrar análisis'}
+              {(enviando || subiendoArchivo) ? <IconoClock className="w-4 h-4 animate-spin" /> : <IconoCheck className="w-4 h-4" />}
+              {(enviando || subiendoArchivo) ? 'Guardando...' : modoEdicion ? 'Actualizar análisis' : 'Registrar análisis'}
             </button>
           </div>
         </form>

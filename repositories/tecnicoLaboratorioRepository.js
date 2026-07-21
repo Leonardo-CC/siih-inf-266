@@ -107,6 +107,7 @@ const SELECT_ANALISIS_CON_CONSULTA = `
   estado,
   resultado,
   observaciones,
+  archivo_resultado,
   paciente:id_paciente (
     id_paciente,
     persona:persona_id (nombre, apellido)
@@ -133,6 +134,7 @@ const SELECT_ANALISIS_SIN_CONSULTA = `
   estado,
   resultado,
   observaciones,
+  archivo_resultado,
   paciente:id_paciente (
     id_paciente,
     persona:persona_id (nombre, apellido)
@@ -155,6 +157,7 @@ function mapearAnalisis(a) {
     estado: a.estado,
     resultado: a.resultado || '',
     observaciones: a.observaciones || '',
+    archivo_resultado: a.archivo_resultado || '', // 🔥 AQUÍ PASAMOS LA URL AL FRONTEND
     paciente_nombre: a.paciente?.persona
       ? `${a.paciente.persona.nombre} ${a.paciente.persona.apellido}`
       : `Paciente #${a.id_paciente}`,
@@ -208,8 +211,14 @@ export async function listarAnalisisLaboratorio(filtro = {}) {
     });
   }
 
+  // El técnico debe ver:
+  // 1. Sus análisis ya asignados (para auditar y continuar trabajo).
+  // 2. TODOS los análisis "pendientes" (la bandeja general de los médicos).
   if (filtro.id_tecnico_laboratorio) {
-    rows = rows.filter((a) => a.id_tecnico_laboratorio === Number(filtro.id_tecnico_laboratorio));
+    const idFiltro = Number(filtro.id_tecnico_laboratorio);
+    rows = rows.filter((a) => 
+      a.id_tecnico_laboratorio === idFiltro || a.estado === 'pendiente'
+    );
   }
   if (filtro.id_paciente) {
     rows = rows.filter((a) => a.id_paciente === Number(filtro.id_paciente));
@@ -325,6 +334,7 @@ export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
   if (payload.id_paciente !== undefined) updates.id_paciente = payload.id_paciente;
   if (payload.id_tecnico_laboratorio !== undefined) updates.id_tecnico_laboratorio = payload.id_tecnico_laboratorio;
   if (payload.id_consulta !== undefined) updates.id_consulta = payload.id_consulta ? Number(payload.id_consulta) : null;
+  if (payload.archivo_resultado !== undefined) updates.archivo_resultado = payload.archivo_resultado;
 
   let { data, error } = await supabaseAdmin
     .from('analisis_laboratorio')

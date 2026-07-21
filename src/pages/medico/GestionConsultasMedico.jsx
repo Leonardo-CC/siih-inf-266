@@ -1056,6 +1056,19 @@ export default function GestionConsultasMedico() {
                   <p><span className="font-semibold">Fecha solicitud:</span> {formatearFecha(s.fecha_solicitud)}</p>
                   {s.resultado ? <p><span className="font-semibold">Resultado:</span> {s.resultado}</p> : null}
                   {s.observaciones ? <p><span className="font-semibold">Observaciones:</span> {s.observaciones}</p> : null}
+                  {s?.archivo_resultado && (
+                    <div className="mt-4 pt-3 border-t border-slate-100">
+                    <p className="text-sm font-semibold text-slate-700 mb-2">Archivo adjunto:</p>
+                    <a
+                      href={s.archivo_resultado}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium transition"
+                    >
+                      Ver documento de laboratorio
+                    </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
