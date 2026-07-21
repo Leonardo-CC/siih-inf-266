@@ -1,12 +1,14 @@
 /// src/pages/paciente/HistorialClinico.jsx.
 import React, { useState, useEffect } from 'react';
 import { obtenerUsuario } from '../../lib/authSession';
-import { IconoBuildingHospital, IconoArchiveBox, IconoPill } from '../../components/Iconos.jsx';
+import { IconoBuildingHospital, IconoArchiveBox, IconoPill, IconoDocumentText } from '../../components/Iconos.jsx';
 
 export default function HistorialClinico() {
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [idPaciente, setIdPaciente] = useState(null);
+  const [descargandoPdf, setDescargandoPdf] = useState(false);
   const usuario = obtenerUsuario();
   useEffect(() => {
     const cargarHistorial = async () => {
@@ -32,6 +34,7 @@ export default function HistorialClinico() {
         }
         
         const id_paciente_real = dataId.id_paciente;
+        setIdPaciente(id_paciente_real);
 
         // 2. Buscamos el historial usando SOLO el ID real del usuario conectado
         const res = await fetch(`/api/paciente/historial?id_paciente=${id_paciente_real}`);
@@ -55,6 +58,33 @@ export default function HistorialClinico() {
 
     cargarHistorial();
   }, [usuario]);
+
+  async function generarPdfHistorial() {
+    if (!idPaciente) return;
+    setDescargandoPdf(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/paciente/historial-pdf?id_paciente=${idPaciente}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.errores?.general || data?.mensaje || 'No se pudo generar el PDF del historial.');
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `historial_paciente_${idPaciente}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(`Error tecnico: ${err.message}`);
+    } finally {
+      setDescargandoPdf(false);
+    }
+  }
   
   if (cargando) {
     return (
@@ -81,6 +111,16 @@ export default function HistorialClinico() {
           Registro cronológico de tus consultas, diagnósticos y tratamientos. Confidencial y seguro.
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={generarPdfHistorial}
+        disabled={descargandoPdf || !idPaciente || historial.length === 0}
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <IconoDocumentText className="w-4 h-4" />
+        {descargandoPdf ? 'Generando...' : 'Generar PDF'}
+      </button>
 
       {historial.length === 0 ? (
         <div className="bg-white p-8 rounded-xl border border-slate-200 text-center shadow-sm">

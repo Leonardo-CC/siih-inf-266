@@ -104,11 +104,15 @@ async function guardarDetallesFactura(id_factura, detalles = []) {
   }
 
   const { error } = await supabaseAdmin.from('factura_detalle').insert(filas);
+  if (error && /factura_detalle|schema cache|relation/i.test(error.message || '')) {
+    console.warn('[facturaService] factura_detalle no disponible; se emitira factura sin detalle itemizado.');
+    return;
+  }
   if (error) throw new Error(`Error registrando detalle de factura: ${error.message}`);
 }
 
 export async function obtenerDetalleFacturaPorPago(id_pago) {
-  const { data: factura, error } = await supabaseAdmin
+  let { data: factura, error } = await supabaseAdmin
     .from('factura')
     .select(`
       id_factura,
@@ -142,6 +146,38 @@ export async function obtenerDetalleFacturaPorPago(id_pago) {
     `)
     .eq('id_pago', id_pago)
     .maybeSingle();
+
+  if (error && /factura_detalle|id_receta|schema cache|relationship|relation/i.test(error.message || '')) {
+    const simple = await supabaseAdmin
+      .from('factura')
+      .select(`
+        id_factura,
+        id_pago,
+        id_paciente,
+        numero_factura,
+        razon_social,
+        nit_ci,
+        concepto,
+        subtotal,
+        iva,
+        total,
+        porcentaje_iva,
+        estado,
+        fecha_emision,
+        pago:id_pago (
+          id_pago,
+          id_consulta,
+          id_inscripcion,
+          metodo_pago,
+          comprobante,
+          fecha_pago
+        )
+      `)
+      .eq('id_pago', id_pago)
+      .maybeSingle();
+    factura = simple.data;
+    error = simple.error;
+  }
 
   if (error) throw new Error(`Error obteniendo factura: ${error.message}`);
   if (!factura) return null;

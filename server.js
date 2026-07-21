@@ -130,6 +130,16 @@ async function setupRoutes() {
       return autorizarHospitalizacionHandler(req, res);
     });
 
+    const { default: hospitalizacionesHandler } = await import('./api/hospitalizaciones/index.js');
+    app.get('/api/hospitalizaciones', async (req, res) => {
+      req.method = 'GET';
+      return hospitalizacionesHandler(req, res);
+    });
+    app.put('/api/hospitalizaciones', async (req, res) => {
+      req.method = 'PUT';
+      return hospitalizacionesHandler(req, res);
+    });
+
     const { default: opcionesAdmisionHandler } = await import('./api/admisiones/opciones.js');
     app.get('/api/admisiones/opciones', async (req, res) => {
       req.method = 'GET';
@@ -234,6 +244,12 @@ async function setupRoutes() {
     app.get('/api/paciente/historial', async (req, res) => {
       req.method = 'GET';
       return historialPacienteHandler(req, res);
+    });
+
+    const { default: historialPacientePdfHandler } = await import('./api/paciente/historial-pdf.js');
+    app.get('/api/paciente/historial-pdf', async (req, res) => {
+      req.method = 'GET';
+      return historialPacientePdfHandler(req, res);
     });
 
     const { default: cancelarCitaHandler } = await import('./api/paciente/citas/cancelar.js');

@@ -8,21 +8,27 @@ export default function Login() {
   const [contrasena, setContrasena] = useState('');
   const [captcha, setCaptcha] = useState(null);
   const [captchaRespuesta, setCaptchaRespuesta] = useState('');
+  const [captchaError, setCaptchaError] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   async function cargarCaptcha() {
+    setCaptchaError(null);
     try {
       const res = await fetch('/api/auth/captcha');
+      if (!res.ok) throw new Error('No se pudo cargar el captcha.');
       const data = await res.json();
       if (data.ok) {
         setCaptcha(data.captcha);
         setCaptchaRespuesta('');
+      } else {
+        throw new Error(data.mensaje || 'No se pudo cargar el captcha.');
       }
-    } catch {
+    } catch (err) {
       setCaptcha(null);
+      setCaptchaError(err.message || 'No se pudo cargar el captcha.');
     }
   }
 
@@ -113,7 +119,9 @@ export default function Login() {
                     {captcha?.imagen ? (
                       <img src={captcha.imagen} alt="Codigo de seguridad" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="h-full w-full animate-pulse bg-slate-200" />
+                      <div className="grid h-full w-full place-items-center bg-green-50 px-2 text-center text-[10px] font-semibold text-green-800">
+                        Sin captcha
+                      </div>
                     )}
                   </div>
                   <button
@@ -126,6 +134,11 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              {captchaError && (
+                <p className="text-center text-xs font-medium text-red-600">
+                  {captchaError}. Verifica que el backend este corriendo en http://localhost:3001.
+                </p>
+              )}
               <div className="flex overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
                 <input
                   type="text"
@@ -144,7 +157,7 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={cargando}
+              disabled={cargando || !captcha}
               className="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cargando ? (

@@ -329,8 +329,6 @@ export default function Dashboard() {
             datos={pacientes}
             cargando={cargandoPacientes}
             emptyMessage="No hay pacientes registrados"
-            onEditar={(paciente) => alert('Editar: ' + paciente.nombre_completo)}
-            onEliminar={(paciente) => alert('Eliminar: ' + paciente.nombre_completo)}
           />
         </Modal>
       )}

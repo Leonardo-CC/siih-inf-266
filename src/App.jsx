@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx';
 import RegistroPaciente from './pages/paciente/RegistroPaciente.jsx';
 import SolicitarCitaPage from './pages/paciente/SolicitarCitaPage.jsx';
 import GestionAdmision from './pages/enfermeria/GestionAdmision.jsx';
+import GestionHospitalizaciones from './pages/enfermeria/GestionHospitalizaciones.jsx';
 import RegistroSignosVitales from './pages/enfermeria/RegistroSignosVitales.jsx';
 import GestionPacientesEnfermeria from './pages/enfermeria/GestionPacientesEnfermeria.jsx';
 import GestionConsultasMedico from './pages/medico/GestionConsultasMedico.jsx';
@@ -88,6 +89,12 @@ function App() {
             path="/enfermeria/admisiones"
             element={
               <ProtectedRoute ruta="/enfermeria/admisiones" element={<GestionAdmision />} />
+            }
+          />
+          <Route
+            path="/enfermeria/hospitalizaciones"
+            element={
+              <ProtectedRoute ruta="/enfermeria/hospitalizaciones" element={<GestionHospitalizaciones />} />
             }
           />
           <Route

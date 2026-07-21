@@ -91,10 +91,10 @@ export default function AdminFinanzas() {
   }
 
   const cards = [
-    { titulo: 'Ingresos', valor: datos.resumen.ingresos, icono: IconoBanknotes, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    { titulo: 'Ingresos netos', valor: datos.resumen.ingresos, icono: IconoBanknotes, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
     { titulo: 'Egresos', valor: datos.resumen.egresos, icono: IconoCreditCard, color: 'text-red-700 bg-red-50 border-red-200' },
     { titulo: 'Resultado', valor: datos.resumen.utilidad, icono: IconoChart, color: 'text-blue-700 bg-blue-50 border-blue-200' },
-    { titulo: 'IVA debito', valor: datos.resumen.iva_debito, icono: IconoDocumentText, color: 'text-amber-700 bg-amber-50 border-amber-200' },
+    { titulo: 'Descuento IVA', valor: datos.resumen.iva_debito, icono: IconoDocumentText, color: 'text-amber-700 bg-amber-50 border-amber-200' },
   ];
 
   return (
@@ -157,7 +157,7 @@ export default function AdminFinanzas() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="border border-slate-200 rounded-lg p-4">
-              <h2 className="font-semibold text-slate-800 mb-3">Ingresos por metodo</h2>
+              <h2 className="font-semibold text-slate-800 mb-3">Ingresos netos por metodo</h2>
               <div className="space-y-2">
                 {(datos.porMetodo || []).map((item) => (
                   <div key={item.nombre} className="flex justify-between text-sm">
@@ -190,6 +190,8 @@ export default function AdminFinanzas() {
               { clave: 'concepto', titulo: 'Concepto' },
               { clave: 'metodo_pago', titulo: 'Metodo' },
               { clave: 'monto', titulo: 'Monto', render: (v, f) => <span className={f.tipo === 'ingreso' ? 'text-emerald-700 font-bold' : 'text-red-700 font-bold'}>{moneda(v)}</span> },
+              { clave: 'descuento_iva', titulo: 'Descuento IVA', render: (v) => <span className="text-amber-700 font-bold">{moneda(v)}</span> },
+              { clave: 'total', titulo: 'Total', render: (v, f) => <span className={f.tipo === 'ingreso' ? 'text-emerald-800 font-bold' : 'text-red-800 font-bold'}>{moneda(v)}</span> },
               { clave: 'numero_factura', titulo: 'Factura', render: (v, f) => f.id_pago ? <a className="text-primary font-semibold hover:underline" href={`/api/pagos/factura?id_pago=${f.id_pago}`} target="_blank" rel="noreferrer">{v || 'PDF'}</a> : '-' },
             ]}
             datos={datos.movimientos || []}

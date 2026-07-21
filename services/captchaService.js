@@ -26,13 +26,13 @@ function codigoAleatorio() {
 function generarSvgCaptcha(codigo) {
   const ancho = 148;
   const alto = 46;
-  const fondos = ['#65c7dc', '#6fcfe3', '#56bdd6', '#7ed6e8'];
+  const fondos = ['#16a34a', '#22c55e', '#15803d', '#4ade80'];
   const lineas = Array.from({ length: 9 }, () => {
     const x1 = crypto.randomInt(0, ancho);
     const y1 = crypto.randomInt(0, alto);
     const x2 = crypto.randomInt(0, ancho);
     const y2 = crypto.randomInt(0, alto);
-    const color = ['#ffffff', '#287f96', '#b9f3fb'][crypto.randomInt(0, 3)];
+    const color = ['#ffffff', '#166534', '#bbf7d0'][crypto.randomInt(0, 3)];
     const opacity = (crypto.randomInt(22, 62) / 100).toFixed(2);
     return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="1.2" opacity="${opacity}" />`;
   }).join('');
@@ -41,7 +41,7 @@ function generarSvgCaptcha(codigo) {
     const cx = crypto.randomInt(0, ancho);
     const cy = crypto.randomInt(0, alto);
     const r = crypto.randomInt(1, 3);
-    const color = ['#ffffff', '#2f95aa', '#9ee8f2'][crypto.randomInt(0, 3)];
+    const color = ['#ffffff', '#15803d', '#86efac'][crypto.randomInt(0, 3)];
     const opacity = (crypto.randomInt(20, 70) / 100).toFixed(2);
     return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" opacity="${opacity}" />`;
   }).join('');
@@ -50,7 +50,7 @@ function generarSvgCaptcha(codigo) {
     const x = 24 + index * 22;
     const y = crypto.randomInt(29, 36);
     const rotacion = crypto.randomInt(-13, 14);
-    return `<text x="${x}" y="${y}" transform="rotate(${rotacion} ${x} ${y})" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#ffffff" stroke="#257f94" stroke-width="0.45">${letra}</text>`;
+    return `<text x="${x}" y="${y}" transform="rotate(${rotacion} ${x} ${y})" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700" fill="#ffffff" stroke="#14532d" stroke-width="0.45">${letra}</text>`;
   }).join('');
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}">

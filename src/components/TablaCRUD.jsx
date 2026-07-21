@@ -38,6 +38,9 @@ export default function TablaCRUD({
     [totalPaginas]
   );
 
+  const botonAccion =
+    'inline-flex items-center justify-center w-8 h-8 rounded-lg border border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20';
+
   if (cargando) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -69,7 +72,7 @@ export default function TablaCRUD({
                 </th>
               ))}
               {tieneAcciones && (
-                <th className="text-right px-4 py-3 font-semibold text-slate-600 border-b border-slate-200">
+                <th className="text-right px-4 py-3 font-semibold text-slate-600 border-b border-slate-200 min-w-[116px]">
                   Acciones
                 </th>
               )}
@@ -87,15 +90,17 @@ export default function TablaCRUD({
                   </td>
                 ))}
                 {tieneAcciones && (
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    {renderAcciones ? renderAcciones(fila) : (
-                      <>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-1.5 min-w-[104px]">
+                      {renderAcciones ? renderAcciones(fila) : (
+                        <>
                         {acciones && acciones.map((acc, i) => (
                           <button
                             key={i}
                             onClick={() => acc.onClick(fila)}
-                            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors mr-1 ${acc.className || 'text-slate-600 hover:bg-slate-100'}`}
+                            className={`${botonAccion} ${acc.icono ? '' : 'w-auto px-3 text-xs font-semibold'} ${acc.className || 'text-slate-600 hover:bg-slate-100'}`}
                             title={acc.title || 'Accion'}
+                            aria-label={acc.title || 'Accion'}
                           >
                             {acc.icono || '...'}
                           </button>
@@ -103,8 +108,9 @@ export default function TablaCRUD({
                         {onEditar && (
                           <button
                             onClick={() => onEditar(fila)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors mr-1"
+                            className={`${botonAccion} ${iconoEditar ? '' : 'w-auto px-3 text-xs font-semibold'} text-blue-600 hover:bg-blue-50`}
                             title="Editar"
+                            aria-label="Editar"
                           >
                             {iconoEditar || 'Editar'}
                           </button>
@@ -112,14 +118,16 @@ export default function TablaCRUD({
                         {onEliminar && (
                           <button
                             onClick={() => onEliminar(fila)}
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors ml-1"
+                            className={`${botonAccion} ${iconoEliminar ? '' : 'w-auto px-3 text-xs font-semibold'} text-red-600 hover:bg-red-50`}
                             title="Eliminar"
+                            aria-label="Eliminar"
                           >
                             {iconoEliminar || 'Eliminar'}
                           </button>
                         )}
-                      </>
-                    )}
+                        </>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

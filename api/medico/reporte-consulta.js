@@ -28,6 +28,10 @@ export default async function handler(req, res) {
     return res.status(200).send(Buffer.from(resultado.pdfBytes));
   } catch (err) {
     console.error('Error en /api/medico/reporte-consulta:', err);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor.' });
+    return res.status(500).json({
+      ok: false,
+      mensaje: err.message || 'Error interno del servidor.',
+      errores: { general: err.message || 'Error interno del servidor.' },
+    });
   }
 }
