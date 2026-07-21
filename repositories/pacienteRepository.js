@@ -52,12 +52,33 @@ export async function crearUsuario({ persona_id, ci, correo, contrasenaHash }) {
 }
 
 // Inserta la especialización "paciente" ligada a la misma persona_id.
-export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro }) {
+export async function crearPaciente({ persona_id, id_tipo_seguro, numero_seguro, matricula_numero, matricula_foto_url, contacto_emergencia_nombre, contacto_emergencia_telefono }) {
+  const nuevoPaciente = {
+    persona_id,
+    id_tipo_seguro: id_tipo_seguro || null,
+    numero_seguro: numero_seguro || null,
+    matricula_numero: matricula_numero || null,
+    matricula_foto_url: matricula_foto_url || null,
+    contacto_emergencia_nombre: contacto_emergencia_nombre || null,
+    contacto_emergencia_telefono: contacto_emergencia_telefono || null,
+  };
+
   const { data, error } = await supabaseAdmin
     .from('paciente')
-    .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
+    .insert([nuevoPaciente])
     .select('id_paciente')
     .single();
+
+  if (error && error.code === 'PGRST204') {
+    const { data: dataCompat, error: errorCompat } = await supabaseAdmin
+      .from('paciente')
+      .insert([{ persona_id, id_tipo_seguro: id_tipo_seguro || null, numero_seguro: numero_seguro || null }])
+      .select('id_paciente')
+      .single();
+
+    if (errorCompat) throw new Error(`Error al crear paciente: ${errorCompat.message}`);
+    return dataCompat.id_paciente;
+  }
 
   if (error) throw new Error(`Error al crear paciente: ${error.message}`);
   return data.id_paciente;
@@ -74,12 +95,12 @@ export async function eliminarPersona(persona_id) {
 // Detalle de un solo paciente (nombre, CI, fecha_nac, seguro), usado
 // por el reporte PDF de consulta (HU-09) para armar el encabezado.
 export async function obtenerDetallePaciente(id_paciente) {
-  const { data: p, error } = await supabaseAdmin
+  let { data: p, error } = await supabaseAdmin
     .from('paciente')
     .select(`
       id_paciente,
       persona_id,
-      tipo_seguro,
+      id_tipo_seguro,
       numero_seguro,
       persona:persona_id (
         nombre,
@@ -87,10 +108,32 @@ export async function obtenerDetallePaciente(id_paciente) {
         telefono,
         sexo,
         fecha_nac
-      )
+      ),
+      tipo_seguro:id_tipo_seguro ( nombre )
     `)
     .eq('id_paciente', id_paciente)
     .maybeSingle();
+
+  if (error && /id_tipo_seguro|tipo_seguro|relationship|schema cache|column/i.test(error.message || '')) {
+    const fallback = await supabaseAdmin
+      .from('paciente')
+      .select(`
+        id_paciente,
+        persona_id,
+        numero_seguro,
+        persona:persona_id (
+          nombre,
+          apellido,
+          telefono,
+          sexo,
+          fecha_nac
+        )
+      `)
+      .eq('id_paciente', id_paciente)
+      .maybeSingle();
+    p = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) throw new Error(`Error al obtener el paciente: ${error.message}`);
   if (!p) return null;
@@ -112,7 +155,7 @@ export async function obtenerDetallePaciente(id_paciente) {
     fecha_nac: p.persona?.fecha_nac || '',
     telefono: p.persona?.telefono || '',
     sexo: p.persona?.sexo || '',
-    tipo_seguro: p.tipo_seguro || '',
+    tipo_seguro: p.tipo_seguro?.nombre || '',
     numero_seguro: p.numero_seguro || '',
   };
 }

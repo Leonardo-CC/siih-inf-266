@@ -107,7 +107,7 @@ export async function listarInscripciones({ limite = 200 } = {}) {
 
   if (error) throw new Error(`Error al listar inscripciones: ${error.message}`);
 
-  return (data || []).map((i) => ({
+  const filas = (data || []).map((i) => ({
     id_inscripcion: i.id_inscripcion,
     fecha_inscripcion: i.fecha_inscripcion,
     estado: i.estado,
@@ -118,6 +118,25 @@ export async function listarInscripciones({ limite = 200 } = {}) {
       ? `${i.paciente.persona.nombre} ${i.paciente.persona.apellido}`
       : `Paciente #${i.id_paciente}`,
   }));
+
+  if (filas.length === 0) return filas;
+
+  const ids = filas.map((i) => i.id_inscripcion);
+  const { data: pagos } = await supabaseAdmin
+    .from('pago')
+    .select('id_pago, id_inscripcion, monto, metodo_pago, comprobante, fecha_pago')
+    .in('id_inscripcion', ids)
+    .order('fecha_pago', { ascending: false });
+
+  const pagoMap = new Map();
+  for (const pago of pagos || []) {
+    if (!pagoMap.has(pago.id_inscripcion)) pagoMap.set(pago.id_inscripcion, pago);
+  }
+
+  return filas.map((fila) => {
+    const pago = pagoMap.get(fila.id_inscripcion) || null;
+    return { ...fila, pago, id_pago: pago?.id_pago || null };
+  });
 }
 
 // Detalle completo de una inscripción, para armar el comprobante en PDF.

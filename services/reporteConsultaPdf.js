@@ -12,8 +12,18 @@ const AZUL_OSCURO = rgb(0.027, 0.231, 0.4); // #073b66
 const GRIS = rgb(0.2, 0.278, 0.357); // #33475b
 const GRIS_CLARO = rgb(0.6, 0.6, 0.6);
 
+function limpiarTextoPdf(valor) {
+  return String(valor ?? '-')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, '-')
+    .replace(/[ÂÃ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim() || '-';
+}
+
 function envolverTexto(font, size, texto, maxWidth) {
-  const palabras = (texto || '').split(/\s+/);
+  const palabras = limpiarTextoPdf(texto || '').split(/\s+/);
   const lineas = [];
   let actual = '';
   for (const palabra of palabras) {
@@ -64,8 +74,8 @@ export async function generarPdfReporteConsulta({ consulta, paciente, medico }) 
   // ---- Datos generales ----
   function fila(etiqueta, valor) {
     nuevaPaginaSiNecesario(20);
-    pagina.drawText(etiqueta, { x: margen, y, size: 10, font: fontBold, color: AZUL_OSCURO });
-    pagina.drawText(valor || '-', { x: margen + 130, y, size: 10, font: fontRegular, color: GRIS });
+    pagina.drawText(limpiarTextoPdf(etiqueta), { x: margen, y, size: 10, font: fontBold, color: AZUL_OSCURO });
+    pagina.drawText(limpiarTextoPdf(valor), { x: margen + 130, y, size: 10, font: fontRegular, color: GRIS });
     y -= 18;
   }
 
@@ -89,14 +99,14 @@ export async function generarPdfReporteConsulta({ consulta, paciente, medico }) 
   // ---- Secciones de texto largo ----
   function seccion(titulo, contenido) {
     nuevaPaginaSiNecesario(40);
-    pagina.drawText(titulo, { x: margen, y, size: 12, font: fontBold, color: AZUL });
+    pagina.drawText(limpiarTextoPdf(titulo), { x: margen, y, size: 12, font: fontBold, color: AZUL });
     y -= 18;
 
     const texto = (contenido && contenido.trim()) || 'No registrado.';
     const lineas = envolverTexto(fontRegular, 10, texto, anchoUtil);
     for (const linea of lineas) {
       nuevaPaginaSiNecesario(16);
-      pagina.drawText(linea, { x: margen, y, size: 10, font: fontRegular, color: GRIS });
+      pagina.drawText(limpiarTextoPdf(linea), { x: margen, y, size: 10, font: fontRegular, color: GRIS });
       y -= 15;
     }
     y -= 12;

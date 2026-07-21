@@ -19,7 +19,7 @@ import {
   componerObservaciones,
 } from './consultaMeta.js';
 
-const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia', 'hospitalizacion'];
+const TIPOS_ADMISION_VALIDOS = ['consulta_externa', 'emergencia'];
 const ESTADOS_ADMISION_VALIDOS = ['registrada', 'en_triage', 'asignada', 'atendida', 'cancelada'];
 
 // ------------------------------------------------------------
@@ -223,19 +223,6 @@ export async function ejecutarRegistroAdmision(payload) {
         .from('emergencia')
         .insert([{ id_consulta: idConsulta }]);
       if (errorEmergencia) throw errorEmergencia;
-    } else if (payload.tipo_admision === 'hospitalizacion') {
-      const { error: errorHospitalizacion } = await supabaseAdmin
-        .from('hospitalizacion')
-        .insert([
-          {
-            id_consulta: idConsulta,
-            id_paciente: idPaciente,
-            id_medico: idMedico,
-            motivo_ingreso: payload.motivo_consulta,
-            estado: 'activa',
-          },
-        ]);
-      if (errorHospitalizacion) throw errorHospitalizacion;
     }
   } catch (subError) {
     await supabaseAdmin.from('consulta').delete().eq('id_consulta', idConsulta);
@@ -507,7 +494,28 @@ export async function actualizarAdmision(id_consulta, payload) {
 
 export async function borrarAdmision(id_consulta) {
   // Eliminar dependencias antes de borrar la consulta para evitar
-  // fallos por llaves foraneas (signos vitales y subtipos de consulta).
+  // fallos por llaves foraneas (signos, recetas, pagos y subtipos).
+  const { data: historiales } = await supabaseAdmin
+    .from('historial_clinico')
+    .select('id_historial, receta ( id_receta )')
+    .eq('id_consulta', id_consulta);
+
+  const idsHistorial = (historiales || []).map((h) => h.id_historial).filter(Boolean);
+  const idsReceta = (historiales || [])
+    .flatMap((h) => Array.isArray(h.receta) ? h.receta : [h.receta])
+    .map((r) => r?.id_receta)
+    .filter(Boolean);
+
+  if (idsReceta.length) {
+    await supabaseAdmin.from('detalle_receta').delete().in('id_receta', idsReceta);
+    await supabaseAdmin.from('receta').delete().in('id_receta', idsReceta);
+  }
+  if (idsHistorial.length) {
+    await supabaseAdmin.from('historial_clinico').delete().in('id_historial', idsHistorial);
+  }
+
+  await supabaseAdmin.from('analisis_laboratorio').delete().eq('id_consulta', id_consulta);
+  await supabaseAdmin.from('pago').update({ id_consulta: null }).eq('id_consulta', id_consulta);
   await supabaseAdmin.from('signos_vitales').delete().eq('id_consulta', id_consulta);
   await supabaseAdmin.from('consulta_externa').delete().eq('id_consulta', id_consulta);
   await supabaseAdmin.from('emergencia').delete().eq('id_consulta', id_consulta);

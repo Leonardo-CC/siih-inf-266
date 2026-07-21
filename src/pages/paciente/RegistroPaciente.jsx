@@ -11,6 +11,10 @@ const initialForm = {
   contrasena: '',
   id_tipo_seguro: '',
   numero_seguro: '',
+  matricula_numero: '',
+  matricula_foto_url: '',
+  contacto_emergencia_nombre: '',
+  contacto_emergencia_telefono: '',
 };
 
 export default function RegistroPaciente() {
@@ -32,6 +36,15 @@ export default function RegistroPaciente() {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrores((prev) => ({ ...prev, [name]: '' }));
+  }
+
+  function cargarArchivoMatricula(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({ ...prev, matricula_foto_url: reader.result }));
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e) {
@@ -187,6 +200,45 @@ export default function RegistroPaciente() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Numero de matricula</label>
+                <input
+                  name="matricula_numero"
+                  value={form.matricula_numero}
+                  onChange={handleChange}
+                  placeholder="Ej. INF-2026-001"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                />
+              </div>
+              <ArchivoCampo
+                label="Foto / respaldo de matricula"
+                value={form.matricula_foto_url}
+                onFile={cargarArchivoMatricula}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Contacto de emergencia</label>
+                <input
+                  name="contacto_emergencia_nombre"
+                  value={form.contacto_emergencia_nombre}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Telefono de emergencia</label>
+                <input
+                  name="contacto_emergencia_telefono"
+                  value={form.contacto_emergencia_telefono}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de seguro</label>
                 <select
                   name="id_tipo_seguro"
@@ -222,6 +274,24 @@ export default function RegistroPaciente() {
             </button>
           </form>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ArchivoCampo({ label, value, onFile }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      <div className="rounded-lg border border-slate-300 bg-white p-3">
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          capture="environment"
+          onChange={(e) => onFile(e.target.files?.[0])}
+          className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary-dark"
+        />
+        {value && <p className="mt-2 text-xs text-green-700">Archivo cargado correctamente.</p>}
       </div>
     </div>
   );

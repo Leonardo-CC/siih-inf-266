@@ -27,6 +27,7 @@ const HORA_INICIO = '08:00';
 const HORA_FIN = '18:00';
 const DURACION_SLOT_MIN = 30;
 const DIA_NO_LABORAL = 0; // 0 = domingo (getDay())
+const TIPOS_CITA_PERMITIDOS = ['consulta_externa', 'emergencia'];
 // ---------------------------------------------------------------------------
 
 function minutosDesdeHHMM(hhmm) {
@@ -109,7 +110,33 @@ export async function listarHorariosDisponibles({ id_medico, fecha }) {
   return { ok: true, status: 200, horarios };
 }
 
-export async function solicitarCita({ id_paciente, id_medico, fecha_hora, motivo }) {
+function normalizarTipoCita(payload = {}) {
+  const valor = payload.tipo_consulta ?? payload.tipo_atencion ?? payload.tipo_admision ?? payload.tipo;
+  return valor ? String(valor).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : 'consulta_externa';
+}
+
+export async function solicitarCita(payload = {}) {
+  const { id_paciente, id_medico, fecha_hora, motivo } = payload;
+  const tipoCita = normalizarTipoCita(payload);
+
+  if (tipoCita.includes('hospitalizacion')) {
+    return {
+      ok: false,
+      status: 400,
+      errores: {
+        tipo_consulta: 'La hospitalizacion no se puede iniciar desde una cita. Debe autorizarse desde el proceso clinico.',
+      },
+    };
+  }
+
+  if (!TIPOS_CITA_PERMITIDOS.includes(tipoCita)) {
+    return {
+      ok: false,
+      status: 400,
+      errores: { tipo_consulta: 'Tipo de consulta no permitido. Usa consulta_externa o emergencia.' },
+    };
+  }
+
   if (!id_paciente || !id_medico || !fecha_hora) {
     return {
       ok: false,

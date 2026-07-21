@@ -12,10 +12,20 @@ import {
   obtenerIdTecnicoLaboratorioPorPersona,
   obtenerIdFarmaceuticoPorPersona 
 } from '../repositories/authRepository.js';
+import { validarCaptcha } from './captchaService.js';
 
 export async function iniciarSesion(payload = {}) {
   const correo = payload.correo?.trim().toLowerCase();
   const contrasena = payload.contrasena || payload.contraseña || '';
+  const captcha = validarCaptcha(payload.captchaToken, payload.captchaRespuesta);
+
+  if (!captcha.ok) {
+    return {
+      ok: false,
+      status: 400,
+      errores: { general: captcha.mensaje },
+    };
+  }
 
   if (!correo || !contrasena) {
     return {

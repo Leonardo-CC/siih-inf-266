@@ -20,6 +20,7 @@ import {
   IconoUserGroup,
   IconoClock,
   IconoPill,
+  IconoBanknotes,
 } from '../components/Iconos.jsx';
 import EnfermeroDashboard from './enfermeria/EnfermeroDashboard.jsx';
 import MedicoDashboard from './medico/MedicoDashboard.jsx';
@@ -53,6 +54,7 @@ const accionesPorRol = {
     { to: '/admin/admisiones', titulo: 'Admisiones', texto: 'Consulta ingresos recientes y asignaciones.', icono: <IconoClipboardDocument className="w-6 h-6" />, color: 'from-rose-500 to-rose-600' },
     { to: '/admin/citas', titulo: 'Citas', texto: 'Administra las citas medicas del hospital.', icono: <IconoCalendar className="w-6 h-6" />, color: 'from-emerald-500 to-emerald-600' },
     { to: '/admin/inscripciones', titulo: 'Inscripciones', texto: 'Inscribe pacientes/estudiantes en una facultad/area y emite el comprobante.', icono: <IconoDocumentText className="w-6 h-6" />, color: 'from-indigo-500 to-indigo-600' },
+    { to: '/admin/finanzas', titulo: 'Finanzas', texto: 'Controla ingresos, egresos, facturas e IVA.', icono: <IconoBanknotes className="w-6 h-6" />, color: 'from-slate-600 to-slate-800' },
     { to: '/admin/facultades', titulo: 'Facultades / Areas', texto: 'Administra el catalogo de facultades y areas institucionales.', icono: <IconoArchiveBox className="w-6 h-6" />, color: 'from-amber-500 to-amber-600' },
   ],
   farmaceutico: [
@@ -327,8 +329,6 @@ export default function Dashboard() {
             datos={pacientes}
             cargando={cargandoPacientes}
             emptyMessage="No hay pacientes registrados"
-            onEditar={(paciente) => alert('Editar: ' + paciente.nombre_completo)}
-            onEliminar={(paciente) => alert('Eliminar: ' + paciente.nombre_completo)}
           />
         </Modal>
       )}

@@ -15,7 +15,17 @@ export default function AdminInscripciones() {
   const [facultades, setFacultades] = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [form, setForm] = useState({ ci: '', id_area: '' });
+  const formInicial = {
+    ci: '',
+    id_area: '',
+    matricula_numero: '',
+    matricula_foto_url: '',
+    monto: '50',
+    metodo_pago: 'efectivo',
+    razon_social: '',
+    nit_ci: '',
+  };
+  const [form, setForm] = useState(formInicial);
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
   const [descargandoId, setDescargandoId] = useState(null);
@@ -76,8 +86,8 @@ export default function AdminInscripciones() {
         return;
       }
 
-      setMensaje(data.mensaje || 'Inscripción registrada correctamente.');
-      setForm({ ci: '', id_area: '' });
+      setMensaje(data.advertencia_factura ? `${data.mensaje} ${data.advertencia_factura}` : data.mensaje || 'Inscripcion registrada correctamente.');
+      setForm(formInicial);
       await cargarTodo();
     } catch {
       setErrorGeneral('No se pudo conectar con el servidor.');
@@ -111,6 +121,21 @@ export default function AdminInscripciones() {
     }
   }
 
+  function cargarArchivoMatricula(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({ ...prev, matricula_foto_url: reader.result }));
+      setErrores((prev) => ({ ...prev, matricula_foto_url: '' }));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleDescargarFactura(inscripcion) {
+    if (!inscripcion.id_pago) return;
+    window.location.href = `/api/pagos/factura?id_pago=${inscripcion.id_pago}`;
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Formulario de inscripción */}
@@ -130,7 +155,7 @@ export default function AdminInscripciones() {
             <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorGeneral}</div>
           )}
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">CI del paciente/estudiante *</label>
               <input
@@ -161,6 +186,78 @@ export default function AdminInscripciones() {
               {errores.id_area && <p className="text-red-500 text-xs mt-1">{errores.id_area}</p>}
             </div>
 
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Numero de matricula *</label>
+              <input
+                name="matricula_numero"
+                value={form.matricula_numero}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.matricula_numero ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              />
+              {errores.matricula_numero && <p className="text-red-500 text-xs mt-1">{errores.matricula_numero}</p>}
+            </div>
+
+            <ArchivoCampo
+              label="Foto / respaldo matricula *"
+              value={form.matricula_foto_url}
+              error={errores.matricula_foto_url}
+              onFile={cargarArchivoMatricula}
+            />
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Monto Bs. *</label>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                name="monto"
+                value={form.monto}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.monto ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              />
+              {errores.monto && <p className="text-red-500 text-xs mt-1">{errores.monto}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Metodo de pago *</label>
+              <select
+                name="metodo_pago"
+                value={form.metodo_pago}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition bg-white ${errores.metodo_pago ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              >
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+              {errores.metodo_pago && <p className="text-red-500 text-xs mt-1">{errores.metodo_pago}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Razon social</label>
+              <input
+                name="razon_social"
+                value={form.razon_social}
+                onChange={handleChange}
+                placeholder="Nombre para factura"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">NIT / CI</label>
+              <input
+                name="nit_ci"
+                value={form.nit_ci}
+                onChange={handleChange}
+                placeholder="0"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={enviando}
@@ -184,6 +281,7 @@ export default function AdminInscripciones() {
               { clave: 'paciente_nombre_completo', titulo: 'Paciente/Estudiante' },
               { clave: 'facultad', titulo: 'Facultad / Área' },
               { clave: 'fecha_inscripcion', titulo: 'Fecha', render: (v) => formatearFecha(v) },
+              { clave: 'pago', titulo: 'Pago', render: (v) => v ? `Bs. ${Number(v.monto).toFixed(2)} (${v.metodo_pago})` : '-' },
               {
                 clave: 'estado',
                 titulo: 'Estado',
@@ -207,6 +305,19 @@ export default function AdminInscripciones() {
                   </button>
                 ),
               },
+              {
+                clave: 'id_pago',
+                titulo: 'Factura',
+                render: (v, fila) => v ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDescargarFactura(fila)}
+                    className="text-primary hover:text-primary-dark font-medium text-sm"
+                  >
+                    PDF factura
+                  </button>
+                ) : '-',
+              },
             ]}
             datos={inscripciones}
             cargando={cargando}
@@ -214,6 +325,28 @@ export default function AdminInscripciones() {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function ArchivoCampo({ label, value, error, onFile }) {
+  const tieneArchivo = Boolean(value);
+
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      <div className={`rounded-lg border bg-white p-3 ${error ? 'border-red-400' : 'border-slate-300'}`}>
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          capture="environment"
+          onChange={(e) => onFile(e.target.files?.[0])}
+          className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary-dark"
+          required={!tieneArchivo}
+        />
+        {tieneArchivo && <p className="mt-2 text-xs text-green-700">Archivo cargado correctamente.</p>}
+      </div>
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 }

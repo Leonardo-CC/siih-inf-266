@@ -33,8 +33,8 @@ import express from 'express';
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -56,6 +56,12 @@ async function setupRoutes() {
     app.post('/api/auth/login', async (req, res) => {
       req.method = 'POST';
       return loginHandler(req, res);
+    });
+
+    const { default: captchaHandler } = await import('./api/auth/captcha.js');
+    app.get('/api/auth/captcha', async (req, res) => {
+      req.method = 'GET';
+      return captchaHandler(req, res);
     });
 
     const { default: validarSeguroHandler } = await import('./api/pagos/validar-seguro.js');
@@ -88,6 +94,12 @@ async function setupRoutes() {
       return montoCitaHandler(req, res);
     });
 
+    const { default: facturaPagoHandler } = await import('./api/pagos/factura.js');
+    app.get('/api/pagos/factura', async (req, res) => {
+      req.method = 'GET';
+      return facturaPagoHandler(req, res);
+    });
+
     const { default: especialidadesHandler } = await import('./api/citas/especialidades.js');
     app.get('/api/citas/especialidades', async (req, res) => {
       req.method = 'GET';
@@ -110,6 +122,22 @@ async function setupRoutes() {
     app.post('/api/citas/solicitar', async (req, res) => {
       req.method = 'POST';
       return solicitarHandler(req, res);
+    });
+
+    const { default: autorizarHospitalizacionHandler } = await import('./api/hospitalizaciones/autorizar.js');
+    app.post('/api/hospitalizaciones/autorizar', async (req, res) => {
+      req.method = 'POST';
+      return autorizarHospitalizacionHandler(req, res);
+    });
+
+    const { default: hospitalizacionesHandler } = await import('./api/hospitalizaciones/index.js');
+    app.get('/api/hospitalizaciones', async (req, res) => {
+      req.method = 'GET';
+      return hospitalizacionesHandler(req, res);
+    });
+    app.put('/api/hospitalizaciones', async (req, res) => {
+      req.method = 'PUT';
+      return hospitalizacionesHandler(req, res);
     });
 
     const { default: opcionesAdmisionHandler } = await import('./api/admisiones/opciones.js');
@@ -216,6 +244,12 @@ async function setupRoutes() {
     app.get('/api/paciente/historial', async (req, res) => {
       req.method = 'GET';
       return historialPacienteHandler(req, res);
+    });
+
+    const { default: historialPacientePdfHandler } = await import('./api/paciente/historial-pdf.js');
+    app.get('/api/paciente/historial-pdf', async (req, res) => {
+      req.method = 'GET';
+      return historialPacientePdfHandler(req, res);
     });
 
     const { default: cancelarCitaHandler } = await import('./api/paciente/citas/cancelar.js');
@@ -412,6 +446,12 @@ async function setupRoutes() {
       return listarUsuariosHandler(req, res);
     });
 
+    const { default: listarEspecialidadesUsuariosHandler } = await import('./api/especialidades/listar.js');
+    app.get('/api/especialidades/listar', async (req, res) => {
+      req.method = 'GET';
+      return listarEspecialidadesUsuariosHandler(req, res);
+    });
+
     const { default: registroUsuarioHandler } = await import('./api/usuarios/registro.js');
     app.post('/api/usuarios/registro', async (req, res) => {
       req.method = 'POST';
@@ -438,6 +478,16 @@ async function setupRoutes() {
     app.put('/api/administrativo/perfil', async (req, res) => {
       req.method = 'PUT';
       return adminPerfilHandler(req, res);
+    });
+
+    const { default: adminFinanzasHandler } = await import('./api/admin/finanzas.js');
+    app.get('/api/admin/finanzas', async (req, res) => {
+      req.method = 'GET';
+      return adminFinanzasHandler(req, res);
+    });
+    app.post('/api/admin/finanzas', async (req, res) => {
+      req.method = 'POST';
+      return adminFinanzasHandler(req, res);
     });
 
     const { default: listarCitasHandler } = await import('./api/citas/listar.js');

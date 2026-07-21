@@ -105,9 +105,13 @@ export async function registrarAnalisis(payload) {
   if (Object.keys(errores).length > 0) {
     return { ok: false, status: 400, errores };
   }
-
   try {
+    // HU-15: la tabla analisis_laboratorio requiere id_tecnico_laboratorio (NOT NULL).
+    // Cuando la solicitud la origina un medico (no un tecnico), se asigna un
+    // tecnico por defecto para cumplir la restriccion de la BD.
+    const solicitudMedica = !id_tecnico_laboratorio;
     let idTecnico = id_tecnico_laboratorio ? Number(id_tecnico_laboratorio) : null;
+    
     // HU-15: si la solicitud se origina en una consulta (dependencia HU-06),
     // validar que dicha consulta pertenezca al paciente vinculado.
     if (id_consulta) {
@@ -127,11 +131,11 @@ export async function registrarAnalisis(payload) {
       id_consulta: id_consulta ? Number(id_consulta) : null,
       tipo_analisis: tipo_analisis.trim(),
       fecha_solicitud,
-      fecha_resultado: fecha_resultado || null,
-      estado: estado || 'pendiente',
-      resultado: resultado || null,
+      fecha_resultado: solicitudMedica ? null : (fecha_resultado || null),
+      estado: solicitudMedica ? 'pendiente' : (estado || 'pendiente'),
+      resultado: solicitudMedica ? null : (resultado || null),
       observaciones: observaciones || null,
-      archivo_resultado: archivo_resultado || null, 
+      archivo_resultado: archivo_resultado || null,
     });
 
     return {
@@ -151,8 +155,8 @@ export async function editarAnalisis(id_analisis, payload) {
   }
 
   try {
-    await actualizarAnalisisLaboratorio(id_analisis, payload);
-    return { ok: true, status: 200, mensaje: 'Análisis actualizado correctamente.' };
+    const analisis = await actualizarAnalisisLaboratorio(id_analisis, payload);
+    return { ok: true, status: 200, mensaje: 'Análisis actualizado correctamente.', analisis };
   } catch (err) {
     return { ok: false, status: 400, errores: { general: traducirError(err) } };
   }

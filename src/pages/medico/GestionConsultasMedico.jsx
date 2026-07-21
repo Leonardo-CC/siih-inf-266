@@ -3,7 +3,7 @@ import { obtenerUsuario } from '../../lib/authSession.js';
 import Modal from '../../components/Modal.jsx';
 import TablaCRUD from '../../components/TablaCRUD.jsx';
 import '../../styles/reporteConsulta.css';
-import { IconoEdit, IconoBeaker, IconoEye, IconoPlus, IconoTrash, IconoDocumentText } from '../../components/Iconos.jsx';
+import { IconoEdit, IconoBeaker, IconoEye, IconoPlus, IconoTrash, IconoDocumentText, IconoBuildingHospital } from '../../components/Iconos.jsx';
 
 const ESTADOS = {
   pendiente: 'Pendiente',
@@ -48,6 +48,28 @@ function formatearFecha(fecha) {
   return new Date(fecha).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function etiquetaLaboratorio(analisis) {
+  if (!analisis) return { texto: 'Sin solicitud', clase: 'bg-slate-100 text-slate-500 border-slate-200' };
+  if (analisis.estado === 'completado') return { texto: 'Completado', clase: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+  if (analisis.estado === 'en_proceso') return { texto: 'En proceso', clase: 'bg-blue-100 text-blue-700 border-blue-200' };
+  if (analisis.estado === 'cancelado') return { texto: 'Cancelado', clase: 'bg-red-100 text-red-700 border-red-200' };
+  return { texto: 'Pendiente', clase: 'bg-amber-100 text-amber-700 border-amber-200' };
+}
+
+function ordenarAnalisisPorActividad(lista = []) {
+  return [...lista].sort((a, b) => {
+    const fechaA = new Date(a.fecha_resultado || a.fecha_solicitud || 0).getTime();
+    const fechaB = new Date(b.fecha_resultado || b.fecha_solicitud || 0).getTime();
+    if (fechaB !== fechaA) return fechaB - fechaA;
+    return Number(b.id_analisis || 0) - Number(a.id_analisis || 0);
+  });
+}
+
+function perteneceAConsulta(analisis, idConsulta) {
+  const id = analisis?.id_consulta || analisis?.consulta_origen?.id_consulta || null;
+  return Number(id) === Number(idConsulta);
+}
+
 function obtenerFechaHoy() {
   const hoy = new Date();
   return hoy.getFullYear() + '-' + 
@@ -74,6 +96,15 @@ const itemPrescripcionVacio = {
   duracion: '',
 };
 
+const hospitalizacionInicial = {
+  diagnostico_ingreso: '',
+  observaciones_clinicas: '',
+  tiempo_internacion_dias: 1,
+  fecha_estimada_alta: '',
+  sala: '',
+  cama: '',
+};
+
 export default function GestionConsultasMedico() {
   const usuario = obtenerUsuario();
   const [consultas, setConsultas] = useState([]);
@@ -97,7 +128,6 @@ export default function GestionConsultasMedico() {
   const [consultaAnalisis, setConsultaAnalisis] = useState(null);
   const [formAnalisis, setFormAnalisis] = useState({
     tipo_analisis: '',
-    estado: 'pendiente',
     observaciones: '',
   });
   const [erroresAnalisis, setErroresAnalisis] = useState({});
@@ -112,15 +142,28 @@ export default function GestionConsultasMedico() {
   const [solicitudesVista, setSolicitudesVista] = useState([]);
   const [cargandoSolicitudes, setCargandoSolicitudes] = useState(false);
   const [errorSolicitudes, setErrorSolicitudes] = useState(null);
+  const [modalHospitalizacion, setModalHospitalizacion] = useState(false);
+  const [consultaHospitalizacion, setConsultaHospitalizacion] = useState(null);
+  const [formHospitalizacion, setFormHospitalizacion] = useState(hospitalizacionInicial);
+  const [erroresHospitalizacion, setErroresHospitalizacion] = useState({});
+  const [enviandoHospitalizacion, setEnviandoHospitalizacion] = useState(false);
+  const [mensajeHospitalizacion, setMensajeHospitalizacion] = useState(null);
+  const [errorHospitalizacion, setErrorHospitalizacion] = useState(null);
 
   // HU-15: abre la solicitud de analisis precargada con la consulta de origen y su paciente.
   function abrirModalSolicitarAnalisis(consulta) {
     setConsultaAnalisis(consulta);
-    setFormAnalisis({ tipo_analisis: '', estado: 'pendiente', observaciones: '' });
+    setFormAnalisis({ tipo_analisis: '', observaciones: '' });
     setErroresAnalisis({});
     setMensajeAnalisis(null);
     setErrorAnalisis(null);
     setModalAnalisisAbierto(true);
+  }
+
+  function solicitarOtroAnalisisDesdeResultados() {
+    if (!consultaVerSolicitud) return;
+    setModalVerSolicitudAbierto(false);
+    abrirModalSolicitarAnalisis(consultaVerSolicitud);
   }
 
   function handleChangeAnalisis(e) {
@@ -131,13 +174,18 @@ export default function GestionConsultasMedico() {
 
   // HU-15: marca la consulta como "con solicitud" en el mapa local.
   function marcarSolicitud(consulta, analisis) {
-    setSolicitudesPorConsulta((prev) => ({
-      ...prev,
-      [consulta.id_consulta]: {
+    setSolicitudesPorConsulta((prev) => {
+      const siguiente = { ...prev };
+      if (!analisis) {
+        delete siguiente[consulta.id_consulta];
+        return siguiente;
+      }
+      siguiente[consulta.id_consulta] = {
         id_consulta: consulta.id_consulta,
-        analisis: analisis || null,
-      },
-    }));
+        analisis,
+      };
+      return siguiente;
+    });
   }
 
   // HU-15: abre el modal para ver las solicitudes ya registradas de una consulta.
@@ -151,17 +199,13 @@ export default function GestionConsultasMedico() {
     setErrorSolicitudes(null);
     setModalVerSolicitudAbierto(true);
     try {
-      // La BD vincula el analisis al paciente; se filtra por id_paciente y,
-      // si la columna id_consulta existe, tambien por la consulta de origen.
-      let url = `/api/tecnico-laboratorio/analisis/listar?id_paciente=${consulta.id_paciente}`;
-      const res = await fetch(url);
+      const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${consulta.id_consulta}`);
       const data = await res.json();
       if (data.ok) {
-        let lista = data.analisis || [];
-        // Filtro fino por consulta solo si la columna existe (id_consulta != null).
-        lista = lista.filter((a) => !a.id_consulta || a.id_consulta === consulta.id_consulta);
-        setSolicitudesVista(lista);
-        if (lista.length) marcarSolicitud(consulta, lista[0]);
+        const lista = ordenarAnalisisPorActividad((data.analisis || []).filter((a) => perteneceAConsulta(a, consulta.id_consulta)));
+        const listaFinal = lista.length ? lista : previas;
+        setSolicitudesVista(listaFinal);
+        if (listaFinal.length) marcarSolicitud(consulta, listaFinal[0]);
         else marcarSolicitud(consulta, null);
       } else {
         setErrorSolicitudes(data.mensaje || 'No se pudieron cargar las solicitudes.');
@@ -182,7 +226,6 @@ export default function GestionConsultasMedico() {
 
     const errs = {};
     if (!formAnalisis.tipo_analisis) errs.tipo_analisis = 'Selecciona un tipo de análisis.';
-    if (!ESTADOS_ANALISIS.some((x) => x.value === formAnalisis.estado)) errs.estado = 'Selecciona un estado válido.';
 
     if (Object.keys(errs).length > 0) {
       setErroresAnalisis(errs);
@@ -198,8 +241,10 @@ export default function GestionConsultasMedico() {
           id_paciente: consultaAnalisis.id_paciente,
           id_consulta: consultaAnalisis.id_consulta,
           tipo_analisis: formAnalisis.tipo_analisis,
-          estado: formAnalisis.estado,
+          estado: 'pendiente',
           fecha_solicitud: new Date().toISOString(),
+          fecha_resultado: null,
+          resultado: null,
           observaciones: formAnalisis.observaciones || null,
         }),
       });
@@ -217,12 +262,22 @@ export default function GestionConsultasMedico() {
         return;
       }
 
-      marcarSolicitud(consultaAnalisis, {
+      const nuevoAnalisis = {
+        ...(data.analisis || {}),
         id_analisis: data.analisis?.id_analisis,
-        tipo_analisis: formAnalisis.tipo_analisis,
-        estado: formAnalisis.estado,
-        observaciones: formAnalisis.observaciones || '',
-      });
+        id_consulta: consultaAnalisis.id_consulta,
+        id_paciente: consultaAnalisis.id_paciente,
+        tipo_analisis: data.analisis?.tipo_analisis || formAnalisis.tipo_analisis,
+        estado: data.analisis?.estado || 'pendiente',
+        fecha_solicitud: data.analisis?.fecha_solicitud || new Date().toISOString(),
+        fecha_resultado: data.analisis?.fecha_resultado || null,
+        resultado: data.analisis?.resultado || null,
+        observaciones: data.analisis?.observaciones || formAnalisis.observaciones || '',
+      };
+      marcarSolicitud(consultaAnalisis, nuevoAnalisis);
+      if (consultaVerSolicitud?.id_consulta === consultaAnalisis.id_consulta) {
+        setSolicitudesVista((prev) => ordenarAnalisisPorActividad([nuevoAnalisis, ...prev]));
+      }
       setMensajeAnalisis('Solicitud de análisis registrada y vinculada a la consulta.');
       setTimeout(() => setModalAnalisisAbierto(false), 1200);
     } catch {
@@ -232,22 +287,84 @@ export default function GestionConsultasMedico() {
     }
   }
 
-  // HU-15: marca las consultas que ya tienen solicitud de analisis del paciente.
-  // La BD vincula el analisis al paciente; se usa id_paciente (y id_consulta
-  // como filtro adicional cuando la columna existe).
+  function abrirAutorizarHospitalizacion(consulta) {
+    setConsultaHospitalizacion(consulta);
+    setFormHospitalizacion({
+      diagnostico_ingreso: consulta.diagnostico || '',
+      observaciones_clinicas: consulta.tratamiento || consulta.observaciones || '',
+    });
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+    setModalHospitalizacion(true);
+  }
+
+  function handleChangeHospitalizacion(e) {
+    const { name, value } = e.target;
+    setFormHospitalizacion((prev) => ({ ...prev, [name]: value }));
+    setErroresHospitalizacion((prev) => ({ ...prev, [name]: '' }));
+  }
+
+  async function handleSubmitHospitalizacion(e) {
+    e.preventDefault();
+    setEnviandoHospitalizacion(true);
+    setErroresHospitalizacion({});
+    setMensajeHospitalizacion(null);
+    setErrorHospitalizacion(null);
+
+    try {
+      const res = await fetch('/api/hospitalizaciones/autorizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rol: usuario?.rol,
+          id_profesional: usuario?.id_medico,
+          id_medico: usuario?.id_medico,
+          id_consulta: consultaHospitalizacion?.id_consulta,
+          id_cita: consultaHospitalizacion?.id_cita,
+          id_paciente: consultaHospitalizacion?.id_paciente,
+          diagnostico_ingreso: formHospitalizacion.diagnostico_ingreso,
+          observaciones_clinicas: formHospitalizacion.observaciones_clinicas,
+          tiempo_internacion_dias: Number(formHospitalizacion.tiempo_internacion_dias),
+          fecha_estimada_alta: formHospitalizacion.fecha_estimada_alta || null,
+          sala: formHospitalizacion.sala,
+          cama: formHospitalizacion.cama,
+        }),
+      });
+      const data = await res.json();
+
+      if (!data.ok) {
+        setErrorHospitalizacion(data.mensaje || data.errores?.general || 'No se pudo autorizar la hospitalizacion.');
+        if (data.errores) setErroresHospitalizacion(data.errores);
+        return;
+      }
+
+      setMensajeHospitalizacion(data.mensaje || 'Hospitalizacion autorizada correctamente.');
+      setTimeout(() => setModalHospitalizacion(false), 1200);
+    } catch {
+      setErrorHospitalizacion('No se pudo conectar con el servidor.');
+    } finally {
+      setEnviandoHospitalizacion(false);
+    }
+  }
+
+  // HU-15: marca solo las consultas que tienen una solicitud vinculada
+  // explicitamente por id_consulta. No se marca por paciente para evitar
+  // falsos positivos al agendar una cita o al tener analisis antiguos.
   async function cargarSolicitudesPorConsulta(lista) {
     const mapa = {};
     await Promise.all(
       lista.map(async (c) => {
         try {
-          const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_paciente=${c.id_paciente}`);
+          const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${c.id_consulta}`);
           const data = await res.json();
-          if (data.ok && data.analisis && data.analisis.length) {
+          const analisisConsulta = ordenarAnalisisPorActividad((data.analisis || []).filter((a) => perteneceAConsulta(a, c.id_consulta)));
+          if (data.ok && analisisConsulta.length) {
             mapa[c.id_consulta] = {
               id_consulta: c.id_consulta,
               id_paciente: c.id_paciente,
-              analisis: data.analisis[0],
-              total: data.analisis.length,
+              analisis: analisisConsulta[0],
+              total: analisisConsulta.length,
             };
           }
         } catch {
@@ -289,6 +406,30 @@ export default function GestionConsultasMedico() {
     }
   }
 
+  async function eliminarConsulta(consulta) {
+    const paciente = `${consulta.paciente_nombre || ''} ${consulta.paciente_apellido || ''}`.trim();
+    if (!confirm(`Eliminar consulta #${consulta.id_consulta}${paciente ? ` de ${paciente}` : ''}?`)) return;
+
+    setErrorGeneral(null);
+    setMensaje(null);
+    try {
+      const res = await fetch('/api/admisiones/eliminar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_consulta: consulta.id_consulta }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setErrorGeneral(data.mensaje || data.errores?.general || 'No se pudo eliminar la consulta.');
+        return;
+      }
+      setMensaje(data.mensaje || 'Consulta eliminada correctamente.');
+      await cargar();
+    } catch {
+      setErrorGeneral('No se pudo conectar con el servidor.');
+    }
+  }
+
   useEffect(() => {
     cargar();
   }, [filtroFecha]);
@@ -322,6 +463,14 @@ export default function GestionConsultasMedico() {
     setErrorGeneral(null);
     setModalAbierto(true);
     cargarMedicamentos();
+  }
+
+  function abrirEditorConsulta(consulta) {
+    if (consulta.tiene_receta) {
+      abrirEditarReceta(consulta);
+      return;
+    }
+    abrirModalAtender(consulta);
   }
 
   function handleChange(e) {
@@ -374,6 +523,15 @@ export default function GestionConsultasMedico() {
         if (!it.duracion.trim()) nuevosErrores[`item_${index}_duracion`] = 'Ingresa la duración.';
       });
 
+      const hayDatosDeReceta = items.some((it) =>
+        it.id_medicamento || Number(it.cantidad) > 1 || it.dosis.trim() || it.frecuencia.trim() || it.duracion.trim()
+      );
+      if (!hayDatosDeReceta) {
+        Object.keys(nuevosErrores).forEach((clave) => {
+          if (clave === 'items' || clave.startsWith('item_')) delete nuevosErrores[clave];
+        });
+      }
+
       if (Object.keys(nuevosErrores).length) {
         setErrores(nuevosErrores);
         setEnviando(false);
@@ -383,6 +541,7 @@ export default function GestionConsultasMedico() {
       const payload = {
         id_consulta: form.id_consulta,
         id_medico: usuario.id_medico,
+        motivo_consulta: form.motivo_consulta,
         diagnostico: form.diagnostico,
         tratamiento: form.tratamiento,
         estado_atencion: form.estado_atencion,
@@ -396,8 +555,8 @@ export default function GestionConsultasMedico() {
         })),
       };
 
-      const res = await fetch('/api/medico/prescripcion', {
-        method: 'POST',
+      const res = await fetch(hayDatosDeReceta ? '/api/medico/prescripcion' : '/api/medico/actualizar-atencion', {
+        method: hayDatosDeReceta ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -664,6 +823,19 @@ export default function GestionConsultasMedico() {
                   ),
                 },
                 { clave: 'diagnostico', titulo: 'Diagnóstico', render: (v) => v ? (v.length > 30 ? v.slice(0, 30) + '…' : v) : '-' },
+                {
+                  clave: 'laboratorio',
+                  titulo: 'Laboratorio',
+                  render: (_v, consulta) => {
+                    const lab = solicitudesPorConsulta[consulta.id_consulta]?.analisis;
+                    const badge = etiquetaLaboratorio(lab);
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.clase}`}>
+                        {badge.texto}
+                      </span>
+                    );
+                  },
+                },
                 { clave: 'fecha_consulta', titulo: 'Fecha', render: (v) => formatearFecha(v) },
               ]}
               datos={consultasFiltradas}
@@ -673,19 +845,32 @@ export default function GestionConsultasMedico() {
                   ? "No tienes consultas agendadas para el día de hoy."
                   : `No hay consultas registradas para la fecha seleccionada.`
               }
-              onEditar={abrirModalAtender}
               renderAcciones={(consulta) => {
-                const yaSolicitado = Boolean(solicitudesPorConsulta[consulta.id_consulta]);
+                const yaSolicitado = Boolean(solicitudesPorConsulta[consulta.id_consulta]?.analisis);
                 return (
-                  <div className="flex items-center gap-1 justify-end">
+                  <div className="flex flex-wrap items-center gap-1.5 justify-end min-w-[220px]">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); abrirEditorConsulta(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                      title={consulta.tiene_receta ? 'Editar consulta y receta' : 'Editar consulta'}
+                      aria-label={consulta.tiene_receta ? 'Editar consulta y receta' : 'Editar consulta'}
+                    >
+                      <IconoEdit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); eliminarConsulta(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                      title="Eliminar consulta"
+                    >
+                      <IconoTrash className="w-4 h-4" />
+                    </button>
                     {yaSolicitado ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); abrirVerSolicitud(consulta); }}
-                        className="inline-flex items-center gap-1 px-2.5 h-8 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-medium text-xs transition-colors"
-                        title="Ver solicitud de análisis"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors"
+                        title="Ver resultados de laboratorio"
                       >
                         <IconoEye className="w-4 h-4" />
-                        Ver solicitud
                       </button>
                     ) : (
                       <button
@@ -697,23 +882,22 @@ export default function GestionConsultasMedico() {
                       </button>
                     )}
                     {consulta.tiene_receta ? (
-                      <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); abrirVerReceta(consulta); }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Ver receta"
-                        >
-                          <IconoDocumentText className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); abrirEditarReceta(consulta); }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="Editar receta"
-                        >
-                          <IconoEdit className="w-4 h-4" />
-                        </button>
-                      </>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); abrirVerReceta(consulta); }}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="Ver receta"
+                        aria-label="Ver receta"
+                      >
+                        <IconoDocumentText className="w-4 h-4" />
+                      </button>
                     ) : null}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); abrirAutorizarHospitalizacion(consulta); }}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-purple-600 hover:bg-purple-50 transition-colors"
+                      title="Autorizar Hospitalizacion"
+                    >
+                      <IconoBuildingHospital className="w-4 h-4" />
+                    </button>
                   </div>
                 );
               }}
@@ -967,20 +1151,6 @@ export default function GestionConsultasMedico() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
-            <select
-              name="estado"
-              value={formAnalisis.estado}
-              onChange={handleChangeAnalisis}
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${erroresAnalisis.estado ? 'border-red-400' : 'border-slate-300'}`}
-            >
-              {ESTADOS_ANALISIS.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
             <textarea
               name="observaciones"
@@ -1016,7 +1186,7 @@ export default function GestionConsultasMedico() {
       <Modal
         abierto={modalVerSolicitudAbierto}
         alCerrar={() => setModalVerSolicitudAbierto(false)}
-        titulo="Solicitudes de análisis"
+        titulo="Resultados de laboratorio"
         ancho="max-w-2xl"
       >
         {consultaVerSolicitud && (
@@ -1035,7 +1205,7 @@ export default function GestionConsultasMedico() {
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : solicitudesVista.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">Aún no se ha registrado ninguna solicitud de análisis para este paciente.</div>
+          <div className="text-center py-8 text-slate-500">Aún no se ha registrado ninguna solicitud de laboratorio para esta consulta.</div>
         ) : (
           <div className="space-y-3">
             {solicitudesVista.map((s) => (
@@ -1054,28 +1224,59 @@ export default function GestionConsultasMedico() {
                 <div className="mt-2 text-xs text-slate-600 space-y-1">
                   <p><span className="font-semibold">ID análisis:</span> #{s.id_analisis}</p>
                   <p><span className="font-semibold">Fecha solicitud:</span> {formatearFecha(s.fecha_solicitud)}</p>
-                  {s.resultado ? <p><span className="font-semibold">Resultado:</span> {s.resultado}</p> : null}
-                  {s.observaciones ? <p><span className="font-semibold">Observaciones:</span> {s.observaciones}</p> : null}
-                  {s?.archivo_resultado && (
-                    <div className="mt-4 pt-3 border-t border-slate-100">
-                    <p className="text-sm font-semibold text-slate-700 mb-2">Archivo adjunto:</p>
-                    <a
-                      href={s.archivo_resultado}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium transition"
-                    >
-                      Ver documento de laboratorio
-                    </a>
+                  
+                  {/* Fecha de resultado de tu compañero */}
+                  {s.fecha_resultado ? <p><span className="font-semibold">Fecha resultado:</span> {formatearFecha(s.fecha_resultado)}</p> : null}
+                  
+                  {/* Caja de resultados de tu compañero */}
+                  {s.estado === 'completado' || s.resultado ? (
+                    <div className="mt-3 rounded-lg border border-emerald-200 bg-white p-3 text-sm text-slate-700">
+                      <p className="text-xs font-bold uppercase text-emerald-700 mb-1">Resultado subido por laboratorio</p>
+                      <p className="whitespace-pre-wrap">{s.resultado || 'Resultado marcado como completado sin texto registrado.'}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      El técnico de laboratorio aún no ha subido el resultado.
                     </div>
                   )}
+
+                  {/* 🔥 TU BOTÓN DE ARCHIVO ADJUNTO (Lo integramos aquí respetando el diseño) */}
+                  {s?.archivo_resultado && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <p className="text-xs font-bold uppercase text-blue-700 mb-1">Archivo adjunto</p>
+                      <a
+                        href={s.archivo_resultado}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-medium transition"
+                      >
+                        📄 Ver documento de laboratorio
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Observaciones de tu compañero */}
+                  {s.observaciones ? (
+                    <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                      <p className="text-xs font-bold uppercase text-slate-500 mb-1">Observaciones</p>
+                      <p className="whitespace-pre-wrap">{s.observaciones}</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex justify-end pt-4">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={solicitarOtroAnalisisDesdeResultados}
+            className="px-4 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark font-medium transition inline-flex items-center justify-center gap-2"
+          >
+            <IconoBeaker className="w-4 h-4" />
+            Solicitar otro análisis
+          </button>
           <button
             type="button"
             onClick={() => setModalVerSolicitudAbierto(false)}
@@ -1324,6 +1525,122 @@ export default function GestionConsultasMedico() {
               <><IconoDocumentText className="w-4 h-4 inline mr-1" /> Descargar reporte PDF</>
             )}
         </button>
+      </Modal>
+
+      <Modal
+        abierto={modalHospitalizacion}
+        alCerrar={() => setModalHospitalizacion(false)}
+        titulo="Autorizar Hospitalizacion"
+        ancho="max-w-2xl"
+      >
+        {mensajeHospitalizacion && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">{mensajeHospitalizacion}</div>
+        )}
+        {errorHospitalizacion && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{errorHospitalizacion}</div>
+        )}
+
+        {consultaHospitalizacion && (
+          <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 space-y-1">
+            <p><span className="font-semibold text-slate-700">Paciente:</span> {consultaHospitalizacion.paciente_nombre} {consultaHospitalizacion.paciente_apellido}</p>
+            <p><span className="font-semibold text-slate-700">Consulta origen:</span> #{consultaHospitalizacion.id_consulta} - {consultaHospitalizacion.motivo_consulta || 'Consulta'}</p>
+            <p><span className="font-semibold text-slate-700">Medico autorizante:</span> #{usuario?.id_medico}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmitHospitalizacion} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Diagnostico de ingreso *</label>
+            <textarea
+              name="diagnostico_ingreso"
+              value={formHospitalizacion.diagnostico_ingreso}
+              onChange={handleChangeHospitalizacion}
+              rows="3"
+              placeholder="Justificacion clinica de la hospitalizacion"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.diagnostico_ingreso ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.diagnostico_ingreso && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.diagnostico_ingreso}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones clinicas *</label>
+            <textarea
+              name="observaciones_clinicas"
+              value={formHospitalizacion.observaciones_clinicas}
+              onChange={handleChangeHospitalizacion}
+              rows="4"
+              placeholder="Indicaciones, cuidados especiales y detalles de seguimiento"
+              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y ${erroresHospitalizacion.observaciones_clinicas ? 'border-red-400' : 'border-slate-300'}`}
+              required
+            />
+            {erroresHospitalizacion.observaciones_clinicas && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.observaciones_clinicas}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Dias internado *</label>
+              <input
+                type="number"
+                min="1"
+                name="tiempo_internacion_dias"
+                value={formHospitalizacion.tiempo_internacion_dias}
+                onChange={handleChangeHospitalizacion}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${erroresHospitalizacion.tiempo_internacion_dias ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              />
+              {erroresHospitalizacion.tiempo_internacion_dias && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.tiempo_internacion_dias}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Alta estimada</label>
+              <input
+                type="date"
+                name="fecha_estimada_alta"
+                value={formHospitalizacion.fecha_estimada_alta}
+                onChange={handleChangeHospitalizacion}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Sala / unidad</label>
+              <input
+                name="sala"
+                value={formHospitalizacion.sala}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. Medicina interna"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Cama</label>
+              <input
+                name="cama"
+                value={formHospitalizacion.cama}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. A-12"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalHospitalizacion(false)}
+              className="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium transition"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={enviandoHospitalizacion}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              <IconoBuildingHospital className="w-4 h-4" />
+              {enviandoHospitalizacion ? 'Autorizando...' : 'Autorizar Hospitalizacion'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

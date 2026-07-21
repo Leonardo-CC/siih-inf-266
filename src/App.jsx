@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx';
 import RegistroPaciente from './pages/paciente/RegistroPaciente.jsx';
 import SolicitarCitaPage from './pages/paciente/SolicitarCitaPage.jsx';
 import GestionAdmision from './pages/enfermeria/GestionAdmision.jsx';
+import GestionHospitalizaciones from './pages/enfermeria/GestionHospitalizaciones.jsx';
 import RegistroSignosVitales from './pages/enfermeria/RegistroSignosVitales.jsx';
 import GestionPacientesEnfermeria from './pages/enfermeria/GestionPacientesEnfermeria.jsx';
 import GestionConsultasMedico from './pages/medico/GestionConsultasMedico.jsx';
@@ -27,6 +28,7 @@ import AdminCatalogo from './pages/admin/AdminCatalogo.jsx';
 import AdminStock from './pages/admin/AdminStock.jsx';
 import AdminMovimientos from './pages/admin/AdminMovimientos.jsx';
 import AdminMedicamentos from './pages/admin/AdminMedicamentos.jsx';
+import AdminFinanzas from './pages/admin/AdminFinanzas.jsx';
 import TecnicoLaboratorioDashboard from './pages/laboratorio/TecnicoLaboratorioDashboard.jsx';
 import GestionAnalisisLaboratorio from './pages/laboratorio/GestionAnalisisLaboratorio.jsx';
 import PacientesLaboratorio from './pages/laboratorio/PacientesLaboratorio.jsx';
@@ -87,6 +89,12 @@ function App() {
             path="/enfermeria/admisiones"
             element={
               <ProtectedRoute ruta="/enfermeria/admisiones" element={<GestionAdmision />} />
+            }
+          />
+          <Route
+            path="/enfermeria/hospitalizaciones"
+            element={
+              <ProtectedRoute ruta="/enfermeria/hospitalizaciones" element={<GestionHospitalizaciones />} />
             }
           />
           <Route
@@ -201,6 +209,12 @@ function App() {
             path="/admin/movimientos"
             element={
               <ProtectedRoute ruta="/admin/movimientos" element={<AdminMovimientos />} />
+            }
+          />
+          <Route
+            path="/admin/finanzas"
+            element={
+              <ProtectedRoute ruta="/admin/finanzas" element={<AdminFinanzas />} />
             }
           />
             <Route

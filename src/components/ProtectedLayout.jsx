@@ -17,6 +17,7 @@ import {
   IconoDocumentText,
   IconoBuildingHospital,
   IconoArrowDown,
+  IconoBanknotes,
 } from './Iconos.jsx';
 
 const navPorRol = {
@@ -30,6 +31,7 @@ const navPorRol = {
   enfermero: [
     { to: '/dashboard', label: 'Dashboard', icono: IconoHome },
     { to: '/enfermeria/admisiones', label: 'Admisiones', icono: IconoClipboardDocument },
+    { to: '/enfermeria/hospitalizaciones', label: 'Hospitalizaciones', icono: IconoBuildingHospital },
     { to: '/enfermeria/signos-vitales', label: 'Signos vitales', icono: IconoHeart },
     { to: '/enfermeria/pacientes', label: 'Pacientes', icono: IconoUsers },
   ],
@@ -63,6 +65,7 @@ const navPorRol = {
     { to: '/admin/stock', label: 'Stock', icono: IconoArchiveBox },
     { to: '/admin/medicamentos', label: 'Medicamentos', icono: IconoPill },
     { to: '/admin/movimientos', label: 'Movimientos', icono: IconoArrowDown },
+    { to: '/admin/finanzas', label: 'Finanzas', icono: IconoBanknotes },
     { to: '/admin/facultades', label: 'Facultades / Áreas', icono: IconoBuildingHospital },
     { to: '/admin/configuracion', label: 'Configuracion', icono: IconoCog },
   ],

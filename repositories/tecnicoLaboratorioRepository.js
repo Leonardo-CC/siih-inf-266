@@ -146,11 +146,12 @@ const SELECT_ANALISIS_SIN_CONSULTA = `
 `;
 
 function mapearAnalisis(a) {
+  const idConsulta = a.id_consulta || a.consulta?.id_consulta || null;
   return {
     id_analisis: a.id_analisis,
     id_paciente: a.id_paciente,
     id_tecnico_laboratorio: a.id_tecnico_laboratorio,
-    id_consulta: a.id_consulta || null,
+    id_consulta: idConsulta,
     tipo_analisis: a.tipo_analisis,
     fecha_solicitud: a.fecha_solicitud,
     fecha_resultado: a.fecha_resultado,
@@ -201,7 +202,7 @@ export async function listarAnalisisLaboratorio(filtro = {}) {
   // HU-15: si la columna id_consulta no existe (migracion pendiente), se deriva
   // la consulta de origen usando el paciente y la fecha mas cercana de consulta.
   const columnaConsultaExiste = Boolean(rows[0]?.consulta_origen || rows.some((r) => r.id_consulta));
-  if (!columnaConsultaExiste && rows.length) {
+  if (!columnaConsultaExiste && rows.length && !filtro.id_consulta) {
     const consultasPorPaciente = await obtenerConsultasCercanasPorPacientes(rows.map((r) => r.id_paciente));
     rows = rows.map((r) => {
       if (r.consulta_origen) return r;
@@ -224,7 +225,10 @@ export async function listarAnalisisLaboratorio(filtro = {}) {
     rows = rows.filter((a) => a.id_paciente === Number(filtro.id_paciente));
   }
   if (filtro.id_consulta) {
-    rows = rows.filter((a) => a.id_consulta === Number(filtro.id_consulta));
+    rows = rows.filter((a) => {
+      const idConsulta = a.id_consulta || a.consulta_origen?.id_consulta || null;
+      return Number(idConsulta) === Number(filtro.id_consulta);
+    });
   }
   if (filtro.estado) {
     rows = rows.filter((a) => a.estado === filtro.estado);
@@ -305,7 +309,7 @@ export async function crearAnalisisLaboratorio(payload) {
   let { data, error } = await supabaseAdmin
     .from('analisis_laboratorio')
     .insert([fila])
-    .select('id_analisis')
+    .select('id_analisis, id_consulta')
     .single();
 
   // HU-15: si la columna id_consulta aun no existe en la DB (migracion pendiente),
@@ -320,7 +324,8 @@ export async function crearAnalisisLaboratorio(payload) {
   }
 
   if (error) throw new Error(`Error al crear análisis: ${error.message}`);
-  return data;
+  const creado = await obtenerAnalisisLaboratorioPorId(data.id_analisis);
+  return creado || { ...data, id_consulta: data?.id_consulta || null };
 }
 
 export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
@@ -356,7 +361,8 @@ export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
   }
 
   if (error) throw new Error(`Error al actualizar análisis: ${error.message}`);
-  return data;
+  const actualizado = await obtenerAnalisisLaboratorioPorId(data.id_analisis);
+  return actualizado || data;
 }
 
 // -------- Validar que una consulta pertenezca al paciente indicado --------
