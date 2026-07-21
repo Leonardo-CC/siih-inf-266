@@ -178,16 +178,23 @@ export async function registrarPrescripcionMedico(id_consulta, id_medico, payloa
     if (!id_historial) {
       const nuevo = await crearHistorialClinico(id_consulta, {
         diagnostico: payload.diagnostico,
-        observaciones: payload.observaciones,
+        observaciones: payload.observaciones || payload.tratamiento,
         alergias: null,
       });
       id_historial = nuevo.id_historial;
     } else {
       await actualizarHistorialClinico(id_historial, {
         diagnostico: payload.diagnostico,
-        observaciones: payload.observaciones,
+        observaciones: payload.observaciones || payload.tratamiento,
       });
     }
+
+    await actualizarAtencionMedico(id_consulta, id_medico, {
+      diagnostico: payload.diagnostico,
+      tratamiento: payload.tratamiento,
+      estado_atencion: payload.estado_atencion || 'atendida',
+      observaciones: payload.observaciones,
+    });
 
     const receta = await crearReceta(id_historial, payload.observaciones_receta);
     const detalles = await crearDetallesReceta(receta.id_receta, itemsValidos);
@@ -257,7 +264,7 @@ export async function editarRecetaMedico(id_consulta, payload = {}) {
 
     const resultado = await actualizarRecetaCompleta(receta.id_receta, receta.id_historial, {
       diagnostico: payload.diagnostico,
-      observaciones: payload.observaciones,
+      observaciones: payload.observaciones || payload.tratamiento,
       items: itemsValidos.map((it) => ({
         id_detalle: it.id_detalle || null,
         id_medicamento: Number(it.id_medicamento),
@@ -266,6 +273,13 @@ export async function editarRecetaMedico(id_consulta, payload = {}) {
         frecuencia: it.frecuencia.trim(),
         duracion: it.duracion.trim(),
       })),
+    });
+
+    await actualizarAtencionMedico(id_consulta, null, {
+      diagnostico: payload.diagnostico,
+      tratamiento: payload.tratamiento,
+      estado_atencion: payload.estado_atencion,
+      observaciones: payload.observaciones,
     });
 
     return {

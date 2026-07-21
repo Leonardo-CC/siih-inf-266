@@ -77,6 +77,10 @@ const itemPrescripcionVacio = {
 const hospitalizacionInicial = {
   diagnostico_ingreso: '',
   observaciones_clinicas: '',
+  tiempo_internacion_dias: 1,
+  fecha_estimada_alta: '',
+  sala: '',
+  cama: '',
 };
 
 export default function GestionConsultasMedico() {
@@ -282,6 +286,10 @@ export default function GestionConsultasMedico() {
           id_paciente: consultaHospitalizacion?.id_paciente,
           diagnostico_ingreso: formHospitalizacion.diagnostico_ingreso,
           observaciones_clinicas: formHospitalizacion.observaciones_clinicas,
+          tiempo_internacion_dias: Number(formHospitalizacion.tiempo_internacion_dias),
+          fecha_estimada_alta: formHospitalizacion.fecha_estimada_alta || null,
+          sala: formHospitalizacion.sala,
+          cama: formHospitalizacion.cama,
         }),
       });
       const data = await res.json();
@@ -417,6 +425,14 @@ export default function GestionConsultasMedico() {
     cargarMedicamentos();
   }
 
+  function abrirEditorConsulta(consulta) {
+    if (consulta.tiene_receta) {
+      abrirEditarReceta(consulta);
+      return;
+    }
+    abrirModalAtender(consulta);
+  }
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -467,6 +483,15 @@ export default function GestionConsultasMedico() {
         if (!it.duracion.trim()) nuevosErrores[`item_${index}_duracion`] = 'Ingresa la duración.';
       });
 
+      const hayDatosDeReceta = items.some((it) =>
+        it.id_medicamento || Number(it.cantidad) > 1 || it.dosis.trim() || it.frecuencia.trim() || it.duracion.trim()
+      );
+      if (!hayDatosDeReceta) {
+        Object.keys(nuevosErrores).forEach((clave) => {
+          if (clave === 'items' || clave.startsWith('item_')) delete nuevosErrores[clave];
+        });
+      }
+
       if (Object.keys(nuevosErrores).length) {
         setErrores(nuevosErrores);
         setEnviando(false);
@@ -476,6 +501,7 @@ export default function GestionConsultasMedico() {
       const payload = {
         id_consulta: form.id_consulta,
         id_medico: usuario.id_medico,
+        motivo_consulta: form.motivo_consulta,
         diagnostico: form.diagnostico,
         tratamiento: form.tratamiento,
         estado_atencion: form.estado_atencion,
@@ -489,8 +515,8 @@ export default function GestionConsultasMedico() {
         })),
       };
 
-      const res = await fetch('/api/medico/prescripcion', {
-        method: 'POST',
+      const res = await fetch(hayDatosDeReceta ? '/api/medico/prescripcion' : '/api/medico/actualizar-atencion', {
+        method: hayDatosDeReceta ? 'POST' : 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -771,9 +797,10 @@ export default function GestionConsultasMedico() {
                 return (
                   <div className="flex flex-wrap items-center gap-1.5 justify-end min-w-[220px]">
                     <button
-                      onClick={(e) => { e.stopPropagation(); abrirModalAtender(consulta); }}
+                      onClick={(e) => { e.stopPropagation(); abrirEditorConsulta(consulta); }}
                       className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                      title="Editar consulta"
+                      title={consulta.tiene_receta ? 'Editar consulta y receta' : 'Editar consulta'}
+                      aria-label={consulta.tiene_receta ? 'Editar consulta y receta' : 'Editar consulta'}
                     >
                       <IconoEdit className="w-4 h-4" />
                     </button>
@@ -802,22 +829,14 @@ export default function GestionConsultasMedico() {
                       </button>
                     )}
                     {consulta.tiene_receta ? (
-                      <>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); abrirVerReceta(consulta); }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Ver receta"
-                        >
-                          <IconoDocumentText className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); abrirEditarReceta(consulta); }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
-                          title="Editar receta"
-                        >
-                          <IconoEdit className="w-4 h-4" />
-                        </button>
-                      </>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); abrirVerReceta(consulta); }}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        title="Ver receta"
+                        aria-label="Ver receta"
+                      >
+                        <IconoDocumentText className="w-4 h-4" />
+                      </button>
                     ) : null}
                     <button
                       onClick={(e) => { e.stopPropagation(); abrirAutorizarHospitalizacion(consulta); }}
@@ -1473,6 +1492,52 @@ export default function GestionConsultasMedico() {
               required
             />
             {erroresHospitalizacion.observaciones_clinicas && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.observaciones_clinicas}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Dias internado *</label>
+              <input
+                type="number"
+                min="1"
+                name="tiempo_internacion_dias"
+                value={formHospitalizacion.tiempo_internacion_dias}
+                onChange={handleChangeHospitalizacion}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${erroresHospitalizacion.tiempo_internacion_dias ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              />
+              {erroresHospitalizacion.tiempo_internacion_dias && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.tiempo_internacion_dias}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Alta estimada</label>
+              <input
+                type="date"
+                name="fecha_estimada_alta"
+                value={formHospitalizacion.fecha_estimada_alta}
+                onChange={handleChangeHospitalizacion}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Sala / unidad</label>
+              <input
+                name="sala"
+                value={formHospitalizacion.sala}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. Medicina interna"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Cama</label>
+              <input
+                name="cama"
+                value={formHospitalizacion.cama}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. A-12"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

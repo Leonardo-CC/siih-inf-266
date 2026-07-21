@@ -11,6 +11,10 @@ function monto(valor) {
   return Number(valor || 0);
 }
 
+function netoFactura(factura) {
+  return monto(factura.subtotal || monto(factura.total) - monto(factura.iva));
+}
+
 export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
   const { inicio, fin } = inicioFin(dias);
 
@@ -56,7 +60,7 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
 
   const ingresosFactura = (facturas || [])
     .filter((f) => f.estado !== 'anulada')
-    .reduce((sum, f) => sum + monto(f.total), 0);
+    .reduce((sum, f) => sum + netoFactura(f), 0);
 
   const ingresosManual = (movimientos || [])
     .filter((m) => m.tipo === 'ingreso')
@@ -82,8 +86,8 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
       : f.pago?.id_inscripcion
       ? 'Inscripciones'
       : 'Consultas';
-    porMetodo[metodo] = (porMetodo[metodo] || 0) + monto(f.total);
-    porCategoria[categoria] = (porCategoria[categoria] || 0) + monto(f.total);
+    porMetodo[metodo] = (porMetodo[metodo] || 0) + netoFactura(f);
+    porCategoria[categoria] = (porCategoria[categoria] || 0) + netoFactura(f);
   });
 
   (movimientos || []).forEach((m) => {
@@ -100,6 +104,8 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
       concepto: f.concepto || `Factura ${f.numero_factura}`,
       metodo_pago: f.pago?.metodo_pago || '-',
       monto: monto(f.total),
+      descuento_iva: monto(f.iva),
+      total: netoFactura(f),
       estado: f.estado,
       id_pago: f.id_pago,
       numero_factura: f.numero_factura,
@@ -112,6 +118,8 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
       concepto: m.concepto,
       metodo_pago: m.metodo_pago || '-',
       monto: monto(m.monto),
+      descuento_iva: 0,
+      total: monto(m.monto),
       estado: 'registrado',
       id_pago: null,
       numero_factura: null,
@@ -124,6 +132,8 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
       concepto: `Compra/entrada estimada: ${l.medicamento?.nombre || 'Medicamento'}`,
       metodo_pago: '-',
       monto: monto(l.cantidad_inicial) * monto(l.medicamento?.precio),
+      descuento_iva: 0,
+      total: monto(l.cantidad_inicial) * monto(l.medicamento?.precio),
       estado: 'estimado',
       id_pago: null,
       numero_factura: null,
@@ -135,6 +145,7 @@ export async function obtenerResumenFinanciero({ dias = 30 } = {}) {
       ingresos: ingresosFactura + ingresosManual,
       egresos: egresosManual + egresosInventarioEstimado,
       utilidad: ingresosFactura + ingresosManual - egresosManual - egresosInventarioEstimado,
+      ingresos_brutos: (facturas || []).filter((f) => f.estado !== 'anulada').reduce((sum, f) => sum + monto(f.total), 0) + ingresosManual,
       iva_debito: (facturas || []).filter((f) => f.estado !== 'anulada').reduce((sum, f) => sum + monto(f.iva), 0),
       facturas_emitidas: (facturas || []).filter((f) => f.estado !== 'anulada').length,
       egresos_inventario_estimado: egresosInventarioEstimado,

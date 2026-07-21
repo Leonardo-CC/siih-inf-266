@@ -18,6 +18,8 @@ export default function DespachoRecetas() {
   const [recetaAConfirmar, setRecetaAConfirmar] = useState(null);
   const [facturaForm, setFacturaForm] = useState({ metodo_pago: 'efectivo', razon_social: '', nit_ci: '' });
   const [despachando, setDespachando] = useState(false);
+  const [errorModal, setErrorModal] = useState(null);
+  const [ultimaFactura, setUltimaFactura] = useState(null);
 
   const total = Number(recetaAConfirmar?.total || 0);
   const subtotal = total / 1.13;
@@ -42,6 +44,8 @@ export default function DespachoRecetas() {
 
   function abrirConfirmacion(receta) {
     setRecetaAConfirmar(receta);
+    setErrorModal(null);
+    setUltimaFactura(null);
     setFacturaForm({
       metodo_pago: 'efectivo',
       razon_social: receta.paciente || '',
@@ -49,11 +53,36 @@ export default function DespachoRecetas() {
     });
   }
 
+  async function descargarFacturaPdf(url, nombreArchivo = 'factura.pdf') {
+    const res = await fetch(url);
+    if (!res.ok) {
+      let mensaje = 'La factura fue creada, pero no se pudo generar el PDF automaticamente.';
+      try {
+        const data = await res.json();
+        mensaje = data.errores?.general || data.mensaje || mensaje;
+      } catch {
+        // La respuesta puede venir como HTML/texto si el servidor fallo antes de emitir JSON.
+      }
+      throw new Error(mensaje);
+    }
+
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 30000);
+  }
+
   async function confirmarDespacho() {
     if (!recetaAConfirmar) return;
 
     setDespachando(true);
     setMensaje(null);
+    setErrorModal(null);
 
     try {
       const res = await fetch('/api/farmacia/despachar-receta', {
@@ -69,22 +98,40 @@ export default function DespachoRecetas() {
       const data = await res.json();
 
       if (!data.ok) {
-        setMensaje({ tipo: 'error', texto: data.mensaje || 'No se pudo despachar la receta.' });
+        setErrorModal(data.mensaje || 'No se pudo despachar la receta.');
         return;
+      }
+
+      const facturaUrl = data.factura_pdf_url || (data.id_pago ? `/api/pagos/factura?id_pago=${data.id_pago}` : null);
+      const nombreFactura = data.factura?.numero_factura
+        ? `factura_${data.factura.numero_factura}.pdf`
+        : `factura_pago_${data.id_pago}.pdf`;
+
+      let advertenciaPdf = null;
+      if (facturaUrl) {
+        setUltimaFactura({
+          url: facturaUrl,
+          nombre: data.factura?.numero_factura || `Pago #${data.id_pago}`,
+        });
+        try {
+          await descargarFacturaPdf(facturaUrl, nombreFactura);
+        } catch (error) {
+          advertenciaPdf = error.message || 'La factura fue creada, pero no se pudo descargar el PDF automaticamente.';
+        }
       }
 
       setRecetas((prev) => prev.filter((r) => r.id_receta !== recetaAConfirmar.id_receta));
       setMensaje({
-        tipo: 'exito',
-        texto: `Receta de ${recetaAConfirmar.paciente} despachada y facturada por ${moneda(data.monto)}.`,
+        tipo: advertenciaPdf ? 'error' : 'exito',
+        texto: advertenciaPdf
+          ? `Receta despachada y factura creada por ${moneda(data.monto)}. ${advertenciaPdf}`
+          : `Receta de ${recetaAConfirmar.paciente} despachada, facturada y con PDF generado por ${moneda(data.monto)}.`,
+        facturaUrl,
+        facturaNombre: data.factura?.numero_factura || `Pago #${data.id_pago}`,
       });
       setRecetaAConfirmar(null);
-
-      if (data.id_pago) {
-        window.open(`/api/pagos/factura?id_pago=${data.id_pago}`, '_blank');
-      }
-    } catch {
-      setMensaje({ tipo: 'error', texto: 'Error al conectar con el servidor.' });
+    } catch (error) {
+      setErrorModal(error.message || 'Error al conectar con el servidor.');
     } finally {
       setDespachando(false);
       setTimeout(() => setMensaje(null), 5000);
@@ -114,7 +161,17 @@ export default function DespachoRecetas() {
 
       {mensaje && (
         <div className={`p-4 rounded-lg font-medium shadow-sm border ${mensaje.tipo === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-          {mensaje.texto}
+          <div>{mensaje.texto}</div>
+          {mensaje.facturaUrl && (
+            <a
+              href={mensaje.facturaUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex rounded-lg bg-white/80 px-3 py-2 text-sm font-bold underline"
+            >
+              Abrir factura {mensaje.facturaNombre}
+            </a>
+          )}
         </div>
       )}
 
@@ -200,6 +257,22 @@ export default function DespachoRecetas() {
             </div>
 
             <div className="p-6 space-y-5">
+              {errorModal && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+                  {errorModal}
+                  {ultimaFactura?.url && (
+                    <a
+                      href={ultimaFactura.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block w-fit rounded-lg bg-white px-3 py-2 text-red-700 underline"
+                    >
+                      Abrir factura {ultimaFactura.nombre}
+                    </a>
+                  )}
+                </div>
+              )}
+
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-xs font-bold text-slate-400 uppercase">Paciente</span>
@@ -264,6 +337,12 @@ export default function DespachoRecetas() {
                 </div>
               </div>
 
+              {total <= 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  Esta receta tiene total Bs. 0.00. Revisa que los medicamentos tengan precio registrado antes de facturar.
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setRecetaAConfirmar(null)}
@@ -273,7 +352,7 @@ export default function DespachoRecetas() {
                 </button>
                 <button
                   onClick={confirmarDespacho}
-                  disabled={despachando || total <= 0}
+                  disabled={despachando}
                   className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm transition disabled:opacity-50"
                 >
                   {despachando ? 'Procesando...' : 'Entregar y facturar'}

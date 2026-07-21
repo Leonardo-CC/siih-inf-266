@@ -74,13 +74,17 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } 
     const idsConsulta = rows.map((r) => r.id_consulta);
     const { data: historiales } = await supabaseAdmin
       .from('historial_clinico')
-      .select('id_consulta, id_historial, receta ( id_receta )')
+      .select('id_consulta, id_historial, diagnostico, observaciones, receta ( id_receta )')
       .in('id_consulta', idsConsulta);
 
     (historiales || []).forEach((h) => {
       const receta = Array.isArray(h.receta) ? h.receta[0] : h.receta;
       if (receta?.id_receta) {
-        recetasPorConsulta.set(h.id_consulta, receta.id_receta);
+        recetasPorConsulta.set(h.id_consulta, {
+          id_receta: receta.id_receta,
+          diagnostico: h.diagnostico,
+          observaciones: h.observaciones,
+        });
       }
     });
   }
@@ -89,7 +93,8 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } 
     const adm = leerMetaAdmision(c.observaciones);
     const med = leerMetaMedico(c.observaciones);
     const pac = pacientes.get(c.id_paciente) || { nombre: '', apellido: '' };
-    const idReceta = recetasPorConsulta.get(c.id_consulta) || null;
+    const historial = recetasPorConsulta.get(c.id_consulta) || null;
+    const idReceta = historial?.id_receta || null;
     return {
       id_consulta: c.id_consulta,
       id_cita: c.id_cita,
@@ -100,11 +105,11 @@ export async function obtenerConsultasMedico(id_medico, { limite = 200, fecha } 
       tipo_admision: adm.tipo_admision,
       sala_asignada: adm.sala_asignada,
       estado_atencion: med.estado_atencion || 'pendiente',
-      diagnostico: med.diagnostico,
+      diagnostico: med.diagnostico || historial?.diagnostico || null,
       tratamiento: med.tratamiento,
       receta: med.receta,
       proxima_cita: med.proxima_cita,
-      observaciones: textoLibre(c.observaciones) || null,
+      observaciones: textoLibre(c.observaciones) || historial?.observaciones || null,
       paciente_nombre: pac.nombre || `Paciente #${c.id_paciente}`,
       paciente_apellido: pac.apellido,
       tiene_receta: Boolean(idReceta),
@@ -226,6 +231,56 @@ export async function obtenerConsultaParaReporte(id_consulta, id_medico) {
 
   const med = leerMetaMedico(c.observaciones);
   const libre = textoLibre(c.observaciones);
+  const { data: historial, error: errHistorial } = await supabaseAdmin
+    .from('historial_clinico')
+    .select(`
+      id_historial,
+      diagnostico,
+      observaciones
+    `)
+    .eq('id_consulta', id_consulta)
+    .maybeSingle();
+
+  if (errHistorial) throw new Error(`Error al obtener el historial clinico: ${errHistorial.message}`);
+
+  let receta = null;
+  let detallesReceta = [];
+  if (historial?.id_historial) {
+    const { data: recetaData, error: errReceta } = await supabaseAdmin
+      .from('receta')
+      .select('id_receta, observaciones, estado')
+      .eq('id_historial', historial.id_historial)
+      .order('fecha_emision', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (errReceta) throw new Error(`Error al obtener la receta: ${errReceta.message}`);
+    receta = recetaData || null;
+
+    if (receta?.id_receta) {
+      const { data: detalles, error: errDetalles } = await supabaseAdmin
+        .from('detalle_receta')
+        .select('cantidad, dosis, frecuencia, duracion, medicamento ( nombre )')
+        .eq('id_receta', receta.id_receta)
+        .order('id_detalle', { ascending: true });
+
+      if (errDetalles) throw new Error(`Error al obtener detalle de receta: ${errDetalles.message}`);
+      detallesReceta = detalles || [];
+    }
+  }
+
+  const resumenReceta = detallesReceta
+    .map((d) => {
+      const medicamento = d.medicamento?.nombre || 'Medicamento';
+      const partes = [
+        `${d.cantidad || 1}x ${medicamento}`,
+        d.dosis,
+        d.frecuencia,
+        d.duracion,
+      ].filter(Boolean);
+      return partes.join(' - ');
+    })
+    .join('\n');
 
   return {
     id_consulta: c.id_consulta,
@@ -234,11 +289,11 @@ export async function obtenerConsultaParaReporte(id_consulta, id_medico) {
     fecha_consulta: c.fecha_consulta,
     motivo_consulta: c.motivo_consulta,
     estado_atencion: med.estado_atencion,
-    diagnostico: med.diagnostico,
-    tratamiento: med.tratamiento,
-    receta: med.receta,
+    diagnostico: med.diagnostico || historial?.diagnostico || null,
+    tratamiento: med.tratamiento || historial?.observaciones || null,
+    receta: med.receta || receta?.observaciones || resumenReceta || null,
     proxima_cita: med.proxima_cita,
-    observaciones_libres: libre || null,
+    observaciones_libres: libre || historial?.observaciones || null,
   };
 }
 

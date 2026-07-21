@@ -8,6 +8,7 @@ const rolesPermitidos = {
   '/paciente/perfil': ['paciente'],
   '/paciente/historial': ['paciente', 'medico'],
   '/enfermeria/admisiones': ['enfermero', 'administrativo', 'medico'],
+  '/enfermeria/hospitalizaciones': ['enfermero', 'administrativo'],
   '/enfermeria/signos-vitales': ['enfermero', 'administrativo'],
   '/enfermeria/pacientes': ['enfermero', 'administrativo'],
   '/laboratorio/analisis': ['tecnico_laboratorio', 'administrativo'],

@@ -7,6 +7,62 @@ function redondear2(valor) {
   return Math.round((Number(valor || 0) + Number.EPSILON) * 100) / 100;
 }
 
+async function insertarPagoFarmacia({ idCita, idConsulta, idReceta, idPaciente, montoTotal, metodo_pago, comprobante }) {
+  const intentos = [
+    {
+      id_cita: idCita,
+      id_consulta: idConsulta,
+      id_receta: Number(idReceta),
+      id_paciente: idPaciente,
+      monto: montoTotal,
+      metodo_pago,
+      estado_pago: 'aprobado',
+      comprobante,
+      fecha_pago: new Date().toISOString(),
+    },
+    {
+      id_cita: idCita,
+      id_consulta: idConsulta,
+      id_paciente: idPaciente,
+      monto: montoTotal,
+      metodo_pago,
+      estado_pago: 'aprobado',
+      comprobante,
+      fecha_pago: new Date().toISOString(),
+    },
+    {
+      id_cita: idCita,
+      id_consulta: idConsulta,
+      id_paciente: idPaciente,
+      monto: montoTotal,
+      metodo_pago,
+      comprobante,
+    },
+    {
+      id_cita: idCita,
+      id_paciente: idPaciente,
+      monto: montoTotal,
+      metodo_pago,
+      comprobante,
+    },
+  ];
+
+  let ultimoError = null;
+  for (const payload of intentos) {
+    const limpio = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== null && value !== undefined));
+    const { data, error } = await supabaseAdmin
+      .from('pago')
+      .insert([limpio])
+      .select('id_pago')
+      .single();
+
+    if (!error && data?.id_pago) return data;
+    ultimoError = error;
+  }
+
+  throw new Error(`No se pudo registrar el pago de farmacia: ${ultimoError?.message || 'error desconocido'}`);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, mensaje: 'Metodo no permitido' });
@@ -22,6 +78,7 @@ export default async function handler(req, res) {
         historial_clinico (
           consulta (
             id_consulta,
+            id_cita,
             id_paciente,
             paciente (
               persona_id,
@@ -43,6 +100,7 @@ export default async function handler(req, res) {
 
     const consulta = receta.historial_clinico?.consulta;
     const idConsulta = consulta?.id_consulta || null;
+    const idCita = consulta?.id_cita || null;
     const idPaciente = consulta?.id_paciente || null;
     const personaPaciente = consulta?.paciente?.persona;
     const nombrePaciente = personaPaciente
@@ -83,6 +141,26 @@ export default async function handler(req, res) {
         });
       }
     }
+
+    const comprobante = `FARM-${Date.now()}`;
+    const pago = await insertarPagoFarmacia({
+      idCita,
+      idConsulta,
+      idReceta: id_receta,
+      idPaciente,
+      montoTotal,
+      metodo_pago,
+      comprobante,
+    });
+
+    const factura = await crearFacturaParaPago({
+      id_pago: pago.id_pago,
+      id_paciente: idPaciente,
+      razon_social: razon_social || nombrePaciente,
+      nit_ci: nit_ci || '0',
+      concepto: `Medicamentos receta #${id_receta}`,
+      detalles: detallesFactura,
+    });
 
     for (const detalle of receta.detalle_receta || []) {
       let cantidadFaltante = Number(detalle.cantidad);
@@ -135,36 +213,10 @@ export default async function handler(req, res) {
 
     if (errFinal) throw errFinal;
 
-    const comprobante = `FARM-${Date.now()}`;
-    const { data: pago, error: errPago } = await supabaseAdmin
-      .from('pago')
-      .insert([{
-        id_consulta: idConsulta,
-        id_receta: Number(id_receta),
-        id_paciente: idPaciente,
-        monto: montoTotal,
-        metodo_pago,
-        estado_pago: 'aprobado',
-        comprobante,
-        fecha_pago: new Date().toISOString(),
-      }])
-      .select('id_pago')
-      .single();
-
-    if (errPago) throw new Error(`Despacho realizado, pero fallo el registro de pago: ${errPago.message}`);
-
-    const factura = await crearFacturaParaPago({
-      id_pago: pago.id_pago,
-      id_paciente: idPaciente,
-      razon_social: razon_social || nombrePaciente,
-      nit_ci: nit_ci || '0',
-      concepto: `Medicamentos receta #${id_receta}`,
-      detalles: detallesFactura,
-    });
-
     return res.status(200).json({
       ok: true,
       id_pago: pago.id_pago,
+      factura_pdf_url: `/api/pagos/factura?id_pago=${pago.id_pago}`,
       factura,
       monto: montoTotal,
       desglose_iva: calcularFactura(montoTotal),

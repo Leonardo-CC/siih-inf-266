@@ -50,6 +50,10 @@ const estadoInicial = {
 const hospitalizacionInicial = {
   diagnostico_ingreso: '',
   observaciones_clinicas: '',
+  tiempo_internacion_dias: 1,
+  fecha_estimada_alta: '',
+  sala: '',
+  cama: '',
 };
 
 export default function GestionAdmision() {
@@ -211,6 +215,10 @@ export default function GestionAdmision() {
         id_medico: admisionHospitalizacion?.id_medico,
         diagnostico_ingreso: formHospitalizacion.diagnostico_ingreso,
         observaciones_clinicas: formHospitalizacion.observaciones_clinicas,
+        tiempo_internacion_dias: Number(formHospitalizacion.tiempo_internacion_dias),
+        fecha_estimada_alta: formHospitalizacion.fecha_estimada_alta || null,
+        sala: formHospitalizacion.sala,
+        cama: formHospitalizacion.cama,
       };
 
       const res = await fetch('/api/hospitalizaciones/autorizar', {
@@ -655,6 +663,52 @@ export default function GestionAdmision() {
               required
             />
             {erroresHospitalizacion.observaciones_clinicas && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.observaciones_clinicas}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Dias internado *</label>
+              <input
+                type="number"
+                min="1"
+                name="tiempo_internacion_dias"
+                value={formHospitalizacion.tiempo_internacion_dias}
+                onChange={handleChangeHospitalizacion}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${erroresHospitalizacion.tiempo_internacion_dias ? 'border-red-400' : 'border-slate-300'}`}
+                required
+              />
+              {erroresHospitalizacion.tiempo_internacion_dias && <p className="text-red-500 text-xs mt-1">{erroresHospitalizacion.tiempo_internacion_dias}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Alta estimada</label>
+              <input
+                type="date"
+                name="fecha_estimada_alta"
+                value={formHospitalizacion.fecha_estimada_alta}
+                onChange={handleChangeHospitalizacion}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Sala / unidad</label>
+              <input
+                name="sala"
+                value={formHospitalizacion.sala}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. Medicina interna"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Cama</label>
+              <input
+                name="cama"
+                value={formHospitalizacion.cama}
+                onChange={handleChangeHospitalizacion}
+                placeholder="Ej. A-12"
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
