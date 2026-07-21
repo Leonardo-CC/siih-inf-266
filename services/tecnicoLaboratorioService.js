@@ -93,7 +93,7 @@ export async function registrarAnalisis(payload) {
     estado,
     resultado,
     observaciones,
-    archivo_resultado, // 🔥 1. EXTRAEMOS EL ARCHIVO DEL PAYLOAD
+    archivo_resultado,
   } = payload || {};
 
   const errores = {};
@@ -131,7 +131,7 @@ export async function registrarAnalisis(payload) {
       estado: estado || 'pendiente',
       resultado: resultado || null,
       observaciones: observaciones || null,
-      archivo_resultado: archivo_resultado || null, // 🔥 2. LO GUARDAMOS EN LA BASE DE DATOS
+      archivo_resultado: archivo_resultado || null, 
     });
 
     return {
