@@ -171,8 +171,9 @@ export default function GestionConsultasMedico() {
       const data = await res.json();
       if (data.ok) {
         const lista = (data.analisis || []).filter((a) => Number(a.id_consulta) === Number(consulta.id_consulta));
-        setSolicitudesVista(lista);
-        if (lista.length) marcarSolicitud(consulta, lista[0]);
+        const listaFinal = lista.length ? lista : previas;
+        setSolicitudesVista(listaFinal);
+        if (listaFinal.length) marcarSolicitud(consulta, listaFinal[0]);
         else marcarSolicitud(consulta, null);
       } else {
         setErrorSolicitudes(data.mensaje || 'No se pudieron cargar las solicitudes.');
@@ -230,8 +231,11 @@ export default function GestionConsultasMedico() {
 
       marcarSolicitud(consultaAnalisis, {
         id_analisis: data.analisis?.id_analisis,
+        id_consulta: consultaAnalisis.id_consulta,
+        id_paciente: consultaAnalisis.id_paciente,
         tipo_analisis: formAnalisis.tipo_analisis,
         estado: formAnalisis.estado,
+        fecha_solicitud: new Date().toISOString(),
         observaciones: formAnalisis.observaciones || '',
       });
       setMensajeAnalisis('Solicitud de análisis registrada y vinculada a la consulta.');

@@ -296,7 +296,7 @@ export async function crearAnalisisLaboratorio(payload) {
   let { data, error } = await supabaseAdmin
     .from('analisis_laboratorio')
     .insert([fila])
-    .select('id_analisis')
+    .select('id_analisis, id_consulta')
     .single();
 
   // HU-15: si la columna id_consulta aun no existe en la DB (migracion pendiente),
@@ -311,7 +311,7 @@ export async function crearAnalisisLaboratorio(payload) {
   }
 
   if (error) throw new Error(`Error al crear análisis: ${error.message}`);
-  return data;
+  return { ...data, id_consulta: data?.id_consulta || null };
 }
 
 export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
