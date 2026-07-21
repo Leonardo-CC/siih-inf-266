@@ -198,7 +198,7 @@ export async function listarAnalisisLaboratorio(filtro = {}) {
   // HU-15: si la columna id_consulta no existe (migracion pendiente), se deriva
   // la consulta de origen usando el paciente y la fecha mas cercana de consulta.
   const columnaConsultaExiste = Boolean(rows[0]?.consulta_origen || rows.some((r) => r.id_consulta));
-  if (!columnaConsultaExiste && rows.length) {
+  if (!columnaConsultaExiste && rows.length && !filtro.id_consulta) {
     const consultasPorPaciente = await obtenerConsultasCercanasPorPacientes(rows.map((r) => r.id_paciente));
     rows = rows.map((r) => {
       if (r.consulta_origen) return r;

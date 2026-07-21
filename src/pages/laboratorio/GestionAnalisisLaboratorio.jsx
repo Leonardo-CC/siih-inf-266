@@ -87,10 +87,7 @@ export default function GestionAnalisisLaboratorio() {
     setCargando(true);
     setErrorGeneral(null);
     try {
-      const url = usuario?.id_tecnico_laboratorio
-        ? `/api/tecnico-laboratorio/analisis/listar?id_tecnico_laboratorio=${usuario.id_tecnico_laboratorio}`
-        : '/api/tecnico-laboratorio/analisis/listar';
-      const res = await fetch(url);
+      const res = await fetch('/api/tecnico-laboratorio/analisis/listar');
       const data = await res.json();
       if (data.ok) {
         setAnalisis(data.analisis || []);
