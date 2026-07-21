@@ -173,7 +173,14 @@ export default function GestionAnalisisLaboratorio() {
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === 'estado' && value !== 'completado') {
+        next.fecha_resultado = '';
+        next.resultado = value === 'cancelado' ? prev.resultado : '';
+      }
+      return next;
+    });
     setErrores((prev) => ({ ...prev, [name]: '' }));
     if (name === 'id_paciente' && !modoEdicion) {
       setForm((prev) => ({ ...prev, id_consulta: '' }));
@@ -193,6 +200,8 @@ export default function GestionAnalisisLaboratorio() {
     if (!form.tipo_analisis) errs.tipo_analisis = 'Selecciona un tipo de análisis.';
     if (!ESTADOS_ANALISIS.some((x) => x.value === form.estado)) errs.estado = 'Selecciona un estado válido.';
 
+    if (form.estado === 'completado' && !form.resultado.trim()) errs.resultado = 'Ingresa el resultado antes de completar.';
+
     if (Object.keys(errs).length > 0) {
       setErrores(errs);
       setEnviando(false);
@@ -205,6 +214,8 @@ export default function GestionAnalisisLaboratorio() {
         id_paciente: Number(form.id_paciente),
         id_tecnico_laboratorio: usuario.id_tecnico_laboratorio,
         id_consulta: form.id_consulta ? Number(form.id_consulta) : null,
+        fecha_resultado: form.estado === 'completado' ? (form.fecha_resultado || new Date().toISOString()) : null,
+        resultado: form.estado === 'completado' ? form.resultado : null,
       };
 
       const url = modoEdicion ? '/api/tecnico-laboratorio/analisis/actualizar' : '/api/tecnico-laboratorio/analisis/registrar';
@@ -454,8 +465,10 @@ export default function GestionAnalisisLaboratorio() {
                 name="fecha_resultado"
                 value={form.fecha_resultado}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                disabled={form.estado !== 'completado'}
+                className={`w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${form.estado !== 'completado' ? 'bg-slate-100 cursor-not-allowed' : ''}`}
               />
+              {form.estado !== 'completado' && <p className="mt-1 text-xs text-slate-400">Se habilita al marcar el analisis como completado.</p>}
             </div>
           </div>
 
@@ -480,8 +493,10 @@ export default function GestionAnalisisLaboratorio() {
                 value={form.resultado}
                 onChange={handleChange}
                 placeholder="Ej: Hemoglobina 14 g/dL"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"
+                disabled={form.estado !== 'completado'}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${errores.resultado ? 'border-red-400' : 'border-slate-300'} ${form.estado !== 'completado' ? 'bg-slate-100 cursor-not-allowed' : ''}`}
               />
+              {errores.resultado && <p className="text-red-500 text-xs mt-1">{errores.resultado}</p>}
             </div>
           </div>
 

@@ -144,11 +144,12 @@ const SELECT_ANALISIS_SIN_CONSULTA = `
 `;
 
 function mapearAnalisis(a) {
+  const idConsulta = a.id_consulta || a.consulta?.id_consulta || null;
   return {
     id_analisis: a.id_analisis,
     id_paciente: a.id_paciente,
     id_tecnico_laboratorio: a.id_tecnico_laboratorio,
-    id_consulta: a.id_consulta || null,
+    id_consulta: idConsulta,
     tipo_analisis: a.tipo_analisis,
     fecha_solicitud: a.fecha_solicitud,
     fecha_resultado: a.fecha_resultado,
@@ -215,7 +216,10 @@ export async function listarAnalisisLaboratorio(filtro = {}) {
     rows = rows.filter((a) => a.id_paciente === Number(filtro.id_paciente));
   }
   if (filtro.id_consulta) {
-    rows = rows.filter((a) => a.id_consulta === Number(filtro.id_consulta));
+    rows = rows.filter((a) => {
+      const idConsulta = a.id_consulta || a.consulta_origen?.id_consulta || null;
+      return Number(idConsulta) === Number(filtro.id_consulta);
+    });
   }
   if (filtro.estado) {
     rows = rows.filter((a) => a.estado === filtro.estado);
@@ -311,7 +315,8 @@ export async function crearAnalisisLaboratorio(payload) {
   }
 
   if (error) throw new Error(`Error al crear análisis: ${error.message}`);
-  return { ...data, id_consulta: data?.id_consulta || null };
+  const creado = await obtenerAnalisisLaboratorioPorId(data.id_analisis);
+  return creado || { ...data, id_consulta: data?.id_consulta || null };
 }
 
 export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
@@ -346,7 +351,8 @@ export async function actualizarAnalisisLaboratorio(id_analisis, payload) {
   }
 
   if (error) throw new Error(`Error al actualizar análisis: ${error.message}`);
-  return data;
+  const actualizado = await obtenerAnalisisLaboratorioPorId(data.id_analisis);
+  return actualizado || data;
 }
 
 // -------- Validar que una consulta pertenezca al paciente indicado --------

@@ -48,6 +48,28 @@ function formatearFecha(fecha) {
   return new Date(fecha).toLocaleString('es-BO', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function etiquetaLaboratorio(analisis) {
+  if (!analisis) return { texto: 'Sin solicitud', clase: 'bg-slate-100 text-slate-500 border-slate-200' };
+  if (analisis.estado === 'completado') return { texto: 'Completado', clase: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+  if (analisis.estado === 'en_proceso') return { texto: 'En proceso', clase: 'bg-blue-100 text-blue-700 border-blue-200' };
+  if (analisis.estado === 'cancelado') return { texto: 'Cancelado', clase: 'bg-red-100 text-red-700 border-red-200' };
+  return { texto: 'Pendiente', clase: 'bg-amber-100 text-amber-700 border-amber-200' };
+}
+
+function ordenarAnalisisPorActividad(lista = []) {
+  return [...lista].sort((a, b) => {
+    const fechaA = new Date(a.fecha_resultado || a.fecha_solicitud || 0).getTime();
+    const fechaB = new Date(b.fecha_resultado || b.fecha_solicitud || 0).getTime();
+    if (fechaB !== fechaA) return fechaB - fechaA;
+    return Number(b.id_analisis || 0) - Number(a.id_analisis || 0);
+  });
+}
+
+function perteneceAConsulta(analisis, idConsulta) {
+  const id = analisis?.id_consulta || analisis?.consulta_origen?.id_consulta || null;
+  return Number(id) === Number(idConsulta);
+}
+
 function obtenerFechaHoy() {
   const hoy = new Date();
   return hoy.getFullYear() + '-' + 
@@ -106,7 +128,6 @@ export default function GestionConsultasMedico() {
   const [consultaAnalisis, setConsultaAnalisis] = useState(null);
   const [formAnalisis, setFormAnalisis] = useState({
     tipo_analisis: '',
-    estado: 'pendiente',
     observaciones: '',
   });
   const [erroresAnalisis, setErroresAnalisis] = useState({});
@@ -132,11 +153,17 @@ export default function GestionConsultasMedico() {
   // HU-15: abre la solicitud de analisis precargada con la consulta de origen y su paciente.
   function abrirModalSolicitarAnalisis(consulta) {
     setConsultaAnalisis(consulta);
-    setFormAnalisis({ tipo_analisis: '', estado: 'pendiente', observaciones: '' });
+    setFormAnalisis({ tipo_analisis: '', observaciones: '' });
     setErroresAnalisis({});
     setMensajeAnalisis(null);
     setErrorAnalisis(null);
     setModalAnalisisAbierto(true);
+  }
+
+  function solicitarOtroAnalisisDesdeResultados() {
+    if (!consultaVerSolicitud) return;
+    setModalVerSolicitudAbierto(false);
+    abrirModalSolicitarAnalisis(consultaVerSolicitud);
   }
 
   function handleChangeAnalisis(e) {
@@ -147,13 +174,18 @@ export default function GestionConsultasMedico() {
 
   // HU-15: marca la consulta como "con solicitud" en el mapa local.
   function marcarSolicitud(consulta, analisis) {
-    setSolicitudesPorConsulta((prev) => ({
-      ...prev,
-      [consulta.id_consulta]: {
+    setSolicitudesPorConsulta((prev) => {
+      const siguiente = { ...prev };
+      if (!analisis) {
+        delete siguiente[consulta.id_consulta];
+        return siguiente;
+      }
+      siguiente[consulta.id_consulta] = {
         id_consulta: consulta.id_consulta,
-        analisis: analisis || null,
-      },
-    }));
+        analisis,
+      };
+      return siguiente;
+    });
   }
 
   // HU-15: abre el modal para ver las solicitudes ya registradas de una consulta.
@@ -170,7 +202,7 @@ export default function GestionConsultasMedico() {
       const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${consulta.id_consulta}`);
       const data = await res.json();
       if (data.ok) {
-        const lista = (data.analisis || []).filter((a) => Number(a.id_consulta) === Number(consulta.id_consulta));
+        const lista = ordenarAnalisisPorActividad((data.analisis || []).filter((a) => perteneceAConsulta(a, consulta.id_consulta)));
         const listaFinal = lista.length ? lista : previas;
         setSolicitudesVista(listaFinal);
         if (listaFinal.length) marcarSolicitud(consulta, listaFinal[0]);
@@ -194,7 +226,6 @@ export default function GestionConsultasMedico() {
 
     const errs = {};
     if (!formAnalisis.tipo_analisis) errs.tipo_analisis = 'Selecciona un tipo de análisis.';
-    if (!ESTADOS_ANALISIS.some((x) => x.value === formAnalisis.estado)) errs.estado = 'Selecciona un estado válido.';
 
     if (Object.keys(errs).length > 0) {
       setErroresAnalisis(errs);
@@ -210,8 +241,10 @@ export default function GestionConsultasMedico() {
           id_paciente: consultaAnalisis.id_paciente,
           id_consulta: consultaAnalisis.id_consulta,
           tipo_analisis: formAnalisis.tipo_analisis,
-          estado: formAnalisis.estado,
+          estado: 'pendiente',
           fecha_solicitud: new Date().toISOString(),
+          fecha_resultado: null,
+          resultado: null,
           observaciones: formAnalisis.observaciones || null,
         }),
       });
@@ -229,15 +262,22 @@ export default function GestionConsultasMedico() {
         return;
       }
 
-      marcarSolicitud(consultaAnalisis, {
+      const nuevoAnalisis = {
+        ...(data.analisis || {}),
         id_analisis: data.analisis?.id_analisis,
         id_consulta: consultaAnalisis.id_consulta,
         id_paciente: consultaAnalisis.id_paciente,
-        tipo_analisis: formAnalisis.tipo_analisis,
-        estado: formAnalisis.estado,
-        fecha_solicitud: new Date().toISOString(),
-        observaciones: formAnalisis.observaciones || '',
-      });
+        tipo_analisis: data.analisis?.tipo_analisis || formAnalisis.tipo_analisis,
+        estado: data.analisis?.estado || 'pendiente',
+        fecha_solicitud: data.analisis?.fecha_solicitud || new Date().toISOString(),
+        fecha_resultado: data.analisis?.fecha_resultado || null,
+        resultado: data.analisis?.resultado || null,
+        observaciones: data.analisis?.observaciones || formAnalisis.observaciones || '',
+      };
+      marcarSolicitud(consultaAnalisis, nuevoAnalisis);
+      if (consultaVerSolicitud?.id_consulta === consultaAnalisis.id_consulta) {
+        setSolicitudesVista((prev) => ordenarAnalisisPorActividad([nuevoAnalisis, ...prev]));
+      }
       setMensajeAnalisis('Solicitud de análisis registrada y vinculada a la consulta.');
       setTimeout(() => setModalAnalisisAbierto(false), 1200);
     } catch {
@@ -318,7 +358,7 @@ export default function GestionConsultasMedico() {
         try {
           const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${c.id_consulta}`);
           const data = await res.json();
-          const analisisConsulta = (data.analisis || []).filter((a) => Number(a.id_consulta) === Number(c.id_consulta));
+          const analisisConsulta = ordenarAnalisisPorActividad((data.analisis || []).filter((a) => perteneceAConsulta(a, c.id_consulta)));
           if (data.ok && analisisConsulta.length) {
             mapa[c.id_consulta] = {
               id_consulta: c.id_consulta,
@@ -783,6 +823,19 @@ export default function GestionConsultasMedico() {
                   ),
                 },
                 { clave: 'diagnostico', titulo: 'Diagnóstico', render: (v) => v ? (v.length > 30 ? v.slice(0, 30) + '…' : v) : '-' },
+                {
+                  clave: 'laboratorio',
+                  titulo: 'Laboratorio',
+                  render: (_v, consulta) => {
+                    const lab = solicitudesPorConsulta[consulta.id_consulta]?.analisis;
+                    const badge = etiquetaLaboratorio(lab);
+                    return (
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.clase}`}>
+                        {badge.texto}
+                      </span>
+                    );
+                  },
+                },
                 { clave: 'fecha_consulta', titulo: 'Fecha', render: (v) => formatearFecha(v) },
               ]}
               datos={consultasFiltradas}
@@ -793,7 +846,7 @@ export default function GestionConsultasMedico() {
                   : `No hay consultas registradas para la fecha seleccionada.`
               }
               renderAcciones={(consulta) => {
-                const yaSolicitado = Boolean(solicitudesPorConsulta[consulta.id_consulta]);
+                const yaSolicitado = Boolean(solicitudesPorConsulta[consulta.id_consulta]?.analisis);
                 return (
                   <div className="flex flex-wrap items-center gap-1.5 justify-end min-w-[220px]">
                     <button
@@ -815,7 +868,7 @@ export default function GestionConsultasMedico() {
                       <button
                         onClick={(e) => { e.stopPropagation(); abrirVerSolicitud(consulta); }}
                         className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors"
-                        title="Ver solicitud de análisis"
+                        title="Ver resultados de laboratorio"
                       >
                         <IconoEye className="w-4 h-4" />
                       </button>
@@ -1098,20 +1151,6 @@ export default function GestionConsultasMedico() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Estado *</label>
-            <select
-              name="estado"
-              value={formAnalisis.estado}
-              onChange={handleChangeAnalisis}
-              className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition ${erroresAnalisis.estado ? 'border-red-400' : 'border-slate-300'}`}
-            >
-              {ESTADOS_ANALISIS.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Observaciones</label>
             <textarea
               name="observaciones"
@@ -1147,7 +1186,7 @@ export default function GestionConsultasMedico() {
       <Modal
         abierto={modalVerSolicitudAbierto}
         alCerrar={() => setModalVerSolicitudAbierto(false)}
-        titulo="Solicitudes de análisis"
+        titulo="Resultados de laboratorio"
         ancho="max-w-2xl"
       >
         {consultaVerSolicitud && (
@@ -1166,7 +1205,7 @@ export default function GestionConsultasMedico() {
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : solicitudesVista.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">Aún no se ha registrado ninguna solicitud de análisis para este paciente.</div>
+          <div className="text-center py-8 text-slate-500">Aún no se ha registrado ninguna solicitud de laboratorio para esta consulta.</div>
         ) : (
           <div className="space-y-3">
             {solicitudesVista.map((s) => (
@@ -1185,15 +1224,38 @@ export default function GestionConsultasMedico() {
                 <div className="mt-2 text-xs text-slate-600 space-y-1">
                   <p><span className="font-semibold">ID análisis:</span> #{s.id_analisis}</p>
                   <p><span className="font-semibold">Fecha solicitud:</span> {formatearFecha(s.fecha_solicitud)}</p>
-                  {s.resultado ? <p><span className="font-semibold">Resultado:</span> {s.resultado}</p> : null}
-                  {s.observaciones ? <p><span className="font-semibold">Observaciones:</span> {s.observaciones}</p> : null}
+                  {s.fecha_resultado ? <p><span className="font-semibold">Fecha resultado:</span> {formatearFecha(s.fecha_resultado)}</p> : null}
+                  {s.estado === 'completado' || s.resultado ? (
+                    <div className="mt-3 rounded-lg border border-emerald-200 bg-white p-3 text-sm text-slate-700">
+                      <p className="text-xs font-bold uppercase text-emerald-700 mb-1">Resultado subido por laboratorio</p>
+                      <p className="whitespace-pre-wrap">{s.resultado || 'Resultado marcado como completado sin texto registrado.'}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      El técnico de laboratorio aún no ha subido el resultado.
+                    </div>
+                  )}
+                  {s.observaciones ? (
+                    <div className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                      <p className="text-xs font-bold uppercase text-slate-500 mb-1">Observaciones</p>
+                      <p className="whitespace-pre-wrap">{s.observaciones}</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex justify-end pt-4">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4">
+          <button
+            type="button"
+            onClick={solicitarOtroAnalisisDesdeResultados}
+            className="px-4 py-2.5 rounded-lg bg-primary text-white hover:bg-primary-dark font-medium transition inline-flex items-center justify-center gap-2"
+          >
+            <IconoBeaker className="w-4 h-4" />
+            Solicitar otro análisis
+          </button>
           <button
             type="button"
             onClick={() => setModalVerSolicitudAbierto(false)}

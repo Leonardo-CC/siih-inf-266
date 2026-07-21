@@ -25,6 +25,31 @@ function generarNumeroFactura(idPago) {
   return `SIIH-${year}-${String(idPago).padStart(8, '0')}`;
 }
 
+async function obtenerPagoFlexible(id_pago) {
+  const selects = [
+    'id_pago, id_consulta, id_inscripcion, id_receta, monto, metodo_pago, comprobante, fecha_pago',
+    'id_pago, id_consulta, id_inscripcion, monto, metodo_pago, comprobante, fecha_pago',
+    'id_pago, id_consulta, monto, metodo_pago, comprobante, fecha_pago',
+    'id_pago, monto, metodo_pago, comprobante, fecha_pago',
+    'id_pago, monto, metodo_pago',
+  ];
+
+  let ultimoError = null;
+  for (const select of selects) {
+    const { data, error } = await supabaseAdmin
+      .from('pago')
+      .select(select)
+      .eq('id_pago', id_pago)
+      .maybeSingle();
+
+    if (!error) return data;
+    ultimoError = error;
+    if (!/schema cache|column|relationship|id_consulta|id_inscripcion|id_receta|comprobante|fecha_pago/i.test(error.message || '')) break;
+  }
+
+  throw new Error(`Error obteniendo pago: ${ultimoError?.message || 'error desconocido'}`);
+}
+
 export async function crearFacturaParaPago({
   id_pago,
   id_paciente = null,
@@ -33,13 +58,7 @@ export async function crearFacturaParaPago({
   concepto = null,
   detalles = [],
 }) {
-  const { data: pago, error: errorPago } = await supabaseAdmin
-    .from('pago')
-    .select('id_pago, id_consulta, id_inscripcion, monto, metodo_pago, comprobante, fecha_pago')
-    .eq('id_pago', id_pago)
-    .maybeSingle();
-
-  if (errorPago) throw new Error(`Error obteniendo pago: ${errorPago.message}`);
+  const pago = await obtenerPagoFlexible(id_pago);
   if (!pago) throw new Error('Pago no encontrado para facturar.');
 
   const calculo = calcularFactura(pago.monto);
