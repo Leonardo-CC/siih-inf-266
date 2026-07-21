@@ -167,15 +167,10 @@ export default function GestionConsultasMedico() {
     setErrorSolicitudes(null);
     setModalVerSolicitudAbierto(true);
     try {
-      // La BD vincula el analisis al paciente; se filtra por id_paciente y,
-      // si la columna id_consulta existe, tambien por la consulta de origen.
-      let url = `/api/tecnico-laboratorio/analisis/listar?id_paciente=${consulta.id_paciente}`;
-      const res = await fetch(url);
+      const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${consulta.id_consulta}`);
       const data = await res.json();
       if (data.ok) {
-        let lista = data.analisis || [];
-        // Filtro fino por consulta solo si la columna existe (id_consulta != null).
-        lista = lista.filter((a) => !a.id_consulta || a.id_consulta === consulta.id_consulta);
+        const lista = (data.analisis || []).filter((a) => Number(a.id_consulta) === Number(consulta.id_consulta));
         setSolicitudesVista(lista);
         if (lista.length) marcarSolicitud(consulta, lista[0]);
         else marcarSolicitud(consulta, null);
@@ -309,22 +304,23 @@ export default function GestionConsultasMedico() {
     }
   }
 
-  // HU-15: marca las consultas que ya tienen solicitud de analisis del paciente.
-  // La BD vincula el analisis al paciente; se usa id_paciente (y id_consulta
-  // como filtro adicional cuando la columna existe).
+  // HU-15: marca solo las consultas que tienen una solicitud vinculada
+  // explicitamente por id_consulta. No se marca por paciente para evitar
+  // falsos positivos al agendar una cita o al tener analisis antiguos.
   async function cargarSolicitudesPorConsulta(lista) {
     const mapa = {};
     await Promise.all(
       lista.map(async (c) => {
         try {
-          const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_paciente=${c.id_paciente}`);
+          const res = await fetch(`/api/tecnico-laboratorio/analisis/listar?id_consulta=${c.id_consulta}`);
           const data = await res.json();
-          if (data.ok && data.analisis && data.analisis.length) {
+          const analisisConsulta = (data.analisis || []).filter((a) => Number(a.id_consulta) === Number(c.id_consulta));
+          if (data.ok && analisisConsulta.length) {
             mapa[c.id_consulta] = {
               id_consulta: c.id_consulta,
               id_paciente: c.id_paciente,
-              analisis: data.analisis[0],
-              total: data.analisis.length,
+              analisis: analisisConsulta[0],
+              total: analisisConsulta.length,
             };
           }
         } catch {
