@@ -8,56 +8,40 @@ function redondear2(valor) {
 }
 
 async function insertarPagoFarmacia({ idCita, idConsulta, idReceta, idPaciente, montoTotal, metodo_pago, comprobante }) {
-  const intentos = [
-    {
-      id_cita: idCita,
-      id_consulta: idConsulta,
-      id_receta: Number(idReceta),
-      id_paciente: idPaciente,
-      monto: montoTotal,
-      metodo_pago,
-      estado_pago: 'aprobado',
-      comprobante,
-      fecha_pago: new Date().toISOString(),
-    },
-    {
-      id_cita: idCita,
-      id_consulta: idConsulta,
-      id_paciente: idPaciente,
-      monto: montoTotal,
-      metodo_pago,
-      estado_pago: 'aprobado',
-      comprobante,
-      fecha_pago: new Date().toISOString(),
-    },
-    {
-      id_cita: idCita,
-      id_consulta: idConsulta,
-      id_paciente: idPaciente,
-      monto: montoTotal,
-      metodo_pago,
-      comprobante,
-    },
-    {
-      id_cita: idCita,
-      id_paciente: idPaciente,
-      monto: montoTotal,
-      metodo_pago,
-      comprobante,
-    },
-  ];
+  const payloadBase = {
+    id_cita: idCita,
+    id_consulta: idConsulta,
+    id_receta: Number(idReceta),
+    id_paciente: idPaciente,
+    monto: montoTotal,
+    metodo_pago,
+    estado_pago: 'aprobado',
+    comprobante,
+    fecha_pago: new Date().toISOString(),
+  };
 
   let ultimoError = null;
-  for (const payload of intentos) {
-    const limpio = Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== null && value !== undefined));
+  let payloadActual = Object.fromEntries(Object.entries(payloadBase).filter(([, value]) => value !== null && value !== undefined));
+  const columnasOpcionales = ['id_cita', 'id_receta', 'id_paciente', 'estado_pago', 'fecha_pago', 'id_consulta', 'comprobante'];
+  const columnasOmitidas = new Set();
+
+  for (let intento = 0; intento < 12; intento += 1) {
     const { data, error } = await supabaseAdmin
       .from('pago')
-      .insert([limpio])
+      .insert([payloadActual])
       .select('id_pago')
       .single();
 
     if (!error && data?.id_pago) return data;
     ultimoError = error;
+
+    const mensaje = error?.message || '';
+    const columnaFaltante = mensaje.match(/'([^']+)' column of 'pago'/i)?.[1];
+    const columnaARemover = columnaFaltante || columnasOpcionales.find((col) => payloadActual[col] !== undefined && !columnasOmitidas.has(col));
+
+    if (!columnaARemover || payloadActual[columnaARemover] === undefined) break;
+    delete payloadActual[columnaARemover];
+    columnasOmitidas.add(columnaARemover);
   }
 
   throw new Error(`No se pudo registrar el pago de farmacia: ${ultimoError?.message || 'error desconocido'}`);
